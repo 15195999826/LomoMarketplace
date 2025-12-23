@@ -1,0 +1,10 @@
+{
+  "name": "InkMon",
+  "description": "InkMon 项目开发助手插件",
+  "version": "1.0.0",
+  "author": {
+    "name": "Lomo"
+  },
+  "keywords": ["inkmon", "development"],
+  "category": "productivity"
+}

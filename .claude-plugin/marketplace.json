@@ -1,0 +1,30 @@
+{
+  "name": "LomoMarketplace",
+  "owner": {
+    "name": "Lomo",
+    "email": "lomo@example.com"
+  },
+  "metadata": {
+    "description": "Lomo's Claude Code Plugin Marketplace",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "UE_ReactUMG",
+      "source": "./plugins/UE_ReactUMG",
+      "description": "Unreal Engine ReactUMG 开发助手插件",
+      "version": "1.0.0",
+      "keywords": ["unreal", "ue", "react", "umg", "ui"],
+      "category": "productivity"
+    },
+    {
+      "name": "InkMon",
+      "source": "./plugins/InkMon",
+      "description": "InkMon 世界",
+      "version": "1.0.0",
+      "keywords": ["inkmon", "development"],
+      "category": "productivity"
+    }
+  ]
+}

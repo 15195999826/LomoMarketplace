@@ -1,0 +1,10 @@
+{
+  "name": "UE_ReactUMG",
+  "description": "Unreal Engine ReactUMG 开发助手插件",
+  "version": "1.0.0",
+  "author": {
+    "name": "Lomo"
+  },
+  "keywords": ["unreal", "ue", "react", "umg", "ui"],
+  "category": "productivity"
+}
