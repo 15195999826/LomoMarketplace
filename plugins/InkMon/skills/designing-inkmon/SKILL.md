@@ -10,6 +10,22 @@ allowed-tools: Read, Write
 
 ---
 
+## Quick Start
+
+30 秒创建一个 InkMon 的最小流程：
+
+```
+1. 阶段？ → mature (成熟体, BST 350-450)
+2. 概念？ → 草系熊 + 苔藓覆盖
+3. 数值？ → HP:80 Atk:75 Def:70 SpA:55 SpD:65 Spd:45 = BST 390
+4. 生成提示词 → 按 CREATE-PROMPTS.md 模板填充
+5. 输出 JSON → 保存到 data/inkmons/MossBear.json
+```
+
+完整示例见 [输出格式](#输出格式) 部分。
+
+---
+
 ## InkWorld 风格锚点词
 
 所有 InkMon 共用 5 个风格锚点词：
@@ -26,7 +42,7 @@ allowed-tools: Read, Write
 
 ## 进化阶段
 
-每个 InkMon 必须指定进化阶段：
+每个 InkMon 必须指定进化阶段，阶段决定 BST 范围：
 
 | 阶段 | 英文 | 特点 | BST 范围 |
 |-----|------|------|---------|
@@ -71,55 +87,38 @@ allowed-tools: Read, Write
 
 ### 7. 验证与反馈循环
 
-生成 JSON 后，执行验证并根据结果迭代：
+生成 JSON 后，执行验证并迭代：
 
-```python
-def design_inkmon():
-    # 步骤 1-6: 设计流程
-    stage = 确定阶段()
-    concept = 概念讨论(stage)
-    stats = 属性确定(concept)
-    ecology = 生态设计(concept)
-    prompts = 外观设计(concept)
-    json_data = 生成JSON(stage, concept, stats, ecology, prompts)
-
-    # 步骤 7: 验证与反馈循环
-    while True:
-        errors = validate(json_data)
-
-        if errors:
-            # 验证失败 → 返回相关步骤修正
-            print(f"发现问题: {errors}")
-            json_data = 修正问题步骤(errors)
-            continue
-
-        # 验证通过 → 请求用户确认
-        user_feedback = 询问用户("设计是否满意？")
-
-        if user_feedback.satisfied:
-            break  # 完成设计
-        else:
-            # 用户不满意 → 返回调整
-            json_data = 根据反馈调整(user_feedback.issues)
-            continue
-
-    保存JSON(json_data)
-    return "设计完成"
-
-def validate(json_data):
-    errors = []
-    if sum(stats) != bst:
-        errors.append("BST 总和不等于六维数值之和 → 返回步骤3")
-    if bst not in 阶段BST范围[stage]:
-        errors.append("BST 超出阶段范围 → 返回步骤3")
-    if element not in 有效属性列表:
-        errors.append("属性无效 → 返回步骤3")
-    if stage not in ["baby", "mature", "adult"]:
-        errors.append("阶段无效 → 返回步骤1")
-    if not 包含风格锚点词(prompts):
-        errors.append("提示词缺少锚点词 → 返回步骤5")
-    return errors
 ```
+┌─────────────┐
+│  生成 JSON  │
+└──────┬──────┘
+       ▼
+┌─────────────┐    ✗ 验证失败
+│   验证检查   │───────────────┐
+└──────┬──────┘               │
+       │ ✓                    ▼
+       ▼              ┌───────────────┐
+┌─────────────┐       │ 返回对应步骤修正 │
+│  用户确认？  │       └───────┬───────┘
+└──────┬──────┘               │
+       │                      │
+   ✓ 满意 ──┐    ✗ 不满意 ────┘
+            ▼
+      ┌──────────┐
+      │ 保存 JSON │
+      └──────────┘
+```
+
+**验证规则**：
+
+| 检查项 | 失败时返回 |
+|-------|----------|
+| 六维之和 ≠ BST | → 步骤 3 |
+| BST 超出阶段范围 | → 步骤 3 |
+| 属性不在有效列表 | → 步骤 3 |
+| 阶段无效 | → 步骤 1 |
+| 提示词缺少锚点词 | → 步骤 5 |
 
 ---
 
@@ -174,8 +173,7 @@ def validate(json_data):
     "design": {
       "base_animal": "熊",
       "features": ["苔藓皮毛", "水晶爪", "树根脚"],
-      "color_palette": ["#228B22", "#8B4513", "#90EE90"],
-      "rarity": "uncommon"
+      "color_palette": ["#228B22", "#8B4513", "#90EE90"]
     },
     "evolution": {
       "stage": "mature",

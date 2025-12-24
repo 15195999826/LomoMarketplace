@@ -116,7 +116,7 @@
         },
         "design": {
           "type": "object",
-          "required": ["base_animal", "features", "color_palette", "rarity"],
+          "required": ["base_animal", "features", "color_palette"],
           "properties": {
             "base_animal": {
               "type": "string",
@@ -139,11 +139,6 @@
               },
               "minItems": 1,
               "maxItems": 5
-            },
-            "rarity": {
-              "type": "string",
-              "description": "稀有度",
-              "enum": ["common", "uncommon", "rare", "legendary"]
             }
           }
         },
