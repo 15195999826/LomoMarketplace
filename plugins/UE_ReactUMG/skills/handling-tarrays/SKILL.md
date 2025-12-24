@@ -1,5 +1,5 @@
 ---
-name: tarray-handling
+name: handling-tarrays
 description: ReactUMG TArray 属性处理指南。在使用 GridPanel.ColumnFill/RowFill 等数组属性时使用。必须用 UE.NewArray() 而非 JS 数组。
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: plan-reactumg
 description: ReactUMG UI 开发规划专家。输入完整的 UI 需求，输出详细开发计划。在规划新的 ReactUMG UI 功能时使用。
-skills: reactumg-full-knowledge, reactumg-architecture
+skills: reactumg-knowledge, reactumg-architecture
 tools: Read, Glob, Grep, Bash
 model: sonnet
 ---
@@ -83,15 +83,21 @@ const Slot: CanvasPanelSlot = {
 };
 ```
 
-### 注意事项
+### 开发检查清单
 
-基于 ReactUMG 知识库，提醒以下陷阱：
-- [ ] 颜色类型是否正确？WidgetStyle 中是否有 ColorUseRule: 0？
-- [ ] TArray 是否使用 UE.NewArray()？
-- [ ] CanvasPanelSlot 的 Anchors/Offsets 是否配置正确？
-- [ ] key 是否使用稳定的标识（如 id），而非位置坐标？
-- [ ] ComboBoxString 是否使用 ref + AddOption() 而非 DefaultOptions？
-- [ ] ref 回调是否在构造函数中绑定？
+复制此清单跟踪进度：
+
+```
+ReactUMG 开发检查：
+- [ ] 1. 颜色类型：SlateColor（嵌套）/ LinearColor（直接）是否正确？
+- [ ] 2. WidgetStyle 颜色：是否有 ColorUseRule: 0？
+- [ ] 3. TArray 属性：是否使用 UE.NewArray()？
+- [ ] 4. CanvasPanelSlot：Anchors/Offsets 配置是否正确？
+- [ ] 5. key 用法：是否使用稳定 ID（非坐标/索引）？
+- [ ] 6. ComboBoxString：是否用 ref + AddOption()？
+- [ ] 7. ref 回调：是否在构造函数中绑定？
+- [ ] 8. 组件结构：根组件选择是否合适？
+```
 
 ### 下一步
 
@@ -105,7 +111,6 @@ const Slot: CanvasPanelSlot = {
 ## 重要提醒
 
 - **永远检查颜色类型** - SlateColor 嵌套，LinearColor 直接
-- **永远使用 UE.NewArray()** - 不要直接使用 JS 数组
 - **永远用 id 作为 key** - 不要用坐标或索引
 - **ComboBoxString 用 ref** - DefaultOptions 不工作
 - **WidgetStyle 加 ColorUseRule: 0** - 否则颜色不生效

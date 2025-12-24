@@ -1,5 +1,5 @@
 ---
-name: key-rules
+name: using-keys
 description: ReactUMG key 使用规范。在渲染列表、拖拽预览等场景时使用。key 标识组件身份，禁止使用坐标等频繁变化的值作为 key。
 ---
 

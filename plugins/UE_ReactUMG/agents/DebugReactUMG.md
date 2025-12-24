@@ -1,7 +1,7 @@
 ---
 name: debug-reactumg
 description: ReactUMG 调试专家。分析 UI 问题，给出修复建议。遇到 ReactUMG 相关的疑难杂症时使用。
-skills: reactumg-full-knowledge, reactumg-architecture
+skills: reactumg-knowledge, reactumg-architecture
 tools: Read, Glob, Grep, Bash
 model: sonnet
 ---
@@ -41,33 +41,42 @@ model: sonnet
 
 ### 4. 给出修复
 
-## 常见问题诊断清单
+## 调试检查清单
+
+复制此清单排查问题：
+
+```
+ReactUMG 问题排查：
+- [ ] 颜色不生效？检查 SlateColor/LinearColor + ColorUseRule
+- [ ] 组件不更新？检查 key 是否用了坐标
+- [ ] 位置不对？检查 CanvasPanelSlot Anchors/Offsets
+- [ ] 类型错误？检查 TArray 是否用 UE.NewArray()
+- [ ] ref 频繁调用？检查是否内联定义 ref 回调
+- [ ] ComboBox 空白？检查是否用 ref + AddOption()
+```
+
+## 详细诊断指南
 
 ### 颜色不生效
-- [ ] SlateColor 是否使用 `{SpecifiedColor: {R,G,B,A}}`？
-- [ ] LinearColor 是否使用 `{R,G,B,A}`？
-- [ ] WidgetStyle 中是否有 `ColorUseRule: 0`？
-- [ ] FocusedForegroundColor 是否有 `ColorUseRule: 0`？
+- SlateColor 必须用 `{SpecifiedColor: {R,G,B,A}}`
+- LinearColor 直接用 `{R,G,B,A}`
+- WidgetStyle 中必须有 `ColorUseRule: 0`
 
 ### 组件不更新
-- [ ] key 是否使用了坐标等频繁变化的值？
-- [ ] Slot 引用是否变化？（ReactUMG Slot 更新 bug）
-- [ ] ref 回调是否每次 render 都创建新函数？
-- [ ] 是否修改了私有成员变量而非 state？
+- key 不能用坐标等频繁变化的值
+- Slot 引用变化会触发 bug
+- ref 回调必须在构造函数中绑定
+- 修改私有成员变量不会触发更新
 
 ### 位置/尺寸不对
-- [ ] CanvasPanelSlot 的 Anchors 是 Point 还是 Range？
-- [ ] Offsets 的含义是否正确理解？（Position/Size vs Margin）
-- [ ] bAutoSize 设置是否正确？
+- Point Anchors（Min==Max）：Offsets = Position/Size
+- Range Anchors（Min≠Max）：Offsets = Margin
+- 检查 bAutoSize 设置
 
 ### 类型错误
-- [ ] TArray 是否使用 `UE.NewArray()`？
-- [ ] ComboBoxString 是否使用 ref + AddOption()？
-- [ ] $ref/$unref 是否正确使用？
-
-### 性能问题
-- [ ] key 是否使用了坐标导致每帧重建？
-- [ ] 大量组件是否有不必要的 re-render？
+- TArray 必须用 `UE.NewArray()`
+- ComboBoxString 必须用 ref + AddOption()
+- UE API out 参数用 $ref/$unref
 
 ## 输出格式
 

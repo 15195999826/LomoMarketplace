@@ -1,5 +1,5 @@
 ---
-name: slot-layout
+name: configuring-slots
 description: ReactUMG Slot 布局系统指南。在使用 CanvasPanel、设置组件位置和尺寸时使用。CanvasPanelSlot 有特殊的 Anchors/Offsets 映射规则。
 ---
 
@@ -98,3 +98,52 @@ Offsets: {Left: 5, Top: -35, Right: 50, Bottom: 70}  // 50x70 按钮
 **其他 Slot 类型**：ButtonSlot, SafeZoneSlot, ScaleBoxSlot, SizeBoxSlot, StackBoxSlot, WrapBoxSlot, WidgetSwitcherSlot, WindowTitleBarAreaSlot, BackgroundBlurSlot
 
 ⚠️ 除 CanvasPanelSlot 外，所有 Slot 的 Blueprint 属性与 TypeScript 定义完全一致，直接使用即可！
+
+---
+
+## 需求 → 配置示例
+
+**需求**: "左侧固定宽度侧边栏 200px"
+```typescript
+const SidebarSlot: CanvasPanelSlot = {
+    LayoutData: {
+        Anchors: {Minimum: {X: 0, Y: 0}, Maximum: {X: 0, Y: 1}},
+        Offsets: {Left: 0, Top: 0, Right: 200, Bottom: 0}
+    },
+    bAutoSize: false
+};
+```
+
+**需求**: "居中弹窗，占屏幕 70%x80%"
+```typescript
+const DialogSlot: CanvasPanelSlot = {
+    LayoutData: {
+        Anchors: {Minimum: {X: 0.15, Y: 0.1}, Maximum: {X: 0.85, Y: 0.9}},
+        Offsets: {Left: 0, Top: 0, Right: 0, Bottom: 0}
+    },
+    bAutoSize: false,
+    ZOrder: 100
+};
+```
+
+**需求**: "底部工具栏，高度 60px"
+```typescript
+const ToolbarSlot: CanvasPanelSlot = {
+    LayoutData: {
+        Anchors: {Minimum: {X: 0, Y: 1}, Maximum: {X: 1, Y: 1}},
+        Offsets: {Left: 0, Top: -60, Right: 0, Bottom: 60}
+    },
+    bAutoSize: false
+};
+```
+
+**需求**: "右下角固定尺寸按钮 100x40"
+```typescript
+const ButtonSlot: CanvasPanelSlot = {
+    LayoutData: {
+        Anchors: {Minimum: {X: 1, Y: 1}, Maximum: {X: 1, Y: 1}},
+        Offsets: {Left: -110, Top: -50, Right: 100, Bottom: 40}
+    },
+    bAutoSize: false
+};
+```

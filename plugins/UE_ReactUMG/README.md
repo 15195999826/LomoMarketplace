@@ -10,12 +10,12 @@ Unreal Engine ReactUMG 开发助手插件，帮助 AI 高效、准确地开发 R
 
 | Skill | 用途 |
 |-------|------|
-| `color-types` | 颜色类型速查（SlateColor vs LinearColor） |
-| `tarray-handling` | TArray 必须用 UE.NewArray() |
-| `slot-layout` | CanvasPanelSlot 映射规则 |
-| `component-tips` | ComboBoxString 等组件陷阱 |
-| `key-rules` | key 使用规范（禁止坐标作为 key） |
-| `ref-usage` | React ref vs PuerTS $ref 区分 |
+| `handling-colors` | 颜色类型速查（SlateColor vs LinearColor） |
+| `handling-tarrays` | TArray 必须用 UE.NewArray() |
+| `configuring-slots` | CanvasPanelSlot 映射规则 + 需求→配置示例 |
+| `avoiding-pitfalls` | ComboBoxString 等组件陷阱 |
+| `using-keys` | key 使用规范（禁止坐标作为 key） |
+| `using-refs` | React ref vs PuerTS $ref 区分 |
 
 ### Agents（按需调用）
 
@@ -67,17 +67,23 @@ UE_ReactUMG/
 ├── .claude-plugin/
 │   └── plugin.json
 ├── skills/
-│   ├── color-types/SKILL.md
-│   ├── tarray-handling/SKILL.md
-│   ├── slot-layout/SKILL.md
-│   ├── component-tips/SKILL.md
-│   ├── key-rules/SKILL.md
-│   ├── ref-usage/SKILL.md
-│   ├── reactumg-full-knowledge/SKILL.md    # 完整知识（供 Agent 使用）
-│   └── reactumg-architecture/SKILL.md      # 架构知识（供 Agent 使用）
+│   ├── handling-colors/SKILL.md        # 颜色类型速查
+│   ├── handling-tarrays/SKILL.md       # TArray 使用指南
+│   ├── configuring-slots/SKILL.md      # Slot 布局 + 需求→配置示例
+│   ├── avoiding-pitfalls/SKILL.md      # 组件陷阱提醒
+│   ├── using-keys/SKILL.md             # key 使用规范
+│   ├── using-refs/SKILL.md             # 两种 ref 区分
+│   ├── reactumg-knowledge/             # 完整知识库（供 Agent 使用）
+│   │   ├── SKILL.md                    # 概览 + 导航
+│   │   ├── colors.md                   # 颜色规则详解
+│   │   ├── tarray.md                   # TArray 指南
+│   │   ├── slots.md                    # Slot 布局详解
+│   │   ├── components.md               # 组件配置 + API 索引
+│   │   └── patterns.md                 # 更新机制 + 交互
+│   └── reactumg-architecture/SKILL.md  # 架构原理（供 Agent 使用）
 ├── agents/
-│   ├── PlanReactUMG.md
-│   └── DebugReactUMG.md
+│   ├── PlanReactUMG.md                 # 规划 Agent（含检查清单）
+│   └── DebugReactUMG.md                # 调试 Agent（含检查清单）
 └── README.md
 ```
 
@@ -97,6 +103,7 @@ UE_ReactUMG/
 
 ## 版本
 
+- **v2.1.0** - 优化重构：统一命名规范、拆分大文件、添加检查清单和示例
 - **v2.0.0** - 完整重构，添加 Skills + Agents 架构
 - **v1.0.0** - 初始版本
 

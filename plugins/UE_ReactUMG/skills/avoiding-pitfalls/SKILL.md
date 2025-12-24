@@ -1,5 +1,5 @@
 ---
-name: component-tips
+name: avoiding-pitfalls
 description: ReactUMG 常见组件陷阱提醒。在使用 ComboBoxString、EditableTextBox 等复杂组件时使用。包含动态选项、ref 回调优化等关键技巧。
 ---
 
