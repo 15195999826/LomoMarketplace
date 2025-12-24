@@ -1,10 +1,21 @@
 {
   "name": "UE_ReactUMG",
-  "description": "Unreal Engine ReactUMG 开发助手插件",
-  "version": "1.0.0",
+  "description": "Unreal Engine ReactUMG 开发助手插件。提供轻量 Skills 用于日常开发提醒，以及 PlanReactUMG/DebugReactUMG Agents 用于规划和调试。帮助 AI 准确理解 ReactUMG 架构，避免颜色类型、TArray、Slot 映射等常见陷阱。",
+  "version": "2.0.0",
   "author": {
     "name": "Lomo"
   },
-  "keywords": ["unreal", "ue", "react", "umg", "ui"],
+  "keywords": [
+    "unreal",
+    "ue",
+    "ue5",
+    "react",
+    "umg",
+    "ui",
+    "reactumg",
+    "typescript",
+    "puerts",
+    "widget"
+  ],
   "category": "productivity"
 }
