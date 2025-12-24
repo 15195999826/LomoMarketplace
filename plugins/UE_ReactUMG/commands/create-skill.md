@@ -135,7 +135,7 @@ allowed-tools: Read, Write, Glob, Grep
 
 ## 二、更新计划
 
-遵循更新链路：**添加知识 → 更新 reactumg-knowledge → 更新 PlanReactUMG → 更新 DebugReactUMG**
+遵循更新链路：**添加知识 → 更新 reactumg-knowledge → 更新 PlanReactUMG → 更新 SimplePlanReactUMG → 更新 DebugReactUMG**
 
 ### 2.1 创建新的轻量 Skill
 
@@ -172,7 +172,14 @@ description: {第三人称描述}
 - [ ] 添加到"开发检查清单"（如适用）
 - [ ] 添加到"重要提醒"（如适用）
 
-### 2.4 更新 DebugReactUMG Agent
+### 2.4 更新 SimplePlanReactUMG Agent
+
+**目标**: `agents/SimplePlanReactUMG.md`
+
+- [ ] 添加到"开发检查清单"（如适用）
+- [ ] 添加到"重要提醒"（如适用）
+
+### 2.5 更新 DebugReactUMG Agent
 
 **目标**: `agents/DebugReactUMG.md`
 
@@ -201,9 +208,10 @@ description: {第三人称描述}
 2. [ ] 按照 2.1 创建新的轻量 Skill
 3. [ ] 按照 2.2 更新知识库
 4. [ ] 按照 2.3 更新 PlanReactUMG
-5. [ ] 按照 2.4 更新 DebugReactUMG
-6. [ ] 测试新 Skill 是否正常激活
-7. [ ] 归档本计划文档
+5. [ ] 按照 2.4 更新 SimplePlanReactUMG
+6. [ ] 按照 2.5 更新 DebugReactUMG
+7. [ ] 测试新 Skill 是否正常激活
+8. [ ] 归档本计划文档
 
 ---
 

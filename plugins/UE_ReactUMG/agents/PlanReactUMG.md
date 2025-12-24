@@ -234,6 +234,7 @@ const contentSlot: UMG.CanvasPanelSlot = {
 - [ ] 6. **ComboBoxString**：是否通过 ref + AddOption() 动态添加？
 - [ ] 7. **ref 回调**：是否在构造函数中绑定 this？
 - [ ] 8. **组件结构**：根组件选择是否合适？
+- [ ] 9. **对齐属性**：使用正确枚举值（Center=2，不是1）
 
 ### 功能完整性检查
 - [ ] 所有必需的 Props 和 State 已定义

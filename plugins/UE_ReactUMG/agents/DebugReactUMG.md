@@ -53,6 +53,7 @@ ReactUMG 问题排查：
 - [ ] 类型错误？检查 TArray 是否用 UE.NewArray()
 - [ ] ref 频繁调用？检查是否内联定义 ref 回调
 - [ ] ComboBox 空白？检查是否用 ref + AddOption()
+- [ ] 组件未居中？检查 HorizontalAlignment/VerticalAlignment 是否使用了 2（不是 1）
 ```
 
 ## 详细诊断指南

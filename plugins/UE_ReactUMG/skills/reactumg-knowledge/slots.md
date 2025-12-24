@@ -116,3 +116,35 @@ const MainPanelSlot: CanvasPanelSlot = {
     ZOrder: 0
 };
 ```
+
+---
+
+## 对齐枚举速查
+
+### EHorizontalAlignment
+
+| 值 | 枚举名 | 说明 |
+|----|--------|------|
+| 0 | Fill | 填充 |
+| 1 | Left | 左对齐 |
+| **2** | **Center** | **居中** |
+| 3 | Right | 右对齐 |
+
+### EVerticalAlignment
+
+| 值 | 枚举名 | 说明 |
+|----|--------|------|
+| 0 | Fill | 填充 |
+| 1 | Top | 顶部 |
+| **2** | **Center** | **居中** |
+| 3 | Bottom | 底部 |
+
+**核心记忆点**：居中是 2，不是 1（1 是 Left/Top）
+
+```typescript
+// OverlaySlot 居中对齐
+const overlaySlot: OverlaySlot = {
+    HorizontalAlignment: 2,  // Center (不是 1!)
+    VerticalAlignment: 2,    // Center (不是 1!)
+};
+```
