@@ -19,10 +19,15 @@ Unreal Engine ReactUMG 开发助手插件，帮助 AI 高效、准确地开发 R
 
 ### Agents（按需调用）
 
-| Agent | 用途 | 调用方式 |
+| Agent | 用途 | 适用场景 |
 |-------|------|----------|
-| `plan-reactumg` | 规划新 UI 功能 | 输入需求，输出完整开发计划 |
-| `debug-reactumg` | 调试 UI 问题 | 描述问题，输出修复建议 |
+| `simple-plan-reactumg` | 快速规划简单任务 | 小型组件、简单修改，对话中直接给出方案 |
+| `plan-reactumg` | 规划复杂 UI 功能 | 生成正式计划文档，适合需要归档的正式项目 |
+| `debug-reactumg` | 调试 UI 问题 | 分析问题，给出修复建议和根因分析 |
+
+**如何选择 Plan Agent：**
+- **简单任务** → `simple-plan-reactumg`：快速原型、单一功能组件、临时界面
+- **复杂项目** → `plan-reactumg`：多层级 UI、团队协作、需要文档归档
 
 **Agents 会自动加载完整知识库**，包含所有开发规则、代码示例和架构原理。
 
@@ -50,14 +55,21 @@ Unreal Engine ReactUMG 开发助手插件，帮助 AI 高效、准确地开发 R
 ### 日常开发
 轻量 Skills 会在你开发 ReactUMG UI 时自动激活，提供关键提醒。
 
-### 规划新功能
+### 快速规划（简单任务）
 ```
-> 使用 plan-reactumg agent 帮我设计一个带拖拽功能的装备面板
+> 使用 simple-plan-reactumg agent 帮我快速实现一个显示玩家血量的 ProgressBar
 ```
+Agent 会在对话中直接给出代码和配置，立即可用。
+
+### 正式规划（复杂项目）
+```
+> 使用 plan-reactumg agent 帮我设计一个带拖拽、排序、筛选功能的背包系统
+```
+Agent 会生成 `reactumg-plan-inventory.md` 文档，包含完整架构设计和实施计划。
 
 ### 调试问题
 ```
-> 使用 debug-reactumg agent 分析为什么我的 FocusedForegroundColor 不生效
+> 使用 debug-reactumg agent 分析为什么我的 ComboBoxString 选项不显示
 ```
 
 ## 插件结构
@@ -82,7 +94,8 @@ UE_ReactUMG/
 │   │   └── patterns.md                 # 更新机制 + 交互
 │   └── reactumg-architecture/SKILL.md  # 架构原理（供 Agent 使用）
 ├── agents/
-│   ├── PlanReactUMG.md                 # 规划 Agent（含检查清单）
+│   ├── SimplePlanReactUMG.md           # 快速规划 Agent（对话式输出）
+│   ├── PlanReactUMG.md                 # 正式规划 Agent（生成文档）
 │   └── DebugReactUMG.md                # 调试 Agent（含检查清单）
 └── README.md
 ```
@@ -103,6 +116,7 @@ UE_ReactUMG/
 
 ## 版本
 
+- **v2.2.0** - 新增双重规划模式：simple-plan-reactumg（快速对话）+ plan-reactumg（正式文档）
 - **v2.1.0** - 优化重构：统一命名规范、拆分大文件、添加检查清单和示例
 - **v2.0.0** - 完整重构，添加 Skills + Agents 架构
 - **v1.0.0** - 初始版本
