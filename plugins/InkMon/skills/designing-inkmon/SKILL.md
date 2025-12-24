@@ -1,7 +1,7 @@
 ---
 name: designing-inkmon
 description: Guides the InkMon creature design process through multi-turn discussion. Use when user is in the InkMon creation workflow, discussing creature concepts, stats, evolution stage, or appearance design.
-allowed-tools: Read, Write
+allowed-tools: Read, Write, Bash
 ---
 
 # Designing InkMon
@@ -93,30 +93,36 @@ allowed-tools: Read, Write
 
 ### 7. 验证与反馈循环
 
-生成 JSON 后，执行验证并迭代：
+生成 JSON 后，使用验证脚本检查并迭代：
+
+```bash
+python scripts/validate_inkmon.py <json_file>
+```
+
+**验证流程**：
 
 ```
 ┌─────────────┐
 │  生成 JSON  │
 └──────┬──────┘
        ▼
-┌─────────────┐    ✗ 验证失败
-│   验证检查   │───────────────┐
-└──────┬──────┘               │
-       │ ✓                    ▼
-       ▼              ┌───────────────┐
-┌─────────────┐       │ 返回对应步骤修正 │
-│  用户确认？  │       └───────┬───────┘
-└──────┬──────┘               │
-       │                      │
-   ✓ 满意 ──┐    ✗ 不满意 ────┘
-            ▼
-      ┌──────────┐
-      │ 保存 JSON │
-      └──────────┘
+┌─────────────────────────────────────┐    ✗ 验证失败
+│  python scripts/validate_inkmon.py  │───────────────┐
+└──────────────┬──────────────────────┘               │
+               │ ✓                                    ▼
+               ▼                          ┌───────────────┐
+        ┌─────────────┐                   │ 返回对应步骤修正 │
+        │  用户确认？  │                   └───────┬───────┘
+        └──────┬──────┘                           │
+               │                                  │
+           ✓ 满意 ──┐            ✗ 不满意 ────────┘
+                    ▼
+              ┌──────────┐
+              │ 保存 JSON │
+              └──────────┘
 ```
 
-**验证规则**：
+**验证脚本检查项**：
 
 | 检查项 | 失败时返回 |
 |-------|----------|
@@ -125,6 +131,9 @@ allowed-tools: Read, Write
 | 属性不在有效列表 | → 步骤 3 |
 | 阶段无效 | → 步骤 1 |
 | 提示词缺少锚点词 | → 步骤 5 |
+| 名称格式错误 | → 步骤 2 |
+| 食性无效 | → 步骤 4 |
+| HEX 颜色格式错误 | → 步骤 2 |
 
 ---
 
@@ -141,6 +150,7 @@ allowed-tools: Read, Write
 | [EVO-PROMPTS.md](EVO-PROMPTS.md) | 进化提示词模板 |
 | [DEVO-PROMPTS.md](DEVO-PROMPTS.md) | 退化提示词模板 |
 | [templates/inkmon-schema.json](templates/inkmon-schema.json) | JSON Schema |
+| [scripts/validate_inkmon.py](scripts/validate_inkmon.py) | JSON 验证脚本 |
 
 ---
 
