@@ -21,7 +21,7 @@
     {
       "name": "InkMon",
       "source": "./plugins/InkMon",
-      "description": "InkMon 世界",
+      "description": "InkMon 生物设计助手，支持创建、进化、退化设计和数据管理",
       "version": "1.0.0",
       "keywords": ["inkmon", "development"],
       "category": "productivity"

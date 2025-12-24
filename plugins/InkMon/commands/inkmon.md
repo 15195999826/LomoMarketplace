@@ -45,11 +45,12 @@ model: sonnet
 
 ### 工作流程
 
-1. **读取原 InkMon** - 从 `data/inkmons/<name>.json` 读取
+1. **读取原 InkMon** - 从 `data/inkmons/<name>.json` 读取，了解当前特征和设计
 2. **检查阶段** - 如果已经是 `adult`，无法继续进化
-3. **讨论进化变化** - 体型变大、复杂度增加、特征强化、气质更成熟
-4. **生成新 InkMon** - 创建进化后的 JSON 文件
-5. **更新进化关系** - 更新原 InkMon 的 `evolves_to` 数组
+3. **读取进化提示词模板** - 参考 `skills/designing-inkmon/EVO-PROMPTS.md`
+4. **讨论进化变化** - 体型变大、复杂度增加、特征强化、气质更成熟
+5. **生成新 InkMon** - 创建进化后的 JSON 文件
+6. **更新进化关系** - 更新原 InkMon 的 `evolves_to` 数组
 
 ### 进化的四个要素
 
@@ -77,11 +78,12 @@ model: sonnet
 
 ### 工作流程
 
-1. **读取原 InkMon** - 从 `data/inkmons/<name>.json` 读取
+1. **读取原 InkMon** - 从 `data/inkmons/<name>.json` 读取，了解当前特征和设计
 2. **检查阶段** - 如果已经是 `baby`，无法继续退化
-3. **讨论退化变化** - 更小、更圆润、特征弱化、更可爱
-4. **生成新 InkMon** - 创建退化后的 JSON 文件
-5. **更新进化关系** - 更新原 InkMon 的 `evolves_from` 字段
+3. **读取退化提示词模板** - 参考 `skills/designing-inkmon/DEVO-PROMPTS.md`
+4. **讨论退化变化** - 更小、更圆润、特征弱化、更可爱
+5. **生成新 InkMon** - 创建退化后的 JSON 文件
+6. **更新进化关系** - 更新原 InkMon 的 `evolves_from` 字段
 
 ### 退化的四个要素（减法设计）
 

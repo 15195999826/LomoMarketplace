@@ -8,6 +8,22 @@ allowed-tools: Read, Write
 
 帮助用户通过多轮讨论设计新的 InkMon 生物。
 
+---
+
+## InkWorld 风格锚点词
+
+所有 InkMon 共用 5 个风格锚点词：
+
+| 锚点词 | 锁定的特征 |
+|--------|-----------|
+| `low poly` | 几何结构（低多边形） |
+| `faceted` | 切面感 |
+| `sharp edges` | 硬边 |
+| `ink sketch texture` | 材质纹理（排线、墨线） |
+| `non-reflective surface` | 无反射表面（哑光质感） |
+
+---
+
 ## 进化阶段
 
 每个 InkMon 必须指定进化阶段：
@@ -64,7 +80,9 @@ allowed-tools: Read, Write
 | [EVOLUTION.md](EVOLUTION.md) | 进化设计原则 |
 | [ELEMENTS.md](ELEMENTS.md) | 属性克制关系 |
 | [ECOLOGY.md](ECOLOGY.md) | 生态关系设计 |
-| [PROMPTS.md](PROMPTS.md) | Design 提示词模板 |
+| [CREATE-PROMPTS.md](CREATE-PROMPTS.md) | 创建提示词模板 |
+| [EVO-PROMPTS.md](EVO-PROMPTS.md) | 进化提示词模板 |
+| [DEVO-PROMPTS.md](DEVO-PROMPTS.md) | 退化提示词模板 |
 | [templates/inkmon-schema.json](templates/inkmon-schema.json) | JSON Schema |
 
 ---
@@ -120,7 +138,7 @@ allowed-tools: Read, Write
       "prey": []
     },
     "image_prompts": {
-      "design": "[参考图链接] Matching the style... (完整提示词)"
+      "design": "Matching the style... (完整提示词)"
     }
   }
 }
@@ -137,3 +155,15 @@ allowed-tools: Read, Write
 | `/inkmon create` | 创建新 InkMon（使用本 Skill） |
 | `/inkmon evo <name>` | 为现有 InkMon 设计进化形态 |
 | `/inkmon devo <name>` | 为现有 InkMon 设计退化形态 |
+
+---
+
+## 提示词生成检查清单
+
+- [ ] 包含一致性约束 (Matching the style...)
+- [ ] 包含世界观锚点 (InkMon from InkWorld)
+- [ ] 包含 5 个风格锚点词
+- [ ] 主体描述包含：名称、原型动物、独特特征、材质/装备
+- [ ] 进化/退化时说明与原形态的关系
+- [ ] 包含环境与背景 (stone pedestal, white background)
+- [ ] 包含技术参数 (--ar 1:1 --Resolution 2K)
