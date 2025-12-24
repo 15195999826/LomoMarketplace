@@ -1,0 +1,139 @@
+---
+name: designing-inkmon
+description: Guides the InkMon creature design process through multi-turn discussion. Use when user is in the InkMon creation workflow, discussing creature concepts, stats, evolution stage, or appearance design.
+allowed-tools: Read, Write
+---
+
+# Designing InkMon
+
+帮助用户通过多轮讨论设计新的 InkMon 生物。
+
+## 进化阶段
+
+每个 InkMon 必须指定进化阶段：
+
+| 阶段 | 英文 | 特点 | BST 范围 |
+|-----|------|------|---------|
+| 幼年体 | baby | 可爱、圆润、简单 | 250-320 |
+| 成熟体 | mature | 平衡、有力量感 | 350-420 |
+| 成年体 | adult | 威严、复杂、完成感 | 450-550 |
+
+**重要**：创建时需要用户指定阶段，不要预设。
+
+---
+
+## 设计流程
+
+### 1. 确定阶段
+- **首先询问用户**：这是 baby / mature / adult 中的哪个阶段？
+- 阶段决定 BST 范围和设计风格
+
+### 2. 概念讨论
+- 确定灵感来源（基于什么动物/元素）
+- 确定设计方向和风格
+- 参考 [NAMING.md](NAMING.md) 确定命名
+
+### 3. 属性确定
+- 选择主属性和副属性
+- 参考 [ELEMENTS.md](ELEMENTS.md) 了解属性克制
+- 参考 [STATS.md](STATS.md) 分配六维数值
+
+### 4. 生态设计
+- 确定栖息地和食性
+- 设计天敌/猎物关系
+- 参考 [ECOLOGY.md](ECOLOGY.md)
+
+### 5. 外观设计与提示词
+- 确定设计特征和配色
+- 根据 [PROMPTS.md](PROMPTS.md) 生成 design 提示词
+- 提示词用于 AI 生成主概念图
+
+### 6. JSON 输出
+- 按固定 Schema 生成 InkMon JSON 文件
+- 保存到 `data/inkmons/` 目录
+- 参考 [templates/inkmon-schema.json](templates/inkmon-schema.json)
+
+---
+
+## 快速参考
+
+| 文档 | 用途 |
+|-----|------|
+| [NAMING.md](NAMING.md) | 命名规范和示例 |
+| [STATS.md](STATS.md) | 六维数值分配指南 |
+| [EVOLUTION.md](EVOLUTION.md) | 进化设计原则 |
+| [ELEMENTS.md](ELEMENTS.md) | 属性克制关系 |
+| [ECOLOGY.md](ECOLOGY.md) | 生态关系设计 |
+| [PROMPTS.md](PROMPTS.md) | Design 提示词模板 |
+| [templates/inkmon-schema.json](templates/inkmon-schema.json) | JSON Schema |
+
+---
+
+## 设计原则
+
+### 视觉识别度
+- 每个 InkMon 应有独特的视觉特征
+- 配色应与属性相符
+- 进化链保持设计一致性
+
+### 数值平衡
+- BST 符合阶段对应的范围
+- 有明显的强项和弱项
+- 进化后数值合理增长
+
+### 生态合理性
+- 栖息地与属性匹配
+- 食性符合设计概念
+- 天敌/猎物关系逻辑自洽
+
+---
+
+## 输出格式
+
+设计完成后，生成符合 Schema 的 JSON 文件：
+
+```json
+{
+  "inkmon": {
+    "name": "苔藓熊",
+    "name_en": "MossBear",
+    "dex_number": 1,
+    "description": "栖息在森林深处的熊类 InkMon，身上覆盖着厚厚的苔藓。",
+    "elements": { "primary": "grass", "secondary": null },
+    "stats": { "hp": 80, "attack": 75, "defense": 70, "sp_attack": 55, "sp_defense": 65, "speed": 45, "bst": 390 },
+    "design": {
+      "base_animal": "熊",
+      "features": ["苔藓皮毛", "水晶爪", "树根脚"],
+      "color_palette": ["#228B22", "#8B4513", "#90EE90"],
+      "rarity": "uncommon"
+    },
+    "evolution": {
+      "stage": "mature",
+      "evolves_from": "MossBaby",
+      "evolves_to": [],
+      "evolution_method": "level_25"
+    },
+    "ecology": {
+      "habitat": "森林",
+      "diet": "herbivore",
+      "predators": [],
+      "prey": []
+    },
+    "image_prompts": {
+      "design": "[参考图链接] Matching the style... (完整提示词)"
+    }
+  }
+}
+```
+
+保存路径: `data/inkmons/<name_en>.json`
+
+---
+
+## 相关命令
+
+| 命令 | 用途 |
+|-----|------|
+| `/inkmon create` | 创建新 InkMon（使用本 Skill） |
+| `/inkmon evo <name>` | 为现有 InkMon 设计进化形态 |
+| `/inkmon devo <name>` | 为现有 InkMon 设计退化形态 |
