@@ -30,8 +30,8 @@ allowed-tools: Read, Write
 
 | 阶段 | 英文 | 特点 | BST 范围 |
 |-----|------|------|---------|
-| 幼年体 | baby | 可爱、圆润、简单 | 250-320 |
-| 成熟体 | mature | 平衡、有力量感 | 350-420 |
+| 幼年体 | baby | 可爱、圆润、简单 | 250-350 |
+| 成熟体 | mature | 平衡、有力量感 | 350-450 |
 | 成年体 | adult | 威严、复杂、完成感 | 450-550 |
 
 **重要**：创建时需要用户指定阶段，不要预设。
@@ -61,13 +61,65 @@ allowed-tools: Read, Write
 
 ### 5. 外观设计与提示词
 - 确定设计特征和配色
-- 根据 [PROMPTS.md](PROMPTS.md) 生成 design 提示词
+- 根据 [CREATE-PROMPTS.md](CREATE-PROMPTS.md) 生成 design 提示词
 - 提示词用于 AI 生成主概念图
 
 ### 6. JSON 输出
 - 按固定 Schema 生成 InkMon JSON 文件
 - 保存到 `data/inkmons/` 目录
 - 参考 [templates/inkmon-schema.json](templates/inkmon-schema.json)
+
+### 7. 验证与反馈循环
+
+生成 JSON 后，执行验证并根据结果迭代：
+
+```python
+def design_inkmon():
+    # 步骤 1-6: 设计流程
+    stage = 确定阶段()
+    concept = 概念讨论(stage)
+    stats = 属性确定(concept)
+    ecology = 生态设计(concept)
+    prompts = 外观设计(concept)
+    json_data = 生成JSON(stage, concept, stats, ecology, prompts)
+
+    # 步骤 7: 验证与反馈循环
+    while True:
+        errors = validate(json_data)
+
+        if errors:
+            # 验证失败 → 返回相关步骤修正
+            print(f"发现问题: {errors}")
+            json_data = 修正问题步骤(errors)
+            continue
+
+        # 验证通过 → 请求用户确认
+        user_feedback = 询问用户("设计是否满意？")
+
+        if user_feedback.satisfied:
+            break  # 完成设计
+        else:
+            # 用户不满意 → 返回调整
+            json_data = 根据反馈调整(user_feedback.issues)
+            continue
+
+    保存JSON(json_data)
+    return "设计完成"
+
+def validate(json_data):
+    errors = []
+    if sum(stats) != bst:
+        errors.append("BST 总和不等于六维数值之和 → 返回步骤3")
+    if bst not in 阶段BST范围[stage]:
+        errors.append("BST 超出阶段范围 → 返回步骤3")
+    if element not in 有效属性列表:
+        errors.append("属性无效 → 返回步骤3")
+    if stage not in ["baby", "mature", "adult"]:
+        errors.append("阶段无效 → 返回步骤1")
+    if not 包含风格锚点词(prompts):
+        errors.append("提示词缺少锚点词 → 返回步骤5")
+    return errors
+```
 
 ---
 
@@ -158,8 +210,25 @@ allowed-tools: Read, Write
 
 ---
 
-## 提示词生成检查清单
+## 设计完成检查清单
 
+### 基础信息
+- [ ] 阶段已确定 (baby/mature/adult)
+- [ ] 中英文名称符合规范
+- [ ] 描述简洁有特色
+
+### 属性与数值
+- [ ] 主属性与设计概念匹配
+- [ ] 副属性有合理理由（如有）
+- [ ] BST 在阶段对应范围内
+- [ ] 六维分布有明显强弱项
+
+### 进化与生态
+- [ ] 进化链设计合理
+- [ ] 栖息地与属性匹配
+- [ ] 食性符合设计概念
+
+### 提示词生成
 - [ ] 包含一致性约束 (Matching the style...)
 - [ ] 包含世界观锚点 (InkMon from InkWorld)
 - [ ] 包含 5 个风格锚点词

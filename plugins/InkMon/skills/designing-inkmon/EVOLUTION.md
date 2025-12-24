@@ -129,10 +129,10 @@
 ```json
 {
   "evolution": {
-    "stage": 1,
+    "stage": "baby",
     "evolves_from": null,
-    "evolves_to": "Infernoape",
-    "evolution_method": "level_32"
+    "evolves_to": ["Infernoape"],
+    "evolution_method": null
   }
 }
 ```
@@ -140,10 +140,10 @@
 **字段说明**:
 | 字段 | 类型 | 说明 |
 |-----|------|------|
-| stage | number | 当前进化阶段 (1/2/3) |
-| evolves_from | string\|null | 进化自哪个 InkMon |
-| evolves_to | string\|null | 进化为哪个 InkMon |
-| evolution_method | string | 进化条件 |
+| stage | string | 当前进化阶段 (baby/mature/adult) |
+| evolves_from | string\|null | 进化自哪个 InkMon (英文名) |
+| evolves_to | string[] | 可进化为哪些 InkMon (支持多分支) |
+| evolution_method | string\|null | 从上一阶段进化到本阶段的条件 |
 
 ## 检查清单
 

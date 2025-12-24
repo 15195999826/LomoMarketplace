@@ -207,6 +207,20 @@
               "items": {
                 "type": "string"
               }
+            },
+            "symbiosis": {
+              "type": "array",
+              "description": "共生关系",
+              "items": {
+                "type": "string"
+              }
+            },
+            "competition": {
+              "type": "array",
+              "description": "竞争关系",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
