@@ -18,3 +18,4 @@ Thumbs.db
 plugins/InkMon/inkmon-server/node_modules
 plugins/InkMon/inkmon-server/build
 plugins/InkMon/inkmon-server/package-lock.json
+plugins/InkMon/inkmon-server/data

@@ -1,0 +1,51 @@
+{
+  "name": "苔熊",
+  "name_en": "MossBear",
+  "dex_number": 1,
+  "description": "森林深处的守护者，身上长满青苔和蕨类植物。性情温和，但在保护领地时会变得极具攻击性。",
+  "elements": {
+    "primary": "grass",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 85,
+    "attack": 75,
+    "defense": 70,
+    "sp_attack": 55,
+    "sp_defense": 65,
+    "speed": 50,
+    "bst": 400
+  },
+  "design": {
+    "base_animal": "熊",
+    "features": [
+      "身体覆盖厚厚的青苔层",
+      "背部生长着小型蕨类和蘑菇",
+      "眼睛呈现深绿色的光芒",
+      "爪子上缠绕着藤蔓"
+    ],
+    "color_palette": [
+      "#4A5D23",
+      "#6B8E23",
+      "#8B4513",
+      "#2F4F2F"
+    ]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": null,
+    "evolves_to": [],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "古老的原始森林，特别喜欢潮湿阴暗的区域",
+    "diet": "omnivore",
+    "predators": [],
+    "prey": ["小型昆虫", "野果", "蜂蜜"],
+    "symbiosis": ["森林精灵"],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A bear-like creature covered in thick moss and small ferns growing on its back, with deep green glowing eyes and vines wrapped around its claws. Low poly style with faceted geometric surfaces, sharp edges defining the muscular form, ink sketch texture on the moss patterns, non-reflective surface with matte forest green and brown earth tones. Standing in a misty forest clearing, peaceful but powerful presence."
+  }
+}

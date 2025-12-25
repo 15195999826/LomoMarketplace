@@ -107,6 +107,56 @@ plugins/InkMon/
 
 ---
 
-## 待办事项 (第二阶段)
+## 第二阶段：数据库 + MCP Server 🔄 进行中
+
+### MCP Server 基础设施 ✅
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|-----|------|---------|------|
+| 创建 `inkmon-server/` 目录 | ✅ | 2024-12-25 | TypeScript MCP Server |
+| 配置 `package.json` | ✅ | 2024-12-25 | @modelcontextprotocol/sdk |
+| 配置 `tsconfig.json` | ✅ | 2024-12-25 | ES2022, Node16 |
+| 实现 `src/index.ts` 基础框架 | ✅ | 2024-12-25 | STDIO 传输 |
+| 实现 `ping` 测试工具 | ✅ | 2024-12-25 | 验证 MCP 集成 |
+| 配置 `.mcp.json` | ✅ | 2024-12-25 | 项目根目录 |
+| Claude Code 集成验证 | ✅ | 2024-12-25 | `/mcp` 测试通过 |
+
+### 数据库实现 ⏳
+
+| 任务 | 状态 | 文件 | 备注 |
+|-----|------|------|------|
+| 设计 Database Schema | ⏳ | - | SQLite |
+| 实现 `database/schema.ts` | ⏳ | - | 表定义 |
+| 实现 `database/connection.ts` | ⏳ | - | 连接管理 |
+| 创建 `data/inkworld.db` | ⏳ | - | 数据库文件 |
+
+### MCP 工具实现 ⏳
+
+| 任务 | 状态 | 文件 | 备注 |
+|-----|------|------|------|
+| `create_inkmon` 工具 | ⏳ | `tools/inkmon-tools.ts` | 创建 InkMon |
+| `get_inkmon` 工具 | ⏳ | - | 查询 InkMon |
+| `list_inkmons` 工具 | ⏳ | - | 列表查询 |
+| 连接 `/inkmon add` 到 MCP | ⏳ | `commands/inkmon.md` | 入库功能 |
+
+### 当前目录结构
+
+```
+plugins/InkMon/
+├── inkmon-server/              # MCP Server (新增)
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── src/
+│   │   └── index.ts            # ping 工具已实现
+│   └── build/                  # 编译输出
+└── ...
+
+LomoMarketplace/
+└── .mcp.json                   # MCP 配置 (新增)
+```
+
+---
+
+## 待办事项 (第三、四阶段)
 
 详见 [Game_Workflow_Development_Plan.md](Game_Workflow_Development_Plan.md)
