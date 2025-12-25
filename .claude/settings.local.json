@@ -3,7 +3,16 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(python scripts/validate_inkmon.py:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(tree:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(timeout 2 node:*)",
+      "mcp__inkmon-mcp__ping"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "inkmon-mcp"
+  ]
 }
