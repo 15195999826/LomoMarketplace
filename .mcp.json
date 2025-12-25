@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "inkmon-mcp": {
-      "command": "node",
-      "args": ["plugins/InkMon/inkmon-server/build/index.js"]
-    }
-  }
-}

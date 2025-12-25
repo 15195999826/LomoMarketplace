@@ -8,7 +8,8 @@
       "Bash(npm install)",
       "Bash(npm run build:*)",
       "Bash(timeout 2 node:*)",
-      "mcp__inkmon-mcp__ping"
+      "mcp__inkmon-mcp__ping",
+      "Bash(xcopy:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

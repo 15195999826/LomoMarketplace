@@ -1,7 +1,11 @@
 {
   "name": "inkmon-mcp-server",
   "version": "1.0.0",
+  "description": "InkMon MCP Server - 提供 InkMon 数据管理功能",
   "type": "module",
+  "bin": {
+    "inkmon-mcp-server": "./build/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js"

@@ -15,7 +15,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 .cache/
-plugins/InkMon/inkmon-server/node_modules
-plugins/InkMon/inkmon-server/build
-plugins/InkMon/inkmon-server/package-lock.json
-plugins/InkMon/inkmon-server/data
+# inkmon-server
+servers/inkmon-server/node_modules
+servers/inkmon-server/build
+servers/inkmon-server/package-lock.json
+servers/inkmon-server/data

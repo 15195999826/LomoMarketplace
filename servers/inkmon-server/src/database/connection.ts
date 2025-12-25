@@ -1,10 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, "../../data");
+// 使用当前工作目录，数据库将在用户项目的 data/ 目录下创建
+const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "inkmon.db");
 
 let db: DatabaseSync | null = null;
