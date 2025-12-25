@@ -15,5 +15,8 @@
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "inkmon-mcp"
-  ]
+  ],
+  "enabledPlugins": {
+    "InkMon@LomoMarketplace": true
+  }
 }

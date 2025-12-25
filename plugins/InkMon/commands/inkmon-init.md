@@ -25,19 +25,7 @@ model: sonnet
 
 ## .mcp.json 配置模板
 
-**Windows**:
-```json
-{
-  "mcpServers": {
-    "inkmon-mcp": {
-      "command": "cmd",
-      "args": ["/c", "node", "<inkmon-server-path>/build/index.js"]
-    }
-  }
-}
-```
-
-**macOS / Linux**:
+**所有平台通用** (Windows / macOS / Linux):
 ```json
 {
   "mcpServers": {
@@ -48,6 +36,8 @@ model: sonnet
   }
 }
 ```
+
+> 注意：`<inkmon-server-path>` 需要替换为实际的 inkmon-server 路径，可以是相对路径或绝对路径。
 
 ## 注意事项
 
