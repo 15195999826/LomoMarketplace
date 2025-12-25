@@ -1,6 +1,6 @@
 # 进化提示词模板
 
-用于 `/inkmon evo` 生成进化后的 InkMon。
+用于 `/inkmon-evo` 生成进化后的 InkMon。
 
 ```
 进化方向: baby → mature → adult

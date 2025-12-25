@@ -65,7 +65,7 @@
 - [ ] 初始化 MCP Server 项目
 - [ ] 实现数据库 Schema
 - [ ] 开发 MCP 工具
-- [ ] 扩展 `/inkmon add` 连接 MCP
+- [x] `/inkmon-add` 连接 MCP
 - [ ] 创建 `/stats` Command
 - [ ] 集成测试
 

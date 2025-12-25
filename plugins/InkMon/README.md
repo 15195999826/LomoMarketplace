@@ -4,11 +4,11 @@ InkMon 生物设计助手插件，支持创建、进化、退化设计和数据�
 
 ## 功能
 
-- `/inkmon init` - 初始化项目环境（首次使用必须执行）
-- `/inkmon create` - 进入 InkMon 创建工作流
-- `/inkmon evo <name>` - 设计进化形态
-- `/inkmon devo <name>` - 设计退化形态
-- `/inkmon add <file.json>` - 将 InkMon JSON 入库
+- `/inkmon-init` - 初始化项目环境（首次使用必须执行）
+- `/inkmon-create` - 进入 InkMon 创建工作流
+- `/inkmon-evo <name>` - 设计进化形态
+- `/inkmon-devo <name>` - 设计退化形态
+- `/inkmon-add <file.json>` - 将 InkMon JSON 入库
 
 ## 快速开始
 
@@ -35,7 +35,7 @@ npm run build
 在你的 InkMon 项目目录中：
 
 ```bash
-/inkmon init
+/inkmon-init
 ```
 
 这会创建 `data/inkmons/` 目录，并提示你配置 MCP Server。
@@ -63,7 +63,7 @@ npm run build
 ### 6. 开始创建
 
 ```bash
-/inkmon create
+/inkmon-create
 ```
 
 ## 数据存放规则

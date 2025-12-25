@@ -1,6 +1,6 @@
 # 退化提示词模板
 
-用于 `/inkmon devo` 设计上一阶段形态。
+用于 `/inkmon-devo` 设计上一阶段形态。
 
 ```
 退化方向: adult → mature → baby

@@ -218,9 +218,9 @@ python scripts/validate_inkmon.py <json_file>
 
 | 命令 | 用途 |
 |-----|------|
-| `/inkmon create` | 创建新 InkMon（使用本 Skill） |
-| `/inkmon evo <name>` | 为现有 InkMon 设计进化形态 |
-| `/inkmon devo <name>` | 为现有 InkMon 设计退化形态 |
+| `/inkmon-create` | 创建新 InkMon（使用本 Skill） |
+| `/inkmon-evo <name>` | 为现有 InkMon 设计进化形态 |
+| `/inkmon-devo <name>` | 为现有 InkMon 设计退化形态 |
 
 ---
 

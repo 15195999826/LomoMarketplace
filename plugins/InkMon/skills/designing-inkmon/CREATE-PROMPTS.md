@@ -1,6 +1,6 @@
 # 创建提示词模板
 
-用于 `/inkmon create` 创建新 InkMon。
+用于 `/inkmon-create` 创建新 InkMon。
 
 ---
 

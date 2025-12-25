@@ -20,10 +20,11 @@
 
 | 任务 | 状态 | 文件 | 备注 |
 |-----|------|------|------|
-| `/inkmon create` - 创建工作流 | ✅ | `commands/inkmon.md` | 进入 InkMon 设计讨论 |
-| `/inkmon evo <name>` - 进化设计 | ✅ | `commands/inkmon.md` | 设计进化后的形态 |
-| `/inkmon devo <name>` - 退化设计 | ✅ | `commands/inkmon.md` | 设计退化前的形态 |
-| `/inkmon add <file.json>` - 入库 | ⏳ | `commands/inkmon.md` | 接口已预留，功能待第二阶段实现 |
+| `/inkmon-init` - 初始化项目 | ✅ | `commands/inkmon-init.md` | 创建目录结构，配置 MCP |
+| `/inkmon-create` - 创建工作流 | ✅ | `commands/inkmon-create.md` | 进入 InkMon 设计讨论 |
+| `/inkmon-evo <name>` - 进化设计 | ✅ | `commands/inkmon-evo.md` | 设计进化后的形态 |
+| `/inkmon-devo <name>` - 退化设计 | ✅ | `commands/inkmon-devo.md` | 设计退化前的形态 |
+| `/inkmon-add <file.json>` - 入库 | ✅ | `commands/inkmon-add.md` | 调用 MCP 入库 |
 | Frontmatter 配置 | ✅ | - | description, argument-hint, allowed-tools, model |
 
 ### Skills 实现 ✅
@@ -56,8 +57,8 @@
 |-----|--------|---------|---------|
 | 进化阶段命名 | Stage 1/2/3 | baby/mature/adult | 更直观易懂 |
 | 稀有度字段 | 有 (common/rare 等) | 移除 | 由进化阶段隐含体现 |
-| 进化命令 | 无 | `/inkmon evo` | 支持进化链设计 |
-| 退化命令 | 无 | `/inkmon devo` | 支持反向设计 |
+| 进化命令 | 无 | `/inkmon-evo` | 支持进化链设计 |
+| 退化命令 | 无 | `/inkmon-devo` | 支持反向设计 |
 | 图片提示词 Skill | 独立 Skill | 整合到 designing-inkmon | 减少冗余，统一管理 |
 | 验证脚本 | 无 | `validate_inkmon.py` | 确保 JSON 数据质量 |
 | image_prompts 结构 | front/back/45_degree | design (单个) | 简化为主概念图提示词 |
@@ -71,7 +72,11 @@ plugins/InkMon/
 ├── .claude-plugin/
 │   └── plugin.json              # v1.0.0
 ├── commands/
-│   └── inkmon.md                # create | evo | devo | add
+│   ├── inkmon-init.md           # 项目初始化
+│   ├── inkmon-create.md         # 创建工作流
+│   ├── inkmon-evo.md            # 进化设计
+│   ├── inkmon-devo.md           # 退化设计
+│   └── inkmon-add.md            # JSON 入库
 ├── skills/
 │   └── designing-inkmon/
 │       ├── SKILL.md             # 主文件
@@ -137,7 +142,7 @@ plugins/InkMon/
 | `create_inkmon` 工具 | ⏳ | `tools/inkmon-tools.ts` | 创建 InkMon |
 | `get_inkmon` 工具 | ⏳ | - | 查询 InkMon |
 | `list_inkmons` 工具 | ⏳ | - | 列表查询 |
-| 连接 `/inkmon add` 到 MCP | ⏳ | `commands/inkmon.md` | 入库功能 |
+| 连接 `/inkmon-add` 到 MCP | ✅ | `commands/inkmon-add.md` | 入库功能 |
 
 ### 当前目录结构
 
