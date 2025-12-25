@@ -221,6 +221,8 @@ python scripts/validate_inkmon.py <json_file>
 | `/inkmon-create` | 创建新 InkMon（使用本 Skill） |
 | `/inkmon-evo <name>` | 为现有 InkMon 设计进化形态 |
 | `/inkmon-devo <name>` | 为现有 InkMon 设计退化形态 |
+| `/inkmon-sync` | 快速同步新 JSON 文件到数据库 |
+| `/inkmon-sync-strict` | 严格同步（检查内容一致性） |
 
 ---
 

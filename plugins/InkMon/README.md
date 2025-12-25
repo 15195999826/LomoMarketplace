@@ -8,7 +8,8 @@ InkMon 生物设计助手插件，支持创建、进化、退化设计和数据�
 - `/inkmon-create` - 进入 InkMon 创建工作流
 - `/inkmon-evo <name>` - 设计进化形态
 - `/inkmon-devo <name>` - 设计退化形态
-- `/inkmon-add <file.json>` - 将 InkMon JSON 入库
+- `/inkmon-sync` - 快速同步（将新 JSON 文件入库）
+- `/inkmon-sync-strict` - 严格同步（检查内容一致性并更新）
 
 ## 快速开始
 
@@ -84,13 +85,15 @@ npm run build
 
 ## MCP Server
 
-MCP Server 位于 `LomoMarketplace/servers/inkmon-server/`，提供以下工具：
+MCP Server 位于 `LomoMarketplace/lomo-mcp-servers/inkmon-server/`，提供以下工具：
 
 | 工具 | 功能 |
 |------|------|
 | `add_inkmon` | 添加 InkMon 到数据库 |
 | `get_inkmon` | 按英文名查询 InkMon |
 | `get_next_dex_number` | 获取下一个可用图鉴编号 |
+| `list_inkmons_name_en` | 列出所有已入库的英文名 |
+| `update_inkmon` | 更新已存在的 InkMon |
 
 ## 相关文档
 
