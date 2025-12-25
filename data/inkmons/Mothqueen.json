@@ -1,0 +1,46 @@
+{
+  "name": "蛾皇",
+  "name_en": "Mothqueen",
+  "dex_number": 21,
+  "description": "夜间之森的女王，巨大的翅膀撒下催眠鳞粉。月光下它的美丽令所有生物着迷。",
+  "elements": {
+    "primary": "bug",
+    "secondary": "light"
+  },
+  "stats": {
+    "hp": 75,
+    "attack": 55,
+    "defense": 60,
+    "sp_attack": 105,
+    "sp_defense": 95,
+    "speed": 80,
+    "bst": 470
+  },
+  "design": {
+    "base_animal": "月蛾",
+    "features": [
+      "巨大的翅膀带有月亮图案",
+      "翅膀边缘闪烁银色光芒",
+      "头顶有优雅的羽状触角",
+      "身体覆盖着柔软的白色绒毛"
+    ],
+    "color_palette": ["#E6E6FA", "#DDA0DD", "#9370DB", "#FFFFFF", "#C0C0C0"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Cocooner",
+    "evolves_to": [],
+    "evolution_method": "夜间等级25进化"
+  },
+  "ecology": {
+    "habitat": "月光照耀的森林",
+    "diet": "herbivore",
+    "predators": [],
+    "prey": [],
+    "symbiosis": ["夜行花卉"],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A magnificent moth with massive wings bearing moon patterns. Silver light shimmers on wing edges, elegant feathered antennae, soft white fur covers body. Low poly style with faceted geometric surfaces, sharp edges on wing shapes, ink sketch texture on moon patterns, non-reflective surface with matte lavender and silver tones, ethereal night queen."
+  }
+}

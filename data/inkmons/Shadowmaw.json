@@ -1,0 +1,46 @@
+{
+  "name": "暗影噬",
+  "name_en": "Shadowmaw",
+  "dex_number": 31,
+  "description": "从最深的黑暗中诞生的存在，能够吞噬光明和希望。尽管可怕，它其实在维持世界的平衡。",
+  "elements": {
+    "primary": "dark",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 75,
+    "attack": 85,
+    "defense": 65,
+    "sp_attack": 75,
+    "sp_defense": 60,
+    "speed": 70,
+    "bst": 430
+  },
+  "design": {
+    "base_animal": "影狼/恶魔",
+    "features": [
+      "由流动的暗影构成的身体",
+      "多只暗红色的眼睛",
+      "背部有影焰翅膀",
+      "獠牙能撕裂现实"
+    ],
+    "color_palette": ["#1A1A1A", "#8B0000", "#4B0082", "#2F2F2F", "#800080"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": null,
+    "evolves_to": [],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "永恒黑暗的深渊",
+    "diet": "special",
+    "predators": [],
+    "prey": ["光能量", "恐惧情绪"],
+    "symbiosis": ["暗影元素"],
+    "competition": ["光系生物"]
+  },
+  "image_prompts": {
+    "design": "A creature made of flowing shadows with multiple dark red eyes. Shadow flame wings on back, fangs that can tear reality. Low poly style with faceted geometric surfaces, sharp edges on shadow forms, ink sketch texture on dark patterns, non-reflective surface with matte black and crimson tones, terrifying but essential for balance."
+  }
+}

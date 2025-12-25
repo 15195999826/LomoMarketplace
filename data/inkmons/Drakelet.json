@@ -1,0 +1,46 @@
+{
+  "name": "幼龙崽",
+  "name_en": "Drakelet",
+  "dex_number": 24,
+  "description": "刚破壳而出的幼龙，虽然还不会飞但已经展现出高傲的性格。喜欢闪亮的宝物。",
+  "elements": {
+    "primary": "dragon",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 50,
+    "attack": 55,
+    "defense": 45,
+    "sp_attack": 55,
+    "sp_defense": 45,
+    "speed": 50,
+    "bst": 300
+  },
+  "design": {
+    "base_animal": "幼龙",
+    "features": [
+      "湛蓝色的鳞片",
+      "未完全展开的小翅膀",
+      "头顶有两个小角",
+      "尾巴末端有菱形"
+    ],
+    "color_palette": ["#4169E1", "#6495ED", "#FFD700", "#2F4F4F"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Wyvernal"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "高山洞穴和龙之巢穴",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["小型动物"],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A baby dragon with azure blue scales and undeveloped wings. Two small horns on head, diamond-shaped tail tip. Low poly style with faceted geometric surfaces, sharp edges on scales, ink sketch texture on wing membranes, non-reflective surface with matte azure blue tones, proud and curious hatchling."
+  }
+}

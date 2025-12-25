@@ -1,0 +1,46 @@
+{
+  "name": "毒液虫",
+  "name_en": "Venomite",
+  "dex_number": 22,
+  "description": "身体会分泌剧毒黏液的小虫，颜色鲜艳作为警告标志。虽然看起来可怕但性格其实很胆小。",
+  "elements": {
+    "primary": "poison",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 45,
+    "attack": 50,
+    "defense": 40,
+    "sp_attack": 55,
+    "sp_defense": 45,
+    "speed": 50,
+    "bst": 285
+  },
+  "design": {
+    "base_animal": "毒虫",
+    "features": [
+      "紫色和黄色警戒色身体",
+      "背部有毒液囊",
+      "触角滴着毒液",
+      "尾部有毒刺"
+    ],
+    "color_palette": ["#8B008B", "#FFD700", "#9400D3", "#ADFF2F"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Toxicore"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "沼泽和潮湿洞穴",
+    "diet": "carnivore",
+    "predators": ["地面系生物"],
+    "prey": ["小型昆虫"],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small venomous bug with purple and yellow warning colors. Venom sacs on back, antennae dripping poison, stinger on tail. Low poly style with faceted geometric surfaces, sharp edges on body segments, ink sketch texture on warning patterns, non-reflective surface with matte purple and yellow tones, dangerous but timid."
+  }
+}

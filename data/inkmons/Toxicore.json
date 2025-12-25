@@ -1,0 +1,46 @@
+{
+  "name": "剧毒王蝎",
+  "name_en": "Toxicore",
+  "dex_number": 23,
+  "description": "沼泽中的致命杀手，一滴毒液就能致命。毒液经过提炼后却能制成珍贵的解毒剂。",
+  "elements": {
+    "primary": "poison",
+    "secondary": "dark"
+  },
+  "stats": {
+    "hp": 80,
+    "attack": 95,
+    "defense": 85,
+    "sp_attack": 90,
+    "sp_defense": 70,
+    "speed": 65,
+    "bst": 485
+  },
+  "design": {
+    "base_animal": "蝎子",
+    "features": [
+      "深紫色的甲壳闪烁诡异光泽",
+      "巨大的钳子滴着腐蚀性液体",
+      "尾部的毒刺发出绿色荧光",
+      "眼睛是血红色"
+    ],
+    "color_palette": ["#4B0082", "#00FF00", "#8B0000", "#2F4F4F", "#9400D3"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Venomite",
+    "evolves_to": [],
+    "evolution_method": "等级32进化"
+  },
+  "ecology": {
+    "habitat": "毒沼泽和废弃矿井",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["任何进入领地的生物"],
+    "symbiosis": [],
+    "competition": ["其他毒系猎食者"]
+  },
+  "image_prompts": {
+    "design": "A massive scorpion with dark purple carapace that shimmers eerily. Giant pincers drip corrosive liquid, tail stinger glows green, blood-red eyes. Low poly style with faceted geometric surfaces, sharp edges on carapace plates, ink sketch texture on venom patterns, non-reflective surface with matte dark purple tones, deadly swamp assassin."
+  }
+}

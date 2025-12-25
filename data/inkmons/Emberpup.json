@@ -1,0 +1,46 @@
+{
+  "name": "炎犬崽",
+  "name_en": "Emberpup",
+  "dex_number": 2,
+  "description": "刚出生时身上只有微弱的火苗，喜欢追逐自己尾巴上的火焰玩耍，非常亲人。",
+  "elements": {
+    "primary": "fire",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 45,
+    "attack": 55,
+    "defense": 40,
+    "sp_attack": 50,
+    "sp_defense": 40,
+    "speed": 60,
+    "bst": 290
+  },
+  "design": {
+    "base_animal": "小狗",
+    "features": [
+      "橙红色的毛皮",
+      "尾巴尖端燃烧着小火苗",
+      "耳朵像火焰形状",
+      "爪子周围有微弱的热气"
+    ],
+    "color_palette": ["#FF6B35", "#F7931E", "#FFD700", "#8B0000"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Blazehound"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "火山脚下的温暖草原",
+    "diet": "carnivore",
+    "predators": ["大型岩石系生物"],
+    "prey": ["小型昆虫", "浆果"],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small puppy-like creature with orange-red fur and flame-shaped ears. A small flame burns at the tip of its tail. Low poly style with faceted geometric surfaces, sharp edges defining the form, ink sketch texture on fur patterns, non-reflective surface with matte orange and red tones, playful and cute expression."
+  }
+}

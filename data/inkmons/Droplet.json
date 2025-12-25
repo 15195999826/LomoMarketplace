@@ -1,0 +1,46 @@
+{
+  "name": "水滴灵",
+  "name_en": "Droplet",
+  "dex_number": 5,
+  "description": "由纯净的泉水凝聚而成的小精灵，身体透明如水晶，总是发出叮咚的水滴声。",
+  "elements": {
+    "primary": "water",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 50,
+    "attack": 35,
+    "defense": 45,
+    "sp_attack": 60,
+    "sp_defense": 55,
+    "speed": 50,
+    "bst": 295
+  },
+  "design": {
+    "base_animal": "水滴精灵",
+    "features": [
+      "透明的水滴形身体",
+      "内部有微微发光的蓝色核心",
+      "头顶有一滴永不落下的水珠",
+      "小小的波浪形手臂"
+    ],
+    "color_palette": ["#87CEEB", "#4169E1", "#E0FFFF", "#1E90FF"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Tidalin"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "清澈的山间溪流和泉眼",
+    "diet": "special",
+    "predators": ["电系生物"],
+    "prey": [],
+    "symbiosis": ["水生植物"],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small water droplet spirit with a transparent crystalline body. A glowing blue core visible inside, a water drop crown on its head. Low poly style with faceted geometric surfaces, sharp edges on crystal forms, ink sketch texture on water ripples, non-reflective surface with matte blue and cyan tones, gentle and pure appearance."
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "铁甲鼹",
+  "name_en": "Ironmole",
+  "dex_number": 27,
+  "description": "生活在地下矿脉中的小生物，皮肤已经进化成金属质地。挖掘速度惊人，常帮助矿工发现矿藏。",
+  "elements": {
+    "primary": "steel",
+    "secondary": "ground"
+  },
+  "stats": {
+    "hp": 50,
+    "attack": 55,
+    "defense": 70,
+    "sp_attack": 30,
+    "sp_defense": 50,
+    "speed": 40,
+    "bst": 295
+  },
+  "design": {
+    "base_animal": "鼹鼠",
+    "features": [
+      "银灰色的金属皮肤",
+      "钻头状的铁爪",
+      "背部有金属铆钉纹路",
+      "小巧但结实的身躯"
+    ],
+    "color_palette": ["#C0C0C0", "#708090", "#2F4F4F", "#A9A9A9"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Steelquake"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "地下矿脉和隧道",
+    "diet": "special",
+    "predators": ["火系生物"],
+    "prey": [],
+    "symbiosis": ["矿工", "地下生态"],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small mole with silver-gray metallic skin. Drill-like iron claws, metal rivet patterns on back. Low poly style with faceted geometric surfaces, sharp edges on metal plates, ink sketch texture on rivet patterns, non-reflective surface with matte steel gray tones, compact and sturdy digger."
+  }
+}

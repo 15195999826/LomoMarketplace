@@ -1,0 +1,46 @@
+{
+  "name": "种子精",
+  "name_en": "Seedling",
+  "dex_number": 29,
+  "description": "刚从古老种子中苏醒的小精灵，头顶的嫩芽会随着心情摇摆。吸收阳光后会变得活泼。",
+  "elements": {
+    "primary": "grass",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 50,
+    "attack": 40,
+    "defense": 50,
+    "sp_attack": 50,
+    "sp_defense": 55,
+    "speed": 45,
+    "bst": 290
+  },
+  "design": {
+    "base_animal": "植物精灵",
+    "features": [
+      "圆润的绿色身体",
+      "头顶有嫩芽和小花苞",
+      "脸上有可爱的叶片面纹",
+      "小小的树根状脚"
+    ],
+    "color_palette": ["#228B22", "#90EE90", "#8B4513", "#ADFF2F"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["MossBear"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "阳光充足的森林边缘",
+    "diet": "special",
+    "predators": ["火系生物", "虫系生物"],
+    "prey": [],
+    "symbiosis": ["土壤微生物"],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A round green plant spirit with a sprout and flower bud on its head. Cute leaf patterns on face, small root-like feet. Low poly style with faceted geometric surfaces, sharp edges on leaf shapes, ink sketch texture on plant patterns, non-reflective surface with matte green tones, adorable and photosynthetic."
+  }
+}

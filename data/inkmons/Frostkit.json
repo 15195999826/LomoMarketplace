@@ -1,0 +1,46 @@
+{
+  "name": "霜晶狐",
+  "name_en": "Frostkit",
+  "dex_number": 14,
+  "description": "毛发如冰晶般闪耀的小狐狸，呼出的气息会瞬间结霜。即使在暴风雪中也能保持温暖。",
+  "elements": {
+    "primary": "ice",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 45,
+    "attack": 40,
+    "defense": 45,
+    "sp_attack": 55,
+    "sp_defense": 50,
+    "speed": 55,
+    "bst": 290
+  },
+  "design": {
+    "base_animal": "北极狐",
+    "features": [
+      "雪白的毛发带有冰蓝色光泽",
+      "尾巴尖端结着永不融化的冰晶",
+      "耳朵内侧有雪花图案",
+      "眼睛清澈如冰湖"
+    ],
+    "color_palette": ["#FFFFFF", "#B0E0E6", "#87CEEB", "#E0FFFF"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Blizzwolf"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "雪山脚下的冰原",
+    "diet": "carnivore",
+    "predators": ["火系生物"],
+    "prey": ["雪地鼠类", "冰鱼"],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small arctic fox kit with snow-white fur that shimmers with ice-blue light. Never-melting ice crystals on tail tip, snowflake patterns inside ears, eyes clear as frozen lakes. Low poly style with faceted geometric surfaces, sharp edges on ice crystals, ink sketch texture on fur patterns, non-reflective surface with matte white and ice blue tones, cute and resilient."
+  }
+}

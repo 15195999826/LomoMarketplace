@@ -1,0 +1,46 @@
+{
+  "name": "潮汐精",
+  "name_en": "Tidalin",
+  "dex_number": 6,
+  "description": "能够自由操控周围的水流，在月圆之夜力量会大幅增强。常被水手视为吉祥的象征。",
+  "elements": {
+    "primary": "water",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 70,
+    "attack": 55,
+    "defense": 65,
+    "sp_attack": 85,
+    "sp_defense": 75,
+    "speed": 70,
+    "bst": 420
+  },
+  "design": {
+    "base_animal": "水之精灵",
+    "features": [
+      "流线型的水蓝色身躯",
+      "头部有月牙形的水晶冠",
+      "身后拖着波浪形的尾巴",
+      "双手能凝聚水球"
+    ],
+    "color_palette": ["#4169E1", "#00CED1", "#B0E0E6", "#191970", "#FFFFFF"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Droplet",
+    "evolves_to": ["Tsunamire"],
+    "evolution_method": "等级22进化"
+  },
+  "ecology": {
+    "habitat": "沿海地区和珊瑚礁",
+    "diet": "special",
+    "predators": [],
+    "prey": ["浮游生物"],
+    "symbiosis": ["珊瑚"],
+    "competition": ["其他水系中型生物"]
+  },
+  "image_prompts": {
+    "design": "A graceful water spirit with streamlined blue body and crescent moon crystal crown. Wavy tail flows behind it, hands can conjure water orbs. Low poly style with faceted geometric surfaces, sharp edges on crystal crown, ink sketch texture on wave patterns, non-reflective surface with matte ocean blue tones, elegant and mystical presence."
+  }
+}

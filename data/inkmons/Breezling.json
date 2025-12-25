@@ -1,0 +1,46 @@
+{
+  "name": "风灵雀",
+  "name_en": "Breezling",
+  "dex_number": 11,
+  "description": "刚学会飞行的幼鸟，翅膀扇动时会产生微风。喜欢在高处筑巢，总是充满好奇心。",
+  "elements": {
+    "primary": "flying",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 40,
+    "attack": 45,
+    "defense": 35,
+    "sp_attack": 45,
+    "sp_defense": 40,
+    "speed": 75,
+    "bst": 280
+  },
+  "design": {
+    "base_animal": "小鸟",
+    "features": [
+      "浅蓝色羽毛带白色条纹",
+      "尾羽飘逸如风带",
+      "眼睛明亮好奇",
+      "翅膀周围有微风环绕"
+    ],
+    "color_palette": ["#87CEEB", "#FFFFFF", "#B0E0E6", "#4682B4"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Galewing"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "山间悬崖和高处树冠",
+    "diet": "omnivore",
+    "predators": ["大型飞行生物", "电系生物"],
+    "prey": ["昆虫", "种子"],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small bird with light blue feathers and white stripes. Flowing ribbon-like tail feathers, bright curious eyes. Gentle breeze swirls around its wings. Low poly style with faceted geometric surfaces, sharp edges on feather tips, ink sketch texture on wing patterns, non-reflective surface with matte sky blue tones, cute and agile."
+  }
+}

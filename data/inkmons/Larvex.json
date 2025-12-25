@@ -1,0 +1,46 @@
+{
+  "name": "幼丝虫",
+  "name_en": "Larvex",
+  "dex_number": 19,
+  "description": "总是在树叶间蠕动的小虫子，能吐出粘性极强的丝线。进化后会发生惊人的蜕变。",
+  "elements": {
+    "primary": "bug",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 45,
+    "attack": 40,
+    "defense": 45,
+    "sp_attack": 35,
+    "sp_defense": 40,
+    "speed": 50,
+    "bst": 255
+  },
+  "design": {
+    "base_animal": "毛毛虫",
+    "features": [
+      "翠绿色的柔软身体",
+      "头顶有触角能感知危险",
+      "身体有黄色环纹",
+      "尾部能分泌丝线"
+    ],
+    "color_palette": ["#228B22", "#ADFF2F", "#FFD700", "#006400"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Cocooner"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "茂密的森林树冠",
+    "diet": "herbivore",
+    "predators": ["飞行系生物", "火系生物"],
+    "prey": [],
+    "symbiosis": [],
+    "competition": ["其他虫系幼虫"]
+  },
+  "image_prompts": {
+    "design": "A small caterpillar with soft green body and yellow ring patterns. Antennae on head sense danger, tail can produce silk. Low poly style with faceted geometric surfaces, sharp edges on body segments, ink sketch texture on ring patterns, non-reflective surface with matte green and yellow tones, cute and vulnerable."
+  }
+}

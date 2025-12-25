@@ -1,0 +1,46 @@
+{
+  "name": "海啸王",
+  "name_en": "Tsunamire",
+  "dex_number": 7,
+  "description": "深海的霸主，一次挥手就能掀起滔天巨浪。传说它的眼泪能形成新的海洋。",
+  "elements": {
+    "primary": "water",
+    "secondary": "dragon"
+  },
+  "stats": {
+    "hp": 90,
+    "attack": 70,
+    "defense": 80,
+    "sp_attack": 110,
+    "sp_defense": 85,
+    "speed": 75,
+    "bst": 510
+  },
+  "design": {
+    "base_animal": "海龙",
+    "features": [
+      "巨大的蛇形身躯覆盖深蓝色鳞片",
+      "头顶有珊瑚状的王冠",
+      "周身环绕着永恒的水流漩涡",
+      "眼睛深邃如大海"
+    ],
+    "color_palette": ["#000080", "#4169E1", "#00FFFF", "#FFFFFF", "#2F4F4F"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Tidalin",
+    "evolves_to": [],
+    "evolution_method": "等级42进化"
+  },
+  "ecology": {
+    "habitat": "深海海沟和海底宫殿",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["大型海洋生物"],
+    "symbiosis": ["深海鱼群"],
+    "competition": ["其他海洋霸主"]
+  },
+  "image_prompts": {
+    "design": "A massive sea dragon with serpentine body covered in deep blue scales. Coral crown on head, eternal water vortex surrounds its body, eyes deep as the ocean. Low poly style with faceted geometric surfaces, sharp edges on scales and coral, ink sketch texture on water vortex, non-reflective surface with matte deep blue tones, majestic and awe-inspiring ocean ruler."
+  }
+}

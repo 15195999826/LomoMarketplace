@@ -3,6 +3,10 @@
     "inkmon-mcp": {
       "command": "node",
       "args": ["lomo-mcp-servers/inkmon-server/build/index.js"]
+    },
+    "chrome-devtools": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest"]
     }
   }
 }

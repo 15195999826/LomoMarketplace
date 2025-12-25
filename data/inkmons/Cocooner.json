@@ -1,0 +1,46 @@
+{
+  "name": "茧甲虫",
+  "name_en": "Cocooner",
+  "dex_number": 20,
+  "description": "完全静止的茧形态，外壳坚硬如钢。内部正在进行神秘的蜕变，偶尔会微微发光。",
+  "elements": {
+    "primary": "bug",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 60,
+    "attack": 35,
+    "defense": 100,
+    "sp_attack": 35,
+    "sp_defense": 90,
+    "speed": 30,
+    "bst": 350
+  },
+  "design": {
+    "base_animal": "蛹",
+    "features": [
+      "金色的硬壳外壳",
+      "表面有精美的花纹",
+      "缝隙中偶尔透出光芒",
+      "底部有固定用的丝线"
+    ],
+    "color_palette": ["#DAA520", "#FFD700", "#B8860B", "#8B4513"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Larvex",
+    "evolves_to": ["Mothqueen"],
+    "evolution_method": "等级10进化"
+  },
+  "ecology": {
+    "habitat": "悬挂在树枝上",
+    "diet": "special",
+    "predators": ["火系生物"],
+    "prey": [],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A golden chrysalis with intricate patterns on its hard shell. Light occasionally glows through the cracks. Low poly style with faceted geometric surfaces, sharp edges on shell segments, ink sketch texture on intricate patterns, non-reflective surface with matte gold tones, mysterious and dormant."
+  }
+}

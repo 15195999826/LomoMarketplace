@@ -1,0 +1,46 @@
+{
+  "name": "钢铁震王",
+  "name_en": "Steelquake",
+  "dex_number": 28,
+  "description": "地下世界的守护者，全身由稀有金属构成。它的移动会引起小型地震，是矿物的化身。",
+  "elements": {
+    "primary": "steel",
+    "secondary": "ground"
+  },
+  "stats": {
+    "hp": 90,
+    "attack": 110,
+    "defense": 130,
+    "sp_attack": 50,
+    "sp_defense": 80,
+    "speed": 35,
+    "bst": 495
+  },
+  "design": {
+    "base_animal": "装甲兽",
+    "features": [
+      "全身覆盖厚重的钢铁铠甲",
+      "头部有钻石硬度的尖角",
+      "爪子能切割任何岩石",
+      "行走时会产生震波"
+    ],
+    "color_palette": ["#708090", "#2F4F4F", "#C0C0C0", "#FFD700", "#4682B4"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Ironmole",
+    "evolves_to": [],
+    "evolution_method": "等级38进化"
+  },
+  "ecology": {
+    "habitat": "地心深处和古老矿脉",
+    "diet": "special",
+    "predators": [],
+    "prey": [],
+    "symbiosis": ["稀有矿物"],
+    "competition": ["岩石巨人"]
+  },
+  "image_prompts": {
+    "design": "A massive armored beast covered in heavy steel armor. Diamond-hard horn on head, claws that can cut any rock, produces shockwaves when walking. Low poly style with faceted geometric surfaces, sharp edges on armor plates, ink sketch texture on metal patterns, non-reflective surface with matte dark steel tones, unstoppable underground guardian."
+  }
+}

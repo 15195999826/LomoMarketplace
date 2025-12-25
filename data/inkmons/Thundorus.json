@@ -1,0 +1,46 @@
+{
+  "name": "雷神兽",
+  "name_en": "Thundorus",
+  "dex_number": 10,
+  "description": "据说是雷神的坐骑，能够召唤毁灭性的雷暴。它的咆哮就是天空中的雷鸣。",
+  "elements": {
+    "primary": "electric",
+    "secondary": "flying"
+  },
+  "stats": {
+    "hp": 80,
+    "attack": 85,
+    "defense": 65,
+    "sp_attack": 105,
+    "sp_defense": 75,
+    "speed": 100,
+    "bst": 510
+  },
+  "design": {
+    "base_animal": "雷兽",
+    "features": [
+      "巨大的翼状雷云覆盖背部",
+      "全身环绕着持续的电弧",
+      "眼睛是两个微型雷暴",
+      "四肢被雷电铠甲包裹"
+    ],
+    "color_palette": ["#4B0082", "#00BFFF", "#FFD700", "#FFFFFF", "#191970"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Voltiger",
+    "evolves_to": [],
+    "evolution_method": "雷雨天气中等级40进化"
+  },
+  "ecology": {
+    "habitat": "永恒雷暴云层中",
+    "diet": "special",
+    "predators": [],
+    "prey": ["雷云能量"],
+    "symbiosis": ["风暴元素"],
+    "competition": ["其他天候之神"]
+  },
+  "image_prompts": {
+    "design": "A majestic thunder beast with massive storm cloud wings on its back. Constant electric arcs surround its body, eyes are miniature thunderstorms, limbs encased in lightning armor. Low poly style with faceted geometric surfaces, sharp edges on armor plates, ink sketch texture on storm patterns, non-reflective surface with matte purple and electric blue tones, godlike and overwhelming presence."
+  }
+}

@@ -17,7 +17,8 @@
       "Bash(pnpm --filter inkmon-mcp-server build:*)",
       "mcp__inkmon-mcp__list_inkmons_name_en",
       "Bash(npx create-next-app@latest inkmon-pokedex --typescript --app --no-tailwind --eslint --no-src-dir --import-alias \"@/*\" --use-pnpm)",
-      "Bash(pnpm run build:*)"
+      "Bash(pnpm run build:*)",
+      "mcp__inkmon-mcp__get_next_dex_number"
     ]
   },
   "enableAllProjectMcpServers": true,

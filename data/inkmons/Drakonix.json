@@ -1,0 +1,46 @@
+{
+  "name": "龙皇",
+  "name_en": "Drakonix",
+  "dex_number": 26,
+  "description": "龙族之王，拥有毁灭性的力量和无上的威严。传说它能活上千年，见证王朝的兴衰。",
+  "elements": {
+    "primary": "dragon",
+    "secondary": "fire"
+  },
+  "stats": {
+    "hp": 90,
+    "attack": 100,
+    "defense": 80,
+    "sp_attack": 100,
+    "sp_defense": 75,
+    "speed": 85,
+    "bst": 530
+  },
+  "design": {
+    "base_animal": "神龙",
+    "features": [
+      "深紫色的鳞片带有金色光泽",
+      "巨大的双翼如同黑夜天幕",
+      "头上有皇冠般的角阵",
+      "口中能喷出毁灭性的龙炎"
+    ],
+    "color_palette": ["#4B0082", "#FFD700", "#8B0000", "#2F4F4F", "#FF4500"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Wyvernal",
+    "evolves_to": [],
+    "evolution_method": "等级55进化"
+  },
+  "ecology": {
+    "habitat": "最高的山巅和远古龙穴",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["任何它想要的猎物"],
+    "symbiosis": [],
+    "competition": ["其他传说生物"]
+  },
+  "image_prompts": {
+    "design": "A majestic dragon king with dark purple scales shimmering with gold. Massive wings like night sky, crown-like horn array on head, breathes devastating dragon fire. Low poly style with faceted geometric surfaces, sharp edges on scales and horns, ink sketch texture on wing membranes, non-reflective surface with matte purple and gold tones, legendary and awe-inspiring."
+  }
+}

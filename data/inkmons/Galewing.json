@@ -1,0 +1,46 @@
+{
+  "name": "疾风隼",
+  "name_en": "Galewing",
+  "dex_number": 12,
+  "description": "俯冲时速可达惊人的速度，锋利的羽翼能切割空气。是最出色的空中猎手之一。",
+  "elements": {
+    "primary": "flying",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 60,
+    "attack": 80,
+    "defense": 55,
+    "sp_attack": 60,
+    "sp_defense": 50,
+    "speed": 110,
+    "bst": 415
+  },
+  "design": {
+    "base_animal": "游隼",
+    "features": [
+      "流线型的深蓝色身躯",
+      "翼尖像刀刃般锋利",
+      "眼睛锐利如鹰",
+      "尾羽分叉成风之形态"
+    ],
+    "color_palette": ["#4169E1", "#191970", "#C0C0C0", "#FFFFFF", "#87CEEB"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Breezling",
+    "evolves_to": ["Stormraptor"],
+    "evolution_method": "等级24进化"
+  },
+  "ecology": {
+    "habitat": "高山峭壁和云层边缘",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["飞行昆虫", "小型鸟类"],
+    "symbiosis": [],
+    "competition": ["其他飞行猎手"]
+  },
+  "image_prompts": {
+    "design": "A streamlined falcon with deep blue body. Blade-sharp wing tips, piercing eagle eyes. Forked tail takes the shape of wind currents. Low poly style with faceted geometric surfaces, sharp edges on wing blades, ink sketch texture on feather patterns, non-reflective surface with matte deep blue tones, swift and deadly hunter."
+  }
+}

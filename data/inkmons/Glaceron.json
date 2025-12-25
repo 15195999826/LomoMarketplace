@@ -1,0 +1,46 @@
+{
+  "name": "冰川巨狼",
+  "name_en": "Glaceron",
+  "dex_number": 16,
+  "description": "冰原上的绝对霸主，传说它的嚎叫能引发雪崩。全身覆盖的冰甲比钢铁还要坚硬。",
+  "elements": {
+    "primary": "ice",
+    "secondary": "steel"
+  },
+  "stats": {
+    "hp": 95,
+    "attack": 100,
+    "defense": 95,
+    "sp_attack": 85,
+    "sp_defense": 80,
+    "speed": 90,
+    "bst": 545
+  },
+  "design": {
+    "base_animal": "冰原巨狼",
+    "features": [
+      "庞大的身躯覆盖着冰晶铠甲",
+      "背部的冰刺如同王冠",
+      "尾巴是巨大的冰锤",
+      "眼睛散发着极光般的光芒"
+    ],
+    "color_palette": ["#E0FFFF", "#B0C4DE", "#4682B4", "#FFFFFF", "#87CEEB"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Blizzwolf",
+    "evolves_to": [],
+    "evolution_method": "在暴风雪中等级44进化"
+  },
+  "ecology": {
+    "habitat": "最寒冷的冰川之巅",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["所有冰原生物"],
+    "symbiosis": ["极光精灵"],
+    "competition": ["冰龙"]
+  },
+  "image_prompts": {
+    "design": "A massive wolf covered in ice crystal armor. Crown-like ice spikes on back, massive ice hammer tail, eyes glow with aurora lights. Low poly style with faceted geometric surfaces, sharp edges on ice armor, ink sketch texture on aurora patterns, non-reflective surface with matte crystal blue tones, majestic ice realm ruler."
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "小石精",
+  "name_en": "Peblit",
+  "dex_number": 17,
+  "description": "由古老岩石自然形成的小精灵，喜欢收集漂亮的矿石。虽然动作缓慢但非常坚韧。",
+  "elements": {
+    "primary": "rock",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 55,
+    "attack": 50,
+    "defense": 70,
+    "sp_attack": 30,
+    "sp_defense": 55,
+    "speed": 25,
+    "bst": 285
+  },
+  "design": {
+    "base_animal": "石头精灵",
+    "features": [
+      "圆滚滚的岩石身体",
+      "镶嵌着各色矿石晶体",
+      "可爱的石头面孔",
+      "四肢是小石块"
+    ],
+    "color_palette": ["#808080", "#A0522D", "#D2691E", "#696969"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Bouldrex"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "山洞和采石场",
+    "diet": "special",
+    "predators": ["钢系生物"],
+    "prey": [],
+    "symbiosis": ["矿工"],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A round boulder-like creature with various mineral crystals embedded in its body. Cute stone face, small rock limbs. Low poly style with faceted geometric surfaces, sharp edges on crystal formations, ink sketch texture on rock patterns, non-reflective surface with matte gray and brown tones, sturdy and adorable."
+  }
+}

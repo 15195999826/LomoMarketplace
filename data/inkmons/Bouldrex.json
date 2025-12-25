@@ -1,0 +1,46 @@
+{
+  "name": "岩巨人",
+  "name_en": "Bouldrex",
+  "dex_number": 18,
+  "description": "由无数岩石和矿物组成的巨人，移动时大地都会震颤。内核藏着珍贵的宝石。",
+  "elements": {
+    "primary": "rock",
+    "secondary": "ground"
+  },
+  "stats": {
+    "hp": 100,
+    "attack": 110,
+    "defense": 130,
+    "sp_attack": 45,
+    "sp_defense": 75,
+    "speed": 30,
+    "bst": 490
+  },
+  "design": {
+    "base_animal": "岩石巨人",
+    "features": [
+      "庞大的岩石躯体",
+      "胸口镶嵌巨大的红宝石",
+      "关节处有熔岩流动",
+      "头部有水晶角"
+    ],
+    "color_palette": ["#696969", "#8B0000", "#CD853F", "#2F4F4F", "#FF4500"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Peblit",
+    "evolves_to": [],
+    "evolution_method": "等级35进化"
+  },
+  "ecology": {
+    "habitat": "深山矿脉和地下洞穴",
+    "diet": "special",
+    "predators": [],
+    "prey": [],
+    "symbiosis": ["地底矿物"],
+    "competition": ["钢系巨兽"]
+  },
+  "image_prompts": {
+    "design": "A massive rock golem with a giant ruby embedded in its chest. Lava flows through its joints, crystal horns on head. Low poly style with faceted geometric surfaces, sharp edges on rock plates, ink sketch texture on lava patterns, non-reflective surface with matte stone and ruby tones, imposing earth guardian."
+  }
+}

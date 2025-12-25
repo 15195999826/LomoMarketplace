@@ -1,0 +1,46 @@
+{
+  "name": "暴雪狼",
+  "name_en": "Blizzwolf",
+  "dex_number": 15,
+  "description": "在暴风雪中狩猎的孤狼，能够制造局部暴风雪来困住猎物。忠诚且极具领地意识。",
+  "elements": {
+    "primary": "ice",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 70,
+    "attack": 75,
+    "defense": 65,
+    "sp_attack": 70,
+    "sp_defense": 65,
+    "speed": 80,
+    "bst": 425
+  },
+  "design": {
+    "base_animal": "狼",
+    "features": [
+      "银灰色的毛发覆盖着霜层",
+      "背部有冰刺状的鬃毛",
+      "爪子被永冻冰覆盖",
+      "呼吸时吐出冰雾"
+    ],
+    "color_palette": ["#C0C0C0", "#B0E0E6", "#FFFFFF", "#708090", "#4682B4"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Frostkit",
+    "evolves_to": ["Glaceron"],
+    "evolution_method": "等级26进化"
+  },
+  "ecology": {
+    "habitat": "永冻雪原和冰川",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["雪地动物", "冰原野牛"],
+    "symbiosis": [],
+    "competition": ["其他冰原猎手"]
+  },
+  "image_prompts": {
+    "design": "A lone wolf with silver-gray fur covered in frost. Ice spike mane on its back, claws encased in permafrost, exhales ice mist. Low poly style with faceted geometric surfaces, sharp edges on ice spikes, ink sketch texture on frost patterns, non-reflective surface with matte silver and ice tones, fierce and territorial."
+  }
+}

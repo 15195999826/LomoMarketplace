@@ -1,0 +1,46 @@
+{
+  "name": "风暴神鹰",
+  "name_en": "Stormraptor",
+  "dex_number": 13,
+  "description": "翱翔于暴风之巅的天空霸主，翅膀一扇就能引起龙卷风。古老传说中的风神使者。",
+  "elements": {
+    "primary": "flying",
+    "secondary": "electric"
+  },
+  "stats": {
+    "hp": 85,
+    "attack": 110,
+    "defense": 75,
+    "sp_attack": 85,
+    "sp_defense": 70,
+    "speed": 125,
+    "bst": 550
+  },
+  "design": {
+    "base_animal": "巨鹰",
+    "features": [
+      "翼展巨大，带有风暴云纹",
+      "羽毛末端闪烁电光",
+      "头冠如风暴漩涡",
+      "眼睛是两个微型龙卷风"
+    ],
+    "color_palette": ["#483D8B", "#00BFFF", "#FFFFFF", "#191970", "#FFD700"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Galewing",
+    "evolves_to": [],
+    "evolution_method": "在风暴天气中等级42进化"
+  },
+  "ecology": {
+    "habitat": "永恒风暴区和山脉最高峰",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["大型飞行生物"],
+    "symbiosis": ["风暴元素"],
+    "competition": ["龙系飞行者"]
+  },
+  "image_prompts": {
+    "design": "A massive eagle with enormous wingspan bearing storm cloud patterns. Feather tips spark with electricity, storm vortex crown, eyes are miniature tornadoes. Low poly style with faceted geometric surfaces, sharp edges on feathers and crown, ink sketch texture on storm patterns, non-reflective surface with matte indigo and gold tones, majestic sky ruler."
+  }
+}

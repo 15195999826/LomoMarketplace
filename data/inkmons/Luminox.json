@@ -1,0 +1,46 @@
+{
+  "name": "光辉兽",
+  "name_en": "Luminox",
+  "dex_number": 30,
+  "description": "据说诞生于黎明的第一缕阳光，全身散发着温暖的光芒。能够驱散黑暗和治愈伤痛。",
+  "elements": {
+    "primary": "light",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 70,
+    "attack": 50,
+    "defense": 60,
+    "sp_attack": 85,
+    "sp_defense": 80,
+    "speed": 75,
+    "bst": 420
+  },
+  "design": {
+    "base_animal": "独角兽/狮子",
+    "features": [
+      "纯白色的毛发散发金色光芒",
+      "头顶有发光的水晶角",
+      "鬃毛如同朝阳光线",
+      "蹄子踏过之处会开出小花"
+    ],
+    "color_palette": ["#FFFFFF", "#FFD700", "#FFF8DC", "#F0E68C", "#FFFACD"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": null,
+    "evolves_to": [],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "沐浴阳光的圣山之巅",
+    "diet": "special",
+    "predators": [],
+    "prey": [],
+    "symbiosis": ["光明元素", "治愈花卉"],
+    "competition": ["暗系生物"]
+  },
+  "image_prompts": {
+    "design": "A majestic unicorn-lion hybrid with pure white fur radiating golden light. Glowing crystal horn on head, mane like sunbeams, flowers bloom where it steps. Low poly style with faceted geometric surfaces, sharp edges on crystal horn, ink sketch texture on mane patterns, non-reflective surface with matte white and gold tones, divine and healing presence."
+  }
+}

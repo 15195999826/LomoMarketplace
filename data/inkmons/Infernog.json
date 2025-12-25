@@ -1,0 +1,46 @@
+{
+  "name": "狱焰王",
+  "name_en": "Infernog",
+  "dex_number": 4,
+  "description": "传说中的地狱犬王，身体核心燃烧着据说能融化一切的白色烈焰。只服从于真正强大的训练师。",
+  "elements": {
+    "primary": "fire",
+    "secondary": "dark"
+  },
+  "stats": {
+    "hp": 85,
+    "attack": 105,
+    "defense": 75,
+    "sp_attack": 90,
+    "sp_defense": 70,
+    "speed": 85,
+    "bst": 510
+  },
+  "design": {
+    "base_animal": "地狱犬",
+    "features": [
+      "三层火焰鬃毛：外红中橙内白",
+      "身体上有裂痕透出岩浆光芒",
+      "獠牙燃烧着蓝白火焰",
+      "尾巴是一条熔岩鞭"
+    ],
+    "color_palette": ["#FF0000", "#FF6600", "#FFFFFF", "#1A1A1A", "#FFD700"]
+  },
+  "evolution": {
+    "stage": "adult",
+    "evolves_from": "Blazehound",
+    "evolves_to": [],
+    "evolution_method": "等级45进化"
+  },
+  "ecology": {
+    "habitat": "火山口深处和地下熔岩洞穴",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["任何敢于挑战它的生物"],
+    "symbiosis": [],
+    "competition": ["龙系顶级掠食者"]
+  },
+  "image_prompts": {
+    "design": "A massive hellhound with three-layered flame mane - red outer, orange middle, white core. Lava cracks across its body emit light, blue-white flames on its fangs, molten lava tail. Low poly style with faceted geometric surfaces, sharp edges defining the powerful form, ink sketch texture on lava patterns, non-reflective surface with matte dark tones, imposing and terrifying presence."
+  }
+}

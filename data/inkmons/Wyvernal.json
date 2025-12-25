@@ -1,0 +1,46 @@
+{
+  "name": "翼龙",
+  "name_en": "Wyvernal",
+  "dex_number": 25,
+  "description": "学会飞行后变得极其自信的年轻龙，喜欢在高空中展示自己的飞行技巧。",
+  "elements": {
+    "primary": "dragon",
+    "secondary": "flying"
+  },
+  "stats": {
+    "hp": 70,
+    "attack": 80,
+    "defense": 65,
+    "sp_attack": 75,
+    "sp_defense": 60,
+    "speed": 85,
+    "bst": 435
+  },
+  "design": {
+    "base_animal": "飞龙",
+    "features": [
+      "深蓝色鳞片带金色边纹",
+      "展开的有力双翼",
+      "角开始分叉生长",
+      "能喷出小规模火焰"
+    ],
+    "color_palette": ["#191970", "#FFD700", "#4169E1", "#8B0000", "#C0C0C0"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Drakelet",
+    "evolves_to": ["Drakonix"],
+    "evolution_method": "等级35进化"
+  },
+  "ecology": {
+    "habitat": "高山峭壁和云层之间",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["中型飞行生物", "山羊"],
+    "symbiosis": [],
+    "competition": ["其他飞行掠食者"]
+  },
+  "image_prompts": {
+    "design": "A young wyvern with deep blue scales and golden edge patterns. Powerful expanded wings, forking horns, can breathe small flames. Low poly style with faceted geometric surfaces, sharp edges on scales and horns, ink sketch texture on wing patterns, non-reflective surface with matte blue and gold tones, confident aerial predator."
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "电火猫",
+  "name_en": "Sparkkit",
+  "dex_number": 8,
+  "description": "浑身毛发带有静电的小猫，兴奋时会噼里啪啦地放电。喜欢在雷雨天外出玩耍。",
+  "elements": {
+    "primary": "electric",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 40,
+    "attack": 45,
+    "defense": 35,
+    "sp_attack": 55,
+    "sp_defense": 40,
+    "speed": 70,
+    "bst": 285
+  },
+  "design": {
+    "base_animal": "小猫",
+    "features": [
+      "黄色的蓬松毛发总是炸开",
+      "尾巴尖端呈闪电形状",
+      "眼睛偶尔闪烁电光",
+      "爪子上有微小的电弧"
+    ],
+    "color_palette": ["#FFD700", "#FFA500", "#FFFFFF", "#4169E1"]
+  },
+  "evolution": {
+    "stage": "baby",
+    "evolves_from": null,
+    "evolves_to": ["Voltiger"],
+    "evolution_method": null
+  },
+  "ecology": {
+    "habitat": "雷雨频繁的草原和山脚",
+    "diet": "carnivore",
+    "predators": ["地面系生物"],
+    "prey": ["小型昆虫", "浆果"],
+    "symbiosis": [],
+    "competition": []
+  },
+  "image_prompts": {
+    "design": "A small kitten with fluffy yellow fur that stands on end from static electricity. Lightning bolt-shaped tail tip, eyes occasionally spark with electricity. Low poly style with faceted geometric surfaces, sharp edges on fur spikes, ink sketch texture on electric patterns, non-reflective surface with matte yellow tones, cute and energetic appearance."
+  }
+}

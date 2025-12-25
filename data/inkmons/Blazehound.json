@@ -1,0 +1,46 @@
+{
+  "name": "烈焰犬",
+  "name_en": "Blazehound",
+  "dex_number": 3,
+  "description": "忠诚的守护者，全身燃烧着不灭的火焰。奔跑时会在身后留下灼热的足迹。",
+  "elements": {
+    "primary": "fire",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 70,
+    "attack": 85,
+    "defense": 60,
+    "sp_attack": 70,
+    "sp_defense": 55,
+    "speed": 80,
+    "bst": 420
+  },
+  "design": {
+    "base_animal": "猎犬",
+    "features": [
+      "深红色的鬃毛如火焰般飘动",
+      "四肢环绕着火环",
+      "眼睛燃烧着金色火光",
+      "背部有火焰图腾纹路"
+    ],
+    "color_palette": ["#DC143C", "#FF4500", "#FFD700", "#8B0000", "#2F0000"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Emberpup",
+    "evolves_to": ["Infernog"],
+    "evolution_method": "等级25进化"
+  },
+  "ecology": {
+    "habitat": "活火山地带和熔岩平原",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["中型草食动物", "岩浆鱼"],
+    "symbiosis": [],
+    "competition": ["其他火系猎食者"]
+  },
+  "image_prompts": {
+    "design": "A fierce hound-like creature with deep crimson mane flowing like flames. Fire rings encircle its legs, golden fire burns in its eyes. Low poly style with faceted geometric surfaces, sharp edges defining the muscular form, ink sketch texture on flame patterns, non-reflective surface with matte crimson and orange tones, powerful and loyal stance."
+  }
+}

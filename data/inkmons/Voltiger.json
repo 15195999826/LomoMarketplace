@@ -1,0 +1,46 @@
+{
+  "name": "雷霆虎",
+  "name_en": "Voltiger",
+  "dex_number": 9,
+  "description": "奔跑速度快如闪电，每一步都会在地上留下电击痕迹。身上的条纹会在战斗时发出耀眼光芒。",
+  "elements": {
+    "primary": "electric",
+    "secondary": null
+  },
+  "stats": {
+    "hp": 65,
+    "attack": 75,
+    "defense": 55,
+    "sp_attack": 80,
+    "sp_defense": 60,
+    "speed": 105,
+    "bst": 440
+  },
+  "design": {
+    "base_animal": "老虎",
+    "features": [
+      "金黄色底色配电蓝色条纹",
+      "条纹在战斗时会发光",
+      "鬃毛如同电浆般飘动",
+      "尾巴末端分叉如闪电"
+    ],
+    "color_palette": ["#FFD700", "#00BFFF", "#FFFFFF", "#4B0082", "#1E90FF"]
+  },
+  "evolution": {
+    "stage": "mature",
+    "evolves_from": "Sparkkit",
+    "evolves_to": ["Thundorus"],
+    "evolution_method": "等级28进化"
+  },
+  "ecology": {
+    "habitat": "雷暴平原和高山之巅",
+    "diet": "carnivore",
+    "predators": [],
+    "prey": ["中型草食动物"],
+    "symbiosis": [],
+    "competition": ["其他高速猎食者"]
+  },
+  "image_prompts": {
+    "design": "A tiger-like creature with golden fur and electric blue stripes that glow in battle. Mane flows like plasma, forked lightning tail. Low poly style with faceted geometric surfaces, sharp edges on stripes and mane, ink sketch texture on electric patterns, non-reflective surface with matte gold and blue tones, swift and powerful hunter."
+  }
+}

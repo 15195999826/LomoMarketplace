@@ -33,9 +33,9 @@
   },
   "evolution": {
     "stage": "mature",
-    "evolves_from": null,
+    "evolves_from": "Seedling",
     "evolves_to": [],
-    "evolution_method": null
+    "evolution_method": "等级20进化"
   },
   "ecology": {
     "habitat": "古老的原始森林，特别喜欢潮湿阴暗的区域",
