@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "inkmon-mcp": {
+      "command": "node",
+      "args": ["lomo-mcp-servers/inkmon-server/build/index.js"]
+    }
+  }
+}
