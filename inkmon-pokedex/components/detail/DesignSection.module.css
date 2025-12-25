@@ -1,0 +1,62 @@
+.section {
+  padding: var(--spacing-lg);
+  background: var(--paper);
+  border: 2px solid var(--ink-black);
+  border-radius: var(--border-radius-organic);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--ink-black);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--ink-light);
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-lg) 0;
+}
+
+.feature {
+  position: relative;
+  padding-left: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-body);
+  color: var(--ink-dark);
+  line-height: 1.6;
+}
+
+.feature::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: var(--ink-black);
+  font-weight: bold;
+}
+
+.prompt {
+  background: var(--paper-dark);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  border: 1px dashed var(--ink-light);
+}
+
+.promptTitle {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--accent-light);
+  margin-bottom: var(--spacing-sm);
+}
+
+.promptText {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-dark);
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

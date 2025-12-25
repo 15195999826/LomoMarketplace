@@ -9,74 +9,94 @@
 
 **开发阶段**：
 - ✅ **第一阶段**: 已完成，详见 [Progress_Tracking.md](Progress_Tracking.md)
-- 📌 **第二阶段（当前）**: 数据库 + MCP Server
-- 🔮 **第三阶段**: Web 应用
-- 🎮 **第四阶段**: 战斗系统
+- ✅ **第二阶段**: 已完成，数据库 + MCP Server
+- ✅ **第三阶段**: 已完成，Next.js Web 图鉴应用
+- 📌 **第四阶段（当前）**: 战斗系统
 
 ---
 
-## 第二阶段：数据库 + MCP Server
+## 第二阶段：数据库 + MCP Server ✅ 已完成
 
-### 目录结构（新增）
+### 实际目录结构
 
 ```
-├── mcp-server/
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── src/
-│       ├── index.ts
-│       ├── server.ts
-│       ├── database/
-│       │   ├── schema.ts
-│       │   └── connection.ts
-│       ├── tools/
-│       │   ├── inkmon-tools.ts
-│       │   ├── evolution-tools.ts
-│       │   └── stats-tools.ts
-│       └── types/
+LomoMarketplace/
+├── lomo-mcp-servers/           # MCP Servers (git submodule)
+│   └── inkmon-mcp/
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── src/
 │           └── index.ts
 ├── data/
-│   └── inkworld.db
+│   ├── inkmon.db               # SQLite 数据库
+│   └── inkmons/                # JSON 文件备份
 └── .mcp.json
 ```
 
 ### 数据库设计 (SQLite)
 
+采用简化的单表设计，InkMon 数据以 JSON 形式存储：
+
 | 表名 | 用途 |
 |------|------|
-| `elements` | 属性/元素 |
-| `element_matchups` | 属性克制关系 |
-| `inkmons` | InkMon 主表 |
-| `evolution_chains` | 进化链关系 |
-| `habitats` | 栖息地 |
-| `ecology_relations` | 天敌/猎物关系 |
+| `inkmons` | InkMon 主表（完整 JSON 数据） |
 
-### MCP Server 工具
+### 已实现的 MCP 工具
 
-| 分类 | 工具 |
-|------|------|
-| InkMon 管理 | `create_inkmon`, `get_inkmon`, `update_inkmon_stats`, `list_inkmons`, `delete_inkmon` |
-| 进化链 | `create_evolution_chain`, `get_evolution_chain` |
-| 生态系统 | `create_habitat`, `assign_inkmon_habitat`, `create_ecology_relation` |
-| 统计查询 | `get_element_statistics`, `get_stat_distribution`, `compare_inkmons` |
+| 分类 | 工具 | 说明 |
+|------|------|------|
+| 基础 | `ping` | 测试连接 |
+| 管理 | `add_inkmon` | 添加 InkMon |
+| 管理 | `get_inkmon` | 按英文名查询 |
+| 管理 | `list_inkmons_name_en` | 列出所有英文名 |
+| 管理 | `update_inkmon` | 更新 InkMon |
+| 辅助 | `get_next_dex_number` | 获取下一个图鉴编号 |
+
+### 已实现的 Commands
+
+| Command | 说明 |
+|---------|------|
+| `/inkmon-sync` | 快速同步 - 将新 JSON 文件入库 |
+| `/inkmon-sync-strict` | 严格同步 - 检查内容一致性 |
 
 ### 实现清单
 
-- [ ] 初始化 MCP Server 项目
-- [ ] 实现数据库 Schema
-- [ ] 开发 MCP 工具
-- [x] `/inkmon-add` 连接 MCP
-- [ ] 创建 `/stats` Command
-- [ ] 集成测试
+- [x] 初始化 MCP Server 项目
+- [x] 实现数据库 Schema
+- [x] 开发 MCP 工具
+- [x] 创建同步 Commands
 
 ---
 
-## 第三阶段：Web 应用
+## 第三阶段：Web 应用 ✅ 已完成
 
-- [ ] Vite + React 项目初始化
-- [ ] InkMon 图鉴列表页
-- [ ] InkMon 详情页
-- [ ] 数据可视化
+### 架构
+
+采用 **Monorepo + pnpm workspaces** 架构：
+- `packages/inkmon-core/` - 共享包（类型、数据库、查询逻辑）
+- `lomo-mcp-servers/inkmon-server/` - MCP Server（依赖 @inkmon/core）
+- `inkmon-pokedex/` - Next.js 15 Web 应用（依赖 @inkmon/core）
+
+### 实现清单
+
+- [x] pnpm Monorepo 初始化
+- [x] 创建 @inkmon/core 共享包
+- [x] 重构 MCP Server 使用共享包
+- [x] Next.js 15 项目创建 (App Router)
+- [x] API Routes (`/api/inkmon`, `/api/inkmon/[nameEn]`)
+- [x] 墨水风 CSS 样式系统
+- [x] 图鉴列表页（PokedexGrid）
+- [x] 详情页（Stats, Design, Ecology）
+
+### 启动命令
+
+```bash
+# 开发模式
+pnpm dev:web
+
+# 生产构建
+pnpm build:all
+```
 
 ---
 

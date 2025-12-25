@@ -1,0 +1,47 @@
+:root {
+  /* 墨水色系 */
+  --ink-black: #1a1a2e;
+  --ink-dark: #16213e;
+  --ink-medium: #0f3460;
+  --ink-light: #e0e0e0;
+
+  /* 纸张色系 */
+  --paper: #f5f0e6;
+  --paper-dark: #e8e0d0;
+  --paper-light: #faf8f3;
+
+  /* 强调色 */
+  --accent: #4a5568;
+  --accent-light: #718096;
+
+  /* 手绘风格 */
+  --border-sketch: 2px solid var(--ink-black);
+  --border-radius-organic: 8px 12px 6px 14px;
+  --border-radius-sm: 4px 6px 3px 7px;
+
+  /* 阴影 - 模拟墨水晕染 */
+  --shadow-ink:
+    2px 2px 0 rgba(26, 26, 46, 0.1),
+    4px 4px 8px rgba(26, 26, 46, 0.15);
+  --shadow-ink-hover:
+    3px 3px 0 rgba(26, 26, 46, 0.15),
+    6px 6px 12px rgba(26, 26, 46, 0.2);
+
+  /* 字体 */
+  --font-display: "ZCOOL XiaoWei", "Ma Shan Zheng", "Noto Serif SC", serif;
+  --font-body: "Noto Sans SC", system-ui, sans-serif;
+  --font-mono: "Fira Code", "Consolas", monospace;
+
+  /* 间距 */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* 过渡 */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+}

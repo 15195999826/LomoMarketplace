@@ -1,0 +1,29 @@
+.footer {
+  margin-top: auto;
+  padding: var(--spacing-xl) 0;
+  background: var(--paper-dark);
+  border-top: 2px solid var(--ink-light);
+}
+
+.inner {
+  text-align: center;
+}
+
+.stats {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--ink-dark);
+  margin-bottom: var(--spacing-sm);
+}
+
+.stats strong {
+  color: var(--ink-black);
+  font-weight: 600;
+}
+
+.copyright {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--accent-light);
+  margin-bottom: 0;
+}

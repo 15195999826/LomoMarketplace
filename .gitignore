@@ -15,8 +15,18 @@ Thumbs.db
 # Temporary files
 *.tmp
 .cache/
-# inkmon-server
+# inkmon-server (legacy)
 servers/inkmon-server/node_modules
 servers/inkmon-server/build
 servers/inkmon-server/package-lock.json
 servers/inkmon-server/data
+
+# Monorepo - node_modules (all levels)
+node_modules/
+
+# Build outputs
+packages/*/dist/
+.next/
+
+# Lock files (optional, can be committed for reproducibility)
+# pnpm-lock.yaml

@@ -109,59 +109,141 @@ plugins/InkMon/
 | 版本 | 日期 | 变更内容 |
 |-----|------|---------|
 | v1.0.0 | 2024-12 | 第一阶段完成：InkMon 创建/进化/退化工作流 |
+| v1.1.0 | 2024-12-26 | 第二阶段完成：SQLite 数据库 + MCP Server |
+| v1.2.0 | 2024-12-26 | 第三阶段完成：Next.js Web 图鉴应用 + Monorepo 架构 |
 
 ---
 
-## 第二阶段：数据库 + MCP Server 🔄 进行中
+## 第二阶段：数据库 + MCP Server ✅ 已完成
 
 ### MCP Server 基础设施 ✅
 
 | 任务 | 状态 | 完成日期 | 备注 |
 |-----|------|---------|------|
-| 创建 `inkmon-server/` 目录 | ✅ | 2024-12-25 | TypeScript MCP Server |
+| 创建 MCP Server 项目 | ✅ | 2024-12-25 | 使用 lomo-mcp-servers submodule |
 | 配置 `package.json` | ✅ | 2024-12-25 | @modelcontextprotocol/sdk |
 | 配置 `tsconfig.json` | ✅ | 2024-12-25 | ES2022, Node16 |
-| 实现 `src/index.ts` 基础框架 | ✅ | 2024-12-25 | STDIO 传输 |
 | 实现 `ping` 测试工具 | ✅ | 2024-12-25 | 验证 MCP 集成 |
 | 配置 `.mcp.json` | ✅ | 2024-12-25 | 项目根目录 |
 | Claude Code 集成验证 | ✅ | 2024-12-25 | `/mcp` 测试通过 |
 
-### 数据库实现 ⏳
+### 数据库实现 ✅
 
-| 任务 | 状态 | 文件 | 备注 |
-|-----|------|------|------|
-| 设计 Database Schema | ⏳ | - | SQLite |
-| 实现 `database/schema.ts` | ⏳ | - | 表定义 |
-| 实现 `database/connection.ts` | ⏳ | - | 连接管理 |
-| 创建 `data/inkworld.db` | ⏳ | - | 数据库文件 |
+| 任务 | 状态 | 完成日期 | 备注 |
+|-----|------|---------|------|
+| 设计 Database Schema | ✅ | 2024-12-26 | SQLite |
+| 实现数据库连接 | ✅ | 2024-12-26 | better-sqlite3 |
+| 创建 `data/inkmon.db` | ✅ | 2024-12-26 | 数据库文件 |
 
-### MCP 工具实现 ⏳
+### MCP 工具实现 ✅
 
-| 任务 | 状态 | 文件 | 备注 |
-|-----|------|------|------|
-| `create_inkmon` 工具 | ⏳ | `tools/inkmon-tools.ts` | 创建 InkMon |
-| `get_inkmon` 工具 | ⏳ | - | 查询 InkMon |
-| `list_inkmons` 工具 | ⏳ | - | 列表查询 |
-| 连接 `/inkmon-add` 到 MCP | ✅ | `commands/inkmon-add.md` | 入库功能 |
+| 任务 | 状态 | 完成日期 | 备注 |
+|-----|------|---------|------|
+| `add_inkmon` 工具 | ✅ | 2024-12-26 | 入库 InkMon |
+| `get_inkmon` 工具 | ✅ | 2024-12-26 | 查询单个 InkMon |
+| `list_inkmons_name_en` 工具 | ✅ | 2024-12-26 | 列出所有英文名 |
+| `update_inkmon` 工具 | ✅ | 2024-12-26 | 更新 InkMon |
+| `get_next_dex_number` 工具 | ✅ | 2024-12-26 | 获取下一个图鉴编号 |
 
-### 当前目录结构
+### Commands 更新 ✅
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|-----|------|---------|------|
+| `/inkmon-sync` | ✅ | 2024-12-26 | 快速同步 JSON 到数据库 |
+| `/inkmon-sync-strict` | ✅ | 2024-12-26 | 严格同步（检查内容一致性） |
+
+### 与原计划的差异
+
+| 项目 | 原计划 | 实际实现 | 变更原因 |
+|-----|--------|---------|---------|
+| MCP Server 位置 | `plugins/InkMon/inkmon-server/` | `lomo-mcp-servers/` (submodule) | 统一管理多个 MCP Server |
+| 数据库文件名 | `inkworld.db` | `inkmon.db` | 更简洁 |
+| 入库命令 | `/inkmon-add` | `/inkmon-sync` | 批量同步更实用 |
+| 数据库表设计 | 多表关系型 | 单表 JSON 存储 | 简化设计，InkMon 数据自包含 |
+
+### 目录结构
 
 ```
-plugins/InkMon/
-├── inkmon-server/              # MCP Server (新增)
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── src/
-│   │   └── index.ts            # ping 工具已实现
-│   └── build/                  # 编译输出
-└── ...
-
 LomoMarketplace/
-└── .mcp.json                   # MCP 配置 (新增)
+├── lomo-mcp-servers/           # MCP Servers (git submodule)
+│   └── inkmon-mcp/             # InkMon MCP Server
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── src/
+│           └── index.ts
+├── data/
+│   ├── inkmon.db               # SQLite 数据库
+│   └── inkmons/                # JSON 文件备份
+├── .mcp.json                   # MCP 配置
+└── plugins/InkMon/
+    └── commands/
+        ├── inkmon-sync.md      # 快速同步
+        └── inkmon-sync-strict.md  # 严格同步
 ```
 
 ---
 
-## 待办事项 (第三、四阶段)
+## 第三阶段：Web 图鉴应用 ✅ 已完成
+
+### Monorepo 架构 ✅
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|-----|------|---------|------|
+| 创建 `pnpm-workspace.yaml` | ✅ | 2024-12-26 | Monorepo 配置 |
+| 创建根 `package.json` | ✅ | 2024-12-26 | 统一脚本管理 |
+| 创建 `@inkmon/core` 共享包 | ✅ | 2024-12-26 | 类型 + 数据库 + 查询逻辑 |
+| 重构 MCP Server 使用共享包 | ✅ | 2024-12-26 | 从 `@inkmon/core` 导入 |
+
+### Next.js Web 应用 ✅
+
+| 任务 | 状态 | 完成日期 | 备注 |
+|-----|------|---------|------|
+| 创建 Next.js 15 项目 | ✅ | 2024-12-26 | App Router |
+| 配置 `serverExternalPackages` | ✅ | 2024-12-26 | 支持 node:sqlite |
+| 实现 API Routes | ✅ | 2024-12-26 | `/api/inkmon`, `/api/inkmon/[nameEn]` |
+| 创建墨水风 CSS 样式 | ✅ | 2024-12-26 | variables, elements, ink-effects |
+| 实现基础 UI 组件 | ✅ | 2024-12-26 | ElementBadge, StatBar, ColorPalette |
+| 实现图鉴列表页 | ✅ | 2024-12-26 | PokedexGrid, PokedexCard |
+| 实现详情页 | ✅ | 2024-12-26 | Header, Stats, Design, Ecology |
+| 生产构建测试 | ✅ | 2024-12-26 | `pnpm build` 通过 |
+
+### 当前目录结构
+
+```
+LomoMarketplace/
+├── pnpm-workspace.yaml         # Monorepo 配置
+├── package.json                # 根配置
+├── packages/
+│   └── inkmon-core/            # 共享包 @inkmon/core
+│       ├── src/
+│       │   ├── index.ts
+│       │   ├── types.ts
+│       │   ├── database.ts
+│       │   ├── schema.ts
+│       │   ├── queries.ts
+│       │   └── validators.ts
+│       └── package.json
+├── lomo-mcp-servers/
+│   └── inkmon-server/          # MCP Server (使用 @inkmon/core)
+├── inkmon-pokedex/             # Next.js Web 应用
+│   ├── app/
+│   │   ├── page.tsx            # 图鉴列表
+│   │   ├── inkmon/[nameEn]/    # 详情页
+│   │   └── api/inkmon/         # API Routes
+│   ├── components/
+│   │   ├── common/
+│   │   ├── layout/
+│   │   ├── pokedex/
+│   │   └── detail/
+│   └── styles/
+├── data/
+│   ├── inkmon.db
+│   └── inkmons/
+└── plugins/InkMon/
+```
+
+---
+
+## 待办事项 (第四阶段)
 
 详见 [Game_Workflow_Development_Plan.md](Game_Workflow_Development_Plan.md)

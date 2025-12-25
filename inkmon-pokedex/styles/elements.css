@@ -1,0 +1,64 @@
+/* 14 种属性颜色定义 */
+:root {
+  --element-fire: #FF6B35;
+  --element-water: #4ECDC4;
+  --element-grass: #7CB342;
+  --element-electric: #FFD93D;
+  --element-ice: #81D4FA;
+  --element-rock: #A1887F;
+  --element-ground: #D4A373;
+  --element-flying: #90CAF9;
+  --element-bug: #AED581;
+  --element-poison: #BA68C8;
+  --element-dark: #5D4E60;
+  --element-light: #FFF59D;
+  --element-steel: #90A4AE;
+  --element-dragon: #7E57C2;
+}
+
+/* 属性徽章样式 */
+.element-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.element-fire { background-color: var(--element-fire); }
+.element-water { background-color: var(--element-water); }
+.element-grass { background-color: var(--element-grass); }
+.element-electric { background-color: var(--element-electric); color: var(--ink-black); text-shadow: none; }
+.element-ice { background-color: var(--element-ice); color: var(--ink-dark); text-shadow: none; }
+.element-rock { background-color: var(--element-rock); }
+.element-ground { background-color: var(--element-ground); color: var(--ink-dark); text-shadow: none; }
+.element-flying { background-color: var(--element-flying); color: var(--ink-dark); text-shadow: none; }
+.element-bug { background-color: var(--element-bug); color: var(--ink-dark); text-shadow: none; }
+.element-poison { background-color: var(--element-poison); }
+.element-dark { background-color: var(--element-dark); }
+.element-light { background-color: var(--element-light); color: var(--ink-black); text-shadow: none; }
+.element-steel { background-color: var(--element-steel); }
+.element-dragon { background-color: var(--element-dragon); }
+
+/* 属性中文名映射 */
+.element-fire::before { content: "火"; }
+.element-water::before { content: "水"; }
+.element-grass::before { content: "草"; }
+.element-electric::before { content: "电"; }
+.element-ice::before { content: "冰"; }
+.element-rock::before { content: "岩"; }
+.element-ground::before { content: "地"; }
+.element-flying::before { content: "飞"; }
+.element-bug::before { content: "虫"; }
+.element-poison::before { content: "毒"; }
+.element-dark::before { content: "暗"; }
+.element-light::before { content: "光"; }
+.element-steel::before { content: "钢"; }
+.element-dragon::before { content: "龙"; }

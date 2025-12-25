@@ -1,0 +1,126 @@
+.header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  background: var(--paper);
+  border: 2px solid var(--ink-black);
+  border-radius: var(--border-radius-organic);
+}
+
+.imageSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.imagePlaceholder {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-organic);
+  border: 2px solid var(--ink-light);
+}
+
+.placeholderText {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.palette {
+  display: flex;
+  justify-content: center;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dexNumber {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--accent-light);
+  background: var(--paper-dark);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: var(--spacing-sm);
+  width: fit-content;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: var(--ink-black);
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.2;
+}
+
+.nameEn {
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  color: var(--accent-light);
+  margin-bottom: var(--spacing-md);
+}
+
+.elements {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.description {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--ink-dark);
+  line-height: 1.8;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--paper-dark);
+  border-radius: var(--border-radius-sm);
+  border-left: 4px solid var(--ink-black);
+}
+
+.meta {
+  display: flex;
+  gap: var(--spacing-xl);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.metaLabel {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metaValue {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  color: var(--ink-black);
+}
+
+@media (max-width: 768px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+
+  .name {
+    font-size: 2rem;
+  }
+
+  .placeholderText {
+    font-size: 3rem;
+  }
+}

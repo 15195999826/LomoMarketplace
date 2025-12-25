@@ -1,0 +1,16 @@
+{
+  "name": "lomo-marketplace",
+  "private": true,
+  "description": "LomoMarketplace - Claude Code Plugin Marketplace",
+  "scripts": {
+    "dev:web": "pnpm --filter inkmon-pokedex dev",
+    "build:core": "pnpm --filter @inkmon/core build",
+    "build:mcp": "pnpm --filter inkmon-mcp-server build",
+    "build:web": "pnpm --filter inkmon-pokedex build",
+    "build:all": "pnpm -r build"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
