@@ -1,89 +1,157 @@
 # Lomo Marketplace
 
-Lomo's Claude Code Plugin Marketplace - 为 Claude Code 提供定制化插件支持。
+Lomo's Claude Code Plugin Marketplace - 为 Claude Code 提供定制化插件支持，同时包含 InkMon 项目的完整技术栈。
 
-## 插件列表
+## 📖 项目概览
 
-### 1. UE_ReactUMG
-Unreal Engine ReactUMG 开发助手插件，提供 UE 和 ReactUMG 相关的开发辅助命令。
+LomoMarketplace 是一个多功能 monorepo 项目，包含：
 
-**功能特性：**
-- UE 项目开发辅助
-- ReactUMG UI 组件开发
-- Blueprint 和 C++ 代码支持
+- **Claude Code 插件** - 为 Claude Code 提供定制化扩展能力
+- **InkMon MCP 服务器** - 提供 InkMon 数据管理的 MCP 工具
+- **InkMon Web 图鉴** - 在线浏览和管理 InkMon（开发中）
 
-### 2. InkMon
-InkMon 项目开发助手插件，为 InkMon 项目提供专用的开发工具和命令。
+## 📁 项目结构
 
-**功能特性：**
-- InkMon 项目特定功能
-- 开发工作流优化
-
-## 安装方法
-
-### 添加 Marketplace
-
-```bash
-# 使用 Git URL（推荐）
-/plugin marketplace add http://git.o.com/lmm/lomoMarketplace.git
-
-# 或使用本地路径
-/plugin marketplace add ./lomoMarketplace
+```
+LomoMarketplace/
+├── plugins/                  # Claude Code 插件
+│   ├── UE_ReactUMG/          # UE ReactUMG 开发助手
+│   └── InkMon/               # InkMon 开发助手
+├── packages/
+│   └── inkmon-core/          # InkMon 核心库（数据库操作、类型定义）
+├── lomo-mcp-servers/
+│   └── inkmon-server/        # InkMon MCP 服务器
+├── inkmon-pokedex/           # Web 图鉴应用（Next.js）
+├── data/                     # 数据目录
+│   ├── inkmon.db             # SQLite 数据库
+│   └── inkmons/              # InkMon JSON 文件
+├── dev_docs/                 # Claude Code 开发文档参考
+├── .mcp.json                 # MCP 服务器配置
+└── CLAUDE.md                 # Claude Code 项目指引
 ```
 
-### 安装插件
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js >= 20.0.0
+- pnpm >= 9.0.0
+
+### 安装依赖
 
 ```bash
-# 安装 UE_ReactUMG 插件
-/plugin install UE_ReactUMG@lomoMarketplace
+git clone <repo-url>
+cd LomoMarketplace
+pnpm install
+```
 
-# 安装 InkMon 插件
+### 环境变量配置
+
+| 变量名 | 说明 | 示例值 |
+|--------|------|--------|
+| `INKMON_DB_PATH` | InkMon 数据库文件路径 | `E:\path\to\data\inkmon.db` |
+
+**Windows 设置（永久）：**
+```cmd
+setx INKMON_DB_PATH "E:\talk\LomoMarketplace\data\inkmon.db"
+```
+
+**临时设置（当前终端）：**
+```cmd
+set INKMON_DB_PATH=E:\talk\LomoMarketplace\data\inkmon.db
+```
+
+> ⚠️ 设置系统环境变量后需要**重启终端**才能生效
+
+---
+
+## 📦 各组件使用
+
+### 1. Claude Code 插件
+
+安装 Claude Code 插件：
+
+```bash
+# 添加 Marketplace
+/plugin marketplace add <repo-path>
+
+# 安装插件
+/plugin install UE_ReactUMG@lomoMarketplace
 /plugin install InkMon@lomoMarketplace
 
-# 安装所有插件
+# 或一次性安装所有
 /plugin install UE_ReactUMG@lomoMarketplace InkMon@lomoMarketplace
 ```
 
-## 项目结构
+**插件列表：**
 
-```
-lomoMarketplace/
-├── .claude-plugin/
-│   └── marketplace.json          # Marketplace 配置
-├── plugins/
-│   ├── UE_ReactUMG/
-│   │   ├── .claude-plugin/
-│   │   │   └── plugin.json       # 插件配置
-│   │   ├── commands/             # 命令目录
-│   │   └── README.md
-│   └── InkMon/
-│       ├── .claude-plugin/
-│       │   └── plugin.json
-│       ├── commands/
-│       └── README.md
-└── README.md
-```
+| 插件 | 说明 |
+|------|------|
+| `UE_ReactUMG` | Unreal Engine ReactUMG 开发助手 |
+| `InkMon` | InkMon 项目开发助手 |
 
-## 开发指南
+### 2. MCP 服务器
 
-### 添加新命令
+在项目根目录的 `.mcp.json` 中配置（已预配置）：
 
-在对应插件的 `commands/` 目录下创建 `.md` 文件：
-
-```markdown
-# commands/example.md
-
-执行某个特定任务的提示词...
+```json
+{
+  "mcpServers": {
+    "inkmon-mcp": {
+      "command": "node",
+      "args": ["lomo-mcp-servers/inkmon-server/build/index.js"]
+    }
+  }
+}
 ```
 
-命令将自动以 `/插件名:命令名` 的格式注册。
+**首次使用需构建：**
+```bash
+pnpm build:mcp
+```
 
-### 更新插件
+**可用工具：**
+- `ping` - 测试连接
+- `get_inkmon` - 获取 InkMon 详情
+- `list_inkmons_name_en` - 列出所有 InkMon
+- `add_inkmon` - 添加新 InkMon
+- `update_inkmon` - 更新 InkMon
+- `get_next_dex_number` - 获取下一个图鉴编号
 
-1. 修改插件文件
-2. 更新版本号（plugin.json 和 marketplace.json）
-3. 提交到 Git 仓库
-4. 用户使用 `/plugin update` 更新
+### 3. Web 图鉴（开发中）
+
+```bash
+# 开发服务器
+pnpm dev:web
+
+# 生产构建
+pnpm build:web
+```
+
+> 📝 **TODO**: Web 图鉴功能正在开发中，敬请期待
+
+---
+
+## 🔧 开发命令
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm install` | 安装所有依赖 |
+| `pnpm build:core` | 构建 @inkmon/core 核心库 |
+| `pnpm build:mcp` | 构建 MCP 服务器 |
+| `pnpm build:web` | 构建 Web 应用 |
+| `pnpm build:all` | 构建全部项目 |
+| `pnpm dev:web` | 启动 Web 开发服务器 |
+
+---
+
+## 🔗 相关文档
+
+- [InkMon 插件 README](./plugins/InkMon/README.md)
+- [UE_ReactUMG 插件 README](./plugins/UE_ReactUMG/README.md)
+- [Claude Code 开发文档](./dev_docs/)
+
+---
 
 ## 维护者
 

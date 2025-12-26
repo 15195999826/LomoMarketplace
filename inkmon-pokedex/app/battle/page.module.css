@@ -32,3 +32,18 @@
   flex: 1;
   padding: var(--spacing-xl) 0;
 }
+
+.loadingState,
+.errorState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  gap: var(--spacing-md);
+  color: var(--accent);
+}
+
+.errorState {
+  color: var(--error, #dc2626);
+}

@@ -23,7 +23,9 @@
       "Bash(powershell -Command \"cd ''E:\\talk\\LomoMarketplace\\lomo-mcp-servers\\inkmon-server''; npx tsc\")",
       "Skill(frontend-design:frontend-design)",
       "Bash(pnpm build:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\inkmon-pokedex''; pnpm run build\")",
+      "Bash(findstr:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

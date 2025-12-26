@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  initializeDatabase,
-  setDatabasePath,
-  getAllInkMons,
   getInkMonsPaginated,
   filterInkMons,
-  getInkMonCount,
   type Element,
   type EvolutionStage,
   VALID_ELEMENTS,
 } from "@inkmon/core";
-import path from "path";
+import { initDb } from "@/lib/db";
 
-// 设置数据库路径为项目根目录的 data/inkmon.db
-const dbPath = path.join(process.cwd(), "..", "data", "inkmon.db");
-setDatabasePath(dbPath);
-initializeDatabase();
+// 初始化数据库
+initDb();
 
 /**
  * GET /api/inkmon

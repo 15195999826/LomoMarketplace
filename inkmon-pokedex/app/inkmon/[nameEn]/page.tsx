@@ -1,21 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import {
-  initializeDatabase,
-  setDatabasePath,
-  getInkMonByNameEn,
-} from "@inkmon/core";
-import path from "path";
+import { getInkMonByNameEn } from "@inkmon/core";
+import { initDb } from "@/lib/db";
 import { DetailContent } from "@/components/detail/DetailContent";
 import { StatsSection } from "@/components/detail/StatsSection";
 import { DesignSection } from "@/components/detail/DesignSection";
 import { EcologySection } from "@/components/detail/EcologySection";
 import styles from "./page.module.css";
 
-// 设置数据库路径
-const dbPath = path.join(process.cwd(), "..", "data", "inkmon.db");
-setDatabasePath(dbPath);
-initializeDatabase();
+// 初始化数据库
+initDb();
 
 interface PageProps {
   params: Promise<{ nameEn: string }>;

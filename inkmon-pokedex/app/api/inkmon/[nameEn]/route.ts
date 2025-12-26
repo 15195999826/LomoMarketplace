@@ -1,16 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  initializeDatabase,
-  setDatabasePath,
-  getInkMonByNameEn,
-  deleteInkMon,
-} from "@inkmon/core";
-import path from "path";
+import { getInkMonByNameEn, deleteInkMon } from "@inkmon/core";
+import { initDb } from "@/lib/db";
 
-// 设置数据库路径
-const dbPath = path.join(process.cwd(), "..", "data", "inkmon.db");
-setDatabasePath(dbPath);
-initializeDatabase();
+// 初始化数据库
+initDb();
 
 interface RouteParams {
   params: Promise<{ nameEn: string }>;
