@@ -1,0 +1,63 @@
+/* WorldMap - 世界地图主容器 */
+.container {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+.mapSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.mapHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mapTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.detailSection {
+  position: sticky;
+  top: var(--spacing-lg);
+}
+
+/* 区域统计 */
+.stats {
+  display: flex;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-md);
+}
+
+.stat {
+  text-align: center;
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink-black);
+  display: block;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--accent-light);
+}

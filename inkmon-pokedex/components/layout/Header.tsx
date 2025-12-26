@@ -16,6 +16,15 @@ export function Header() {
           <Link href="/" className={styles.navLink}>
             图鉴
           </Link>
+          <Link href="/items" className={styles.navLink}>
+            物品
+          </Link>
+          <Link href="/world" className={styles.navLink}>
+            世界地图
+          </Link>
+          <Link href="/battle" className={styles.navLink}>
+            战斗模拟
+          </Link>
         </nav>
         <div className={styles.actions}>
           <AuthButton />

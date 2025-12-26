@@ -1,0 +1,213 @@
+/* ItemSearchFilter - 物品搜索筛选 */
+.filterContainer {
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: var(--shadow-ink);
+  position: relative;
+}
+
+.filterContainer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 90%, rgba(0,0,0,0.015) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, rgba(0,0,0,0.015) 0%, transparent 40%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.filterRow {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+/* 搜索框 */
+.searchWrapper {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: var(--accent-light);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-left: calc(var(--spacing-md) * 2 + 18px);
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--ink-black);
+  transition: var(--transition-normal);
+}
+
+.searchInput::placeholder {
+  color: var(--accent-light);
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: var(--shadow-ink);
+  border-color: var(--ink-medium);
+}
+
+/* 下拉选择器 */
+.selectWrapper {
+  position: relative;
+  min-width: 140px;
+}
+
+.select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-sm) var(--spacing-md);
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--ink-black);
+  cursor: pointer;
+  appearance: none;
+  transition: var(--transition-normal);
+}
+
+.select:focus {
+  outline: none;
+  box-shadow: var(--shadow-ink);
+}
+
+.selectArrow {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--accent-light);
+  pointer-events: none;
+}
+
+/* 色块指示器 */
+.colorIndicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* 重置按钮 */
+.resetButton {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: 1px solid var(--ink-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--accent);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  white-space: nowrap;
+}
+
+.resetButton:hover {
+  background: var(--paper-dark);
+  border-color: var(--ink-black);
+  color: var(--ink-black);
+}
+
+/* 活跃筛选标签 */
+.activeTags {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px dashed var(--ink-light);
+}
+
+.activeTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--paper-dark);
+  border: 1px solid var(--ink-light);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--ink-black);
+}
+
+.activeTag button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--accent-light);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.activeTag button:hover {
+  color: #dc2626;
+}
+
+/* 结果计数 */
+.resultCount {
+  margin-left: auto;
+  font-size: 0.875rem;
+  color: var(--accent);
+}
+
+.resultCount strong {
+  color: var(--ink-black);
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.875rem;
+  color: var(--accent-light);
+}
+
+.loadingDot {
+  width: 6px;
+  height: 6px;
+  background: var(--ink-black);
+  border-radius: 50%;
+  animation: loadingPulse 1.2s ease-in-out infinite;
+}
+
+.loadingDot:nth-child(2) { animation-delay: 0.2s; }
+.loadingDot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}

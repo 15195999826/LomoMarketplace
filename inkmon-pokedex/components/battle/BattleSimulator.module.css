@@ -1,0 +1,185 @@
+/* BattleSimulator - 战斗模拟器主组件 */
+.simulator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* 战斗区域 */
+.battleArea {
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-ink);
+  position: relative;
+  overflow: hidden;
+}
+
+.battleArea::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 25% 50%, rgba(220, 38, 38, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 75% 50%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+/* 队伍容器 */
+.teamsContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-xl);
+  position: relative;
+  z-index: 1;
+}
+
+/* 单个队伍 */
+.team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.teamHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px dashed var(--ink-light);
+}
+
+.teamIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.teamIcon.teamA {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 2px solid #dc2626;
+}
+
+.teamIcon.teamB {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
+}
+
+.teamTitle {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0;
+}
+
+.teamStats {
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  margin-left: auto;
+}
+
+/* 槽位容器 */
+.slots {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+/* VS 分隔 */
+.vsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.vsIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--ink-black);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-ink);
+}
+
+/* 开始战斗按钮 */
+.battleButton {
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--ink-black);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.battleButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-ink-hover);
+}
+
+.battleButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 战斗结果 */
+.resultSection {
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-lg);
+  text-align: center;
+}
+
+.resultTitle {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.resultMessage {
+  font-size: 1rem;
+  color: var(--accent);
+  margin: 0;
+}
+
+/* 提示信息 */
+.hint {
+  text-align: center;
+  padding: var(--spacing-md);
+  background: var(--paper-light);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.875rem;
+  color: var(--accent-light);
+}
+
+.hintIcon {
+  margin-right: var(--spacing-xs);
+}

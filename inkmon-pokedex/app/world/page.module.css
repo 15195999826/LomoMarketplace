@@ -1,0 +1,35 @@
+/* 世界地图页面样式 */
+.pageWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero {
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  text-align: center;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(76, 175, 80, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 80% 50%, rgba(33, 150, 243, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 80%, rgba(255, 193, 7, 0.03) 0%, transparent 40%);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-sm);
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: var(--accent);
+  margin: 0;
+}
+
+.content {
+  flex: 1;
+  padding: var(--spacing-xl) 0;
+}

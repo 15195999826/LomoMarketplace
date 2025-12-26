@@ -1,0 +1,203 @@
+/* ItemListItem - 列表项样式 */
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal),
+    border-color var(--transition-normal);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+
+.listItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--ink-black);
+  border-radius: 0 2px 2px 0;
+  transition: height var(--transition-normal);
+}
+
+.listItem:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-ink);
+}
+
+.listItem:hover::before {
+  height: 60%;
+}
+
+/* 稀有度边框 */
+.listItem.rare {
+  border-left-color: var(--rarity-rare);
+}
+
+.listItem.epic {
+  border-left-color: var(--rarity-epic);
+}
+
+.listItem.legendary {
+  border-left-color: var(--rarity-legendary);
+  border-left-width: 3px;
+}
+
+/* 图标区域 */
+.iconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.itemImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.iconPlaceholder {
+  font-size: 1.5rem;
+}
+
+/* 信息区域 */
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.nameSection {
+  min-width: 120px;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nameEn {
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  margin: 0;
+}
+
+/* 分类标签 */
+.categoryBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--paper-light);
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.categoryBadge.weapon { color: var(--item-weapon); border-color: var(--item-weapon); }
+.categoryBadge.armor { color: var(--item-armor); border-color: var(--item-armor); }
+.categoryBadge.accessory { color: var(--item-accessory); border-color: var(--item-accessory); }
+.categoryBadge.consumable { color: var(--item-consumable); border-color: var(--item-consumable); }
+.categoryBadge.material { color: var(--item-material); border-color: var(--item-material); }
+.categoryBadge.key_item { color: var(--item-key-item); border-color: var(--item-key-item); }
+
+/* 稀有度标签 */
+.rarityBadge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.rarityBadge.common { background: var(--rarity-common); }
+.rarityBadge.rare { background: var(--rarity-rare); }
+.rarityBadge.epic { background: var(--rarity-epic); }
+.rarityBadge.legendary {
+  background: linear-gradient(135deg, var(--rarity-legendary) 0%, #FFD54F 100%);
+}
+
+/* 属性区域 */
+.stats {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-left: auto;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  padding: 4px 8px;
+  background: var(--paper-dark);
+  border-radius: 4px;
+}
+
+.statIcon {
+  font-size: 0.75rem;
+}
+
+.statValue {
+  font-weight: 600;
+  color: var(--ink-black);
+}
+
+/* 删除按钮 */
+.deleteButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--accent-light);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition-normal);
+  flex-shrink: 0;
+}
+
+.listItem:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.deleteButton svg {
+  width: 16px;
+  height: 16px;
+}

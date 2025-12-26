@@ -1,0 +1,15 @@
+/* ItemContainer - 物品图鉴容器 */
+.container {
+  width: 100%;
+}
+
+.toolbar {
+  margin-bottom: var(--spacing-lg);
+}
+
+.toolbarRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}

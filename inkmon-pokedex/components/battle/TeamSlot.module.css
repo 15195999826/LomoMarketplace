@@ -1,0 +1,158 @@
+/* TeamSlot - 队伍槽位组件 */
+.slot {
+  width: 140px;
+  min-height: 180px;
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+}
+
+.slot:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-ink-hover);
+}
+
+.slot.empty {
+  border-style: dashed;
+  background: var(--paper-light);
+}
+
+.slot.empty:hover {
+  background: var(--paper);
+  border-style: solid;
+}
+
+/* 空槽位 */
+.emptyIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--paper-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--spacing-sm);
+  color: var(--accent-light);
+  font-size: 1.5rem;
+  transition: var(--transition-normal);
+}
+
+.slot.empty:hover .emptyIcon {
+  background: var(--ink-black);
+  color: var(--paper);
+}
+
+.emptyText {
+  font-size: 0.8125rem;
+  color: var(--accent-light);
+  margin: 0;
+}
+
+/* 已选择槽位 */
+.selectedSlot {
+  gap: var(--spacing-xs);
+}
+
+.imageWrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-xs);
+}
+
+.inkmonImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.inkmonName {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0;
+}
+
+.elementBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.6875rem;
+  margin-top: 2px;
+}
+
+/* 属性统计 */
+.stats {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6875rem;
+  color: var(--accent);
+  padding: 2px 6px;
+  background: var(--paper-light);
+  border-radius: 4px;
+}
+
+.statIcon {
+  font-size: 0.625rem;
+}
+
+/* 移除按钮 */
+.removeButton {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--ink-light);
+  color: var(--accent);
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: var(--transition-fast);
+}
+
+.slot:hover .removeButton {
+  opacity: 1;
+}
+
+.removeButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}

@@ -44,4 +44,26 @@
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow: 400ms ease;
+
+  /* 稀有度配色 */
+  --rarity-common: #9E9E9E;
+  --rarity-rare: #2196F3;
+  --rarity-epic: #9C27B0;
+  --rarity-legendary: #FF9800;
+
+  /* 生态/地形配色 */
+  --biome-forest: #4CAF50;
+  --biome-ocean: #2196F3;
+  --biome-mountain: #795548;
+  --biome-desert: #FFC107;
+  --biome-tundra: #B3E5FC;
+  --biome-swamp: #8BC34A;
+
+  /* 物品分类配色 */
+  --item-weapon: #E53935;
+  --item-armor: #5E35B1;
+  --item-accessory: #FB8C00;
+  --item-consumable: #43A047;
+  --item-material: #757575;
+  --item-key-item: #FFD700;
 }

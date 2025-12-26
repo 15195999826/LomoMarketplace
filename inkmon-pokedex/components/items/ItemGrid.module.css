@@ -1,0 +1,32 @@
+/* ItemGrid - 物品网格视图 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.empty {
+  grid-column: 1 / -1;
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--accent);
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-md);
+  color: var(--ink-light);
+}
+
+.emptyTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.emptyText {
+  font-size: 0.875rem;
+  margin: 0;
+}

@@ -1,0 +1,131 @@
+/* InkMonPicker - InkMon 选择器 */
+.pickerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transition-normal);
+}
+
+.pickerOverlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.picker {
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  box-shadow: var(--shadow-ink-hover);
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.95);
+  transition: var(--transition-normal);
+}
+
+.pickerOverlay.open .picker {
+  transform: scale(1);
+}
+
+.pickerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--ink-light);
+}
+
+.pickerTitle {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--ink-light);
+  color: var(--accent);
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-normal);
+}
+
+.closeButton:hover {
+  background: var(--paper-dark);
+  color: var(--ink-black);
+}
+
+/* 搜索栏 */
+.searchBar {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px dashed var(--ink-light);
+}
+
+.searchInput {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--ink-black);
+  transition: var(--transition-normal);
+}
+
+.searchInput::placeholder {
+  color: var(--accent-light);
+}
+
+.searchInput:focus {
+  outline: none;
+  box-shadow: var(--shadow-ink);
+}
+
+/* 列表 */
+.pickerList {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* 空状态 */
+.emptyState {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--accent-light);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.emptyText {
+  font-size: 0.9375rem;
+  margin: 0;
+}

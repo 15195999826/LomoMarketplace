@@ -1,0 +1,31 @@
+/* ItemList - 物品列表视图 */
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.emptyState {
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--accent);
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-md);
+  color: var(--ink-light);
+}
+
+.emptyTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.emptyText {
+  font-size: 0.875rem;
+  margin: 0;
+}

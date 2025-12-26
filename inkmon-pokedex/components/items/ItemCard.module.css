@@ -1,0 +1,242 @@
+/* ItemCard - 墨水书卷风格物品卡片 */
+.card {
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition:
+    transform var(--transition-normal),
+    box-shadow var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(0,0,0,0.02) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0,0,0,0.02) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.card:hover {
+  transform: translateY(-6px) rotate(-0.5deg);
+  box-shadow: var(--shadow-ink-hover);
+}
+
+/* 稀有度边框光晕 */
+.card.common {
+  box-shadow: var(--shadow-ink);
+}
+
+.card.rare {
+  box-shadow:
+    var(--shadow-ink),
+    0 0 0 1px rgba(33, 150, 243, 0.3);
+}
+
+.card.epic {
+  box-shadow:
+    var(--shadow-ink),
+    0 0 0 1px rgba(156, 39, 176, 0.4),
+    0 0 12px rgba(156, 39, 176, 0.15);
+}
+
+.card.legendary {
+  box-shadow:
+    var(--shadow-ink),
+    0 0 0 2px rgba(255, 152, 0, 0.5),
+    0 0 20px rgba(255, 152, 0, 0.2);
+}
+
+.card.legendary::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255, 215, 0, 0.08) 50%,
+    transparent 60%
+  );
+  animation: shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0%, 100% { transform: translateX(-100%) rotate(0deg); }
+  50% { transform: translateX(100%) rotate(0deg); }
+}
+
+/* 图片区域 */
+.imageWrapper {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.card:hover .cardImage {
+  transform: scale(1.05);
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.placeholderIcon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+}
+
+/* 分类标签 */
+.categoryBadge {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-xs);
+  background: var(--paper-light);
+  border: 1px solid var(--ink-light);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 5;
+}
+
+.categoryBadge.weapon { color: var(--item-weapon); border-color: var(--item-weapon); }
+.categoryBadge.armor { color: var(--item-armor); border-color: var(--item-armor); }
+.categoryBadge.accessory { color: var(--item-accessory); border-color: var(--item-accessory); }
+.categoryBadge.consumable { color: var(--item-consumable); border-color: var(--item-consumable); }
+.categoryBadge.material { color: var(--item-material); border-color: var(--item-material); }
+.categoryBadge.key_item { color: var(--item-key-item); border-color: var(--item-key-item); }
+
+/* 稀有度标签 */
+.rarityBadge {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.rarityBadge.common { background: var(--rarity-common); }
+.rarityBadge.rare { background: var(--rarity-rare); box-shadow: 0 0 6px var(--rarity-rare); }
+.rarityBadge.epic { background: var(--rarity-epic); box-shadow: 0 0 8px var(--rarity-epic); }
+.rarityBadge.legendary {
+  background: var(--rarity-legendary);
+  box-shadow: 0 0 10px var(--rarity-legendary);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 10px var(--rarity-legendary); }
+  50% { box-shadow: 0 0 18px var(--rarity-legendary), 0 0 25px var(--rarity-legendary); }
+}
+
+/* 内容区域 */
+.content {
+  text-align: center;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+
+.nameEn {
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  margin: 0 0 var(--spacing-xs);
+}
+
+/* 属性展示 */
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-top: var(--spacing-xs);
+}
+
+.stat {
+  font-size: 0.75rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.statIcon {
+  font-size: 0.625rem;
+}
+
+/* 删除按钮 */
+.deleteButton {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--ink-light);
+  border-radius: 50%;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition-normal);
+  z-index: 10;
+}
+
+.card:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.deleteButton svg {
+  width: 14px;
+  height: 14px;
+}

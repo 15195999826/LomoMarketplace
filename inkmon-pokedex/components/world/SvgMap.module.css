@@ -1,0 +1,140 @@
+/* SvgMap - SVG 手绘风格地图 */
+.mapContainer {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  overflow: hidden;
+}
+
+.mapContainer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.svgWrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.mapSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 区域路径 */
+.regionPath {
+  cursor: pointer;
+  transition: var(--transition-normal);
+  stroke: var(--ink-black);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.regionPath:hover {
+  filter: brightness(1.1);
+  stroke-width: 3;
+}
+
+.regionPath.selected {
+  filter: brightness(1.15);
+  stroke-width: 4;
+  stroke-dasharray: none;
+}
+
+/* 手绘笔触效果 */
+.regionPath.sketchy {
+  stroke-dasharray: 4 2 8 3;
+}
+
+/* 生态类型填充 */
+.regionPath.forest { fill: var(--biome-forest); }
+.regionPath.ocean { fill: var(--biome-ocean); }
+.regionPath.mountain { fill: var(--biome-mountain); }
+.regionPath.desert { fill: var(--biome-desert); }
+.regionPath.tundra { fill: var(--biome-tundra); }
+.regionPath.swamp { fill: var(--biome-swamp); }
+
+/* 区域标签 */
+.regionLabel {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--ink-black);
+  text-anchor: middle;
+  pointer-events: none;
+  text-shadow:
+    1px 1px 0 var(--paper),
+    -1px -1px 0 var(--paper),
+    1px -1px 0 var(--paper),
+    -1px 1px 0 var(--paper);
+}
+
+.regionIcon {
+  font-size: 20px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* 装饰元素 */
+.decorative {
+  fill: none;
+  stroke: var(--ink-light);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.5;
+}
+
+/* 罗盘 */
+.compass {
+  position: absolute;
+  bottom: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 50px;
+  height: 50px;
+  opacity: 0.6;
+}
+
+.compassSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 图例 */
+.legend {
+  position: absolute;
+  top: var(--spacing-md);
+  left: var(--spacing-md);
+  background: rgba(245, 240, 230, 0.9);
+  border: 1px solid var(--ink-light);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-sm);
+  font-size: 0.6875rem;
+}
+
+.legendTitle {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--ink-black);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--ink-black);
+}

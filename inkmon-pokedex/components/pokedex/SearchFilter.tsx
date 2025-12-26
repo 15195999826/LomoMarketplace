@@ -56,7 +56,7 @@ export function SearchFilter({
 
   const elementRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced search
   const handleSearchChange = useCallback(

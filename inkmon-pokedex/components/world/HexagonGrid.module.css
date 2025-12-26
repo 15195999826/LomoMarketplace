@@ -1,0 +1,157 @@
+/* HexagonGrid - 六边形网格地图 */
+.gridContainer {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gridContainer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(76, 175, 80, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(33, 150, 243, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255, 193, 7, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.grid {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+/* 六边形单元 */
+.hexagon {
+  position: absolute;
+  width: 80px;
+  height: 92px;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  transform-origin: center center;
+}
+
+.hexagon:hover {
+  transform: scale(1.15);
+  z-index: 10;
+}
+
+.hexagon.selected {
+  transform: scale(1.2);
+  z-index: 20;
+}
+
+.hexagonInner {
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-normal);
+  position: relative;
+  border: none;
+}
+
+/* 生态类型颜色 */
+.hexagonInner.forest {
+  background: linear-gradient(135deg, var(--biome-forest) 0%, #81C784 100%);
+}
+
+.hexagonInner.ocean {
+  background: linear-gradient(135deg, var(--biome-ocean) 0%, #64B5F6 100%);
+}
+
+.hexagonInner.mountain {
+  background: linear-gradient(135deg, var(--biome-mountain) 0%, #A1887F 100%);
+}
+
+.hexagonInner.desert {
+  background: linear-gradient(135deg, var(--biome-desert) 0%, #FFE082 100%);
+}
+
+.hexagonInner.tundra {
+  background: linear-gradient(135deg, #90CAF9 0%, var(--biome-tundra) 100%);
+}
+
+.hexagonInner.swamp {
+  background: linear-gradient(135deg, #689F38 0%, var(--biome-swamp) 100%);
+}
+
+/* 悬停效果 */
+.hexagon:hover .hexagonInner {
+  filter: brightness(1.1);
+}
+
+.hexagon.selected .hexagonInner {
+  filter: brightness(1.15);
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+/* 选中边框 */
+.hexagon.selected::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: var(--ink-black);
+  z-index: -1;
+}
+
+/* 六边形内容 */
+.hexIcon {
+  font-size: 1.5rem;
+  margin-bottom: 2px;
+  filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.hexName {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  padding: 0 4px;
+  line-height: 1.2;
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink-black);
+  color: var(--paper);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition-fast);
+  z-index: 100;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--ink-black);
+}
+
+.hexagon:hover .tooltip {
+  opacity: 1;
+}

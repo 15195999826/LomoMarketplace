@@ -1,0 +1,266 @@
+/* 物品详情页样式 */
+.pageWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  padding: var(--spacing-xl) 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-lg);
+  transition: var(--transition-fast);
+}
+
+.backLink:hover {
+  color: var(--ink-black);
+}
+
+/* 详情卡片 */
+.detailCard {
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-ink);
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: var(--spacing-xl);
+}
+
+/* 图片区域 */
+.imageSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.mainImage {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.itemImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  font-size: 5rem;
+  filter: drop-shadow(4px 4px 8px rgba(0,0,0,0.2));
+}
+
+.rarityOverlay {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.rarityOverlay.common { background: var(--rarity-common); }
+.rarityOverlay.rare { background: var(--rarity-rare); }
+.rarityOverlay.epic { background: var(--rarity-epic); }
+.rarityOverlay.legendary {
+  background: linear-gradient(135deg, var(--rarity-legendary) 0%, #FFD54F 100%);
+}
+
+/* 信息区域 */
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.header {
+  border-bottom: 1px dashed var(--ink-light);
+  padding-bottom: var(--spacing-md);
+}
+
+.categoryBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--paper-light);
+  border: 1px solid;
+  margin-bottom: var(--spacing-sm);
+}
+
+.categoryBadge.weapon { color: var(--item-weapon); border-color: var(--item-weapon); }
+.categoryBadge.armor { color: var(--item-armor); border-color: var(--item-armor); }
+.categoryBadge.accessory { color: var(--item-accessory); border-color: var(--item-accessory); }
+.categoryBadge.consumable { color: var(--item-consumable); border-color: var(--item-consumable); }
+.categoryBadge.material { color: var(--item-material); border-color: var(--item-material); }
+.categoryBadge.key_item { color: var(--item-key-item); border-color: var(--item-key-item); }
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.titleEn {
+  font-size: 1rem;
+  color: var(--accent-light);
+  margin: 0;
+}
+
+/* 描述 */
+.descriptionSection {
+  background: var(--paper-light);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.description {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--accent);
+  margin: 0;
+}
+
+/* 效果 */
+.effectSection {
+  background: linear-gradient(135deg, var(--paper-light) 0%, rgba(76, 175, 80, 0.05) 100%);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+  border-left: 3px solid var(--item-consumable);
+}
+
+.effect {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--item-consumable);
+  margin: 0;
+}
+
+/* 属性区域 */
+.statsSection {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.statCard {
+  flex: 1;
+  min-width: 100px;
+  background: var(--paper-light);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.statIcon {
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink-black);
+  margin: 0;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  margin: 0;
+}
+
+/* 配色板 */
+.paletteSection {
+  margin-top: auto;
+}
+
+.palette {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.colorSwatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--paper);
+  box-shadow: var(--shadow-ink);
+  transition: var(--transition-normal);
+}
+
+.colorSwatch:hover {
+  transform: scale(1.1);
+}
+
+/* 404 状态 */
+.notFound {
+  text-align: center;
+  padding: var(--spacing-2xl);
+}
+
+.notFoundIcon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.notFoundTitle {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.notFoundText {
+  color: var(--accent);
+  margin: 0 0 var(--spacing-lg);
+}
+
+.notFoundLink {
+  display: inline-block;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--ink-black);
+  color: var(--paper);
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition-normal);
+}
+
+.notFoundLink:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-ink);
+}
