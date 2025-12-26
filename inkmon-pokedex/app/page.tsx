@@ -1,7 +1,7 @@
 import {
   initializeDatabase,
   setDatabasePath,
-  getAllInkMons,
+  getInkMonsPaginated,
   getInkMonCount,
 } from "@inkmon/core";
 import path from "path";
@@ -13,9 +13,11 @@ const dbPath = path.join(process.cwd(), "..", "data", "inkmon.db");
 setDatabasePath(dbPath);
 initializeDatabase();
 
+const PAGE_SIZE = 24;
+
 export default async function HomePage() {
-  // 服务端获取数据
-  const inkmons = getAllInkMons();
+  // 服务端只获取第一批数据，提升首屏加载速度
+  const firstBatch = getInkMonsPaginated(1, PAGE_SIZE);
   const total = getInkMonCount();
 
   return (
@@ -28,7 +30,12 @@ export default async function HomePage() {
       </section>
 
       <section className={`container ${styles.content}`}>
-        <PokedexContainer initialInkmons={inkmons} />
+        <PokedexContainer
+          initialInkmons={firstBatch.data}
+          total={total}
+          pageSize={PAGE_SIZE}
+          hasMore={firstBatch.hasMore}
+        />
       </section>
     </div>
   );

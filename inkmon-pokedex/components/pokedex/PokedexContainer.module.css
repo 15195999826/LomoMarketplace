@@ -17,3 +17,27 @@
 .content {
   min-height: 400px;
 }
+
+/* 加载更多指示器 */
+.loadingMore {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+}
+
+.loadingText {
+  font-size: 0.875rem;
+  color: var(--accent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

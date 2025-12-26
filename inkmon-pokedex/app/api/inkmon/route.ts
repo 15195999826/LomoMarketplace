@@ -3,6 +3,7 @@ import {
   initializeDatabase,
   setDatabasePath,
   getAllInkMons,
+  getInkMonsPaginated,
   filterInkMons,
   getInkMonCount,
   type Element,
@@ -21,6 +22,8 @@ initializeDatabase();
  * 获取 InkMon 列表
  *
  * Query params:
+ * - page: 页码 (从 1 开始，默认 1)
+ * - pageSize: 每页数量 (默认 24)
  * - search: 搜索关键词 (名称/编号)
  * - element: 属性筛选 (可多个，逗号分隔)
  * - stage: 进化阶段筛选 (可多个，逗号分隔)
@@ -28,6 +31,8 @@ initializeDatabase();
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || "24", 10);
     const search = searchParams.get("search") || undefined;
     const elementParam = searchParams.get("element");
     const stageParam = searchParams.get("stage");
@@ -55,16 +60,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 有筛选条件时使用 filter，否则获取全部
+    // 有筛选条件时使用 filter（不分页），否则使用分页
     const hasFilters = search || elements || stages;
-    const data = hasFilters
-      ? filterInkMons({ search, elements, stages })
-      : getAllInkMons();
+
+    if (hasFilters) {
+      const data = filterInkMons({ search, elements, stages });
+      return NextResponse.json({
+        data,
+        total: data.length,
+        page: 1,
+        pageSize: data.length,
+        hasMore: false,
+        filters: { search, elements, stages },
+      });
+    }
+
+    // 无筛选时使用分页
+    const result = getInkMonsPaginated(page, pageSize);
 
     return NextResponse.json({
-      data,
-      total: data.length,
-      filters: { search, elements, stages },
+      data: result.data,
+      total: result.total,
+      page,
+      pageSize,
+      hasMore: result.hasMore,
+      filters: {},
     });
   } catch (error: any) {
     console.error("API Error:", error);

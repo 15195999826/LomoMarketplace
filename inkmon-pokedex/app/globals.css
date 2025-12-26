@@ -111,3 +111,13 @@ img {
   h1 { font-size: 2rem; }
   h2 { font-size: 1.5rem; }
 }
+
+/* 骨架屏动画 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

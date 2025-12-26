@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import type { ImageSlot } from "./ImageUploader";
 import styles from "./ImageGallery.module.css";
 
@@ -93,10 +94,13 @@ export function ImageGallery({ images, name, colorPalette }: ImageGalleryProps) 
         style={{ cursor: currentImage ? "zoom-in" : "default" }}
       >
         {currentImage ? (
-          <img
+          <Image
             src={currentImage}
             alt={`${name} - ${VIEW_LABELS[activeView]}`}
+            fill
+            sizes="(max-width: 768px) 100vw, 400px"
             className={styles.mainImageInner}
+            priority
           />
         ) : (
           <div className={styles.mainPlaceholder} style={{ background: gradientBg }}>
@@ -114,9 +118,11 @@ export function ImageGallery({ images, name, colorPalette }: ImageGalleryProps) 
             onClick={() => setActiveView(view)}
           >
             {images[view] ? (
-              <img
-                src={images[view]}
+              <Image
+                src={images[view]!}
                 alt={`${name} - ${VIEW_LABELS[view]}`}
+                fill
+                sizes="80px"
                 className={styles.thumbnailImage}
               />
             ) : (
@@ -170,11 +176,16 @@ export function ImageGallery({ images, name, colorPalette }: ImageGalleryProps) 
           )}
 
           {currentImage && (
-            <img
-              src={currentImage}
-              alt={`${name} - ${VIEW_LABELS[activeView]}`}
-              className={styles.lightboxImage}
-            />
+            <div className={styles.lightboxImageWrapper}>
+              <Image
+                src={currentImage}
+                alt={`${name} - ${VIEW_LABELS[activeView]}`}
+                fill
+                sizes="90vw"
+                className={styles.lightboxImage}
+                quality={90}
+              />
+            </div>
           )}
 
           <span className={styles.lightboxLabel}>

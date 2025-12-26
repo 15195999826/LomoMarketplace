@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { InkMonListItem } from "@inkmon/core";
 import { ElementBadge } from "../common/ElementBadge";
 import { ColorPalette } from "../common/ColorPalette";
@@ -69,9 +70,11 @@ export function PokedexCard({ inkmon, showDelete = false, onDelete }: PokedexCar
       )}
       <div className={styles.imageWrapper}>
         {!imageError ? (
-          <img
+          <Image
             src={imageUrl}
             alt={inkmon.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             className={styles.cardImage}
             onError={handleImageError}
           />

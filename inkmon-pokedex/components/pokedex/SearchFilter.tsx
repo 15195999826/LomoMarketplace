@@ -40,13 +40,17 @@ export interface SearchFilterProps {
     stage: string;
   }) => void;
   resultCount?: number;
+  totalCount?: number;
   isLoading?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export function SearchFilter({
   onFilterChange,
   resultCount,
+  totalCount,
   isLoading = false,
+  isLoadingMore = false,
 }: SearchFilterProps) {
   const [search, setSearch] = useState("");
   const [element, setElement] = useState("");
@@ -250,13 +254,26 @@ export function SearchFilter({
       {/* 结果计数 */}
       {resultCount !== undefined && (
         <div className={styles.resultCount}>
-          找到 <strong>{resultCount}</strong> 个 InkMon
-          {isLoading && (
-            <span className={styles.loading}>
-              <span />
-              <span />
-              <span />
-            </span>
+          {isLoadingMore ? (
+            <>
+              已加载 <strong>{resultCount}</strong> / {totalCount} 个 InkMon
+              <span className={styles.loading}>
+                <span />
+                <span />
+                <span />
+              </span>
+            </>
+          ) : (
+            <>
+              找到 <strong>{resultCount}</strong> 个 InkMon
+              {isLoading && (
+                <span className={styles.loading}>
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              )}
+            </>
           )}
         </div>
       )}

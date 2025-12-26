@@ -73,12 +73,11 @@
   background: #fff;
 }
 
-/* 搜索图标 */
+/* 搜索图标 - 相对于 input 定位 */
 .searchIcon {
   position: absolute;
   left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 0.6rem;
   width: 1.25rem;
   height: 1.25rem;
   color: var(--accent-light);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Providers } from "@/components/providers";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 
@@ -16,11 +17,13 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        <Header />
-        <main style={{ flex: 1 }}>
-          {children}
-        </main>
-        <Footer />
+        <Providers>
+          <Header />
+          <main style={{ flex: 1 }}>
+            {children}
+          </main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

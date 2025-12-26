@@ -86,6 +86,35 @@ export function getAllInkMons(): InkMonListItem[] {
 }
 
 /**
+ * 分页获取 InkMon 列表项
+ */
+export function getInkMonsPaginated(page: number, pageSize: number): {
+  data: InkMonListItem[];
+  total: number;
+  hasMore: boolean;
+} {
+  const db = getDatabase();
+  const offset = (page - 1) * pageSize;
+
+  const rows = db.prepare(`
+    SELECT dex_number, name, name_en, primary_element, secondary_element,
+           evolution_stage, color_palette, hp, attack, defense
+    FROM inkmons
+    ORDER BY dex_number ASC
+    LIMIT ? OFFSET ?
+  `).all(pageSize, offset) as any[];
+
+  const countRow = db.prepare("SELECT COUNT(*) as count FROM inkmons").get() as { count: number };
+  const total = countRow.count;
+
+  return {
+    data: rows.map(rowToListItem),
+    total,
+    hasMore: offset + rows.length < total,
+  };
+}
+
+/**
  * 根据英文名获取 InkMon
  */
 export function getInkMonByNameEn(nameEn: string): InkMon | null {

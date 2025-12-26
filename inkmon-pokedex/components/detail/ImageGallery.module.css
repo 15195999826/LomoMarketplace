@@ -8,14 +8,12 @@
 
 /* 主立绘区域 */
 .mainImage {
+  position: relative;
   aspect-ratio: 1;
   border: var(--border-sketch);
   border-radius: var(--border-radius-organic);
   overflow: hidden;
   background: var(--paper-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .mainImageInner {
@@ -123,9 +121,13 @@
   position: relative;
 }
 
+.lightboxImageWrapper {
+  position: relative;
+  width: 80vw;
+  height: 80vh;
+}
+
 .lightboxImage {
-  max-width: 100%;
-  max-height: 85vh;
   object-fit: contain;
   border-radius: var(--border-radius-organic);
 }

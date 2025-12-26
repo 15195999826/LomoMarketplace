@@ -35,6 +35,7 @@ export {
 export {
   rowToInkMon,
   getAllInkMons,
+  getInkMonsPaginated,
   getInkMonByNameEn,
   getInkMonByDexNumber,
   searchInkMons,
