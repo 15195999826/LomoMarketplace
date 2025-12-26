@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
+import Image from "next/image";
 import type { InkMonListItem } from "@inkmon/core";
 import { ElementBadge } from "@/components/common/ElementBadge";
 import styles from "./TeamSlot.module.css";
+
+const IMAGE_EXTENSIONS = ["png", "jpg", "webp"];
 
 interface TeamSlotProps {
   inkmon: InkMonListItem | null;
@@ -12,6 +16,9 @@ interface TeamSlotProps {
 }
 
 export function TeamSlot({ inkmon, onClick, onRemove, slotIndex }: TeamSlotProps) {
+  const [imageError, setImageError] = useState(false);
+  const [currentExtIndex, setCurrentExtIndex] = useState(0);
+
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
     onRemove?.();
@@ -30,6 +37,16 @@ export function TeamSlot({ inkmon, onClick, onRemove, slotIndex }: TeamSlotProps
     ? `linear-gradient(135deg, ${inkmon.color_palette[0]} 0%, ${inkmon.color_palette[1]} 100%)`
     : inkmon.color_palette[0] || "#ccc";
 
+  const imageUrl = `/images/inkmon/${inkmon.name_en}/main.${IMAGE_EXTENSIONS[currentExtIndex]}`;
+
+  const handleImageError = () => {
+    if (currentExtIndex < IMAGE_EXTENSIONS.length - 1) {
+      setCurrentExtIndex((prev) => prev + 1);
+    } else {
+      setImageError(true);
+    }
+  };
+
   return (
     <div className={`${styles.slot} ${styles.selectedSlot}`} onClick={onClick}>
       <button
@@ -42,9 +59,20 @@ export function TeamSlot({ inkmon, onClick, onRemove, slotIndex }: TeamSlotProps
       </button>
 
       <div className={styles.imageWrapper}>
-        <div className={styles.imagePlaceholder} style={{ background: gradientBg }}>
-          {inkmon.name.charAt(0)}
-        </div>
+        {!imageError ? (
+          <Image
+            src={imageUrl}
+            alt={inkmon.name}
+            fill
+            sizes="80px"
+            className={styles.inkmonImage}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className={styles.imagePlaceholder} style={{ background: gradientBg }}>
+            {inkmon.name.charAt(0)}
+          </div>
+        )}
       </div>
 
       <h4 className={styles.inkmonName}>{inkmon.name}</h4>
