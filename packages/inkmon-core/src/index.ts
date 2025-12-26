@@ -47,3 +47,17 @@ export {
   type AddInkMonResult,
   type UpdateInkMonResult,
 } from "./queries.js";
+
+// File Operations
+export {
+  getInkMonsDir,
+  readInkMonFile,
+  addInkMonFromFile,
+  listLocalInkMonFiles,
+  compareInkMon,
+  batchCompareInkMons,
+  syncInkMonFromFile,
+  type CompareResult,
+  type DiffItem,
+  type BatchCompareItem,
+} from "./file-ops.js";

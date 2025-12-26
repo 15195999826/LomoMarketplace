@@ -139,10 +139,12 @@ plugins/InkMon/
 
 | 任务 | 状态 | 完成日期 | 备注 |
 |-----|------|---------|------|
-| `add_inkmon` 工具 | ✅ | 2024-12-26 | 入库 InkMon |
 | `get_inkmon` 工具 | ✅ | 2024-12-26 | 查询单个 InkMon |
-| `list_inkmons_name_en` 工具 | ✅ | 2024-12-26 | 列出所有英文名 |
-| `update_inkmon` 工具 | ✅ | 2024-12-26 | 更新 InkMon |
+| `list_inkmons_name_en` 工具 | ✅ | 2024-12-26 | 列出数据库英文名 |
+| `list_local_files` 工具 | ✅ | 2024-12-26 | 列出本地文件 |
+| `compare_inkmon` 工具 | ✅ | 2024-12-26 | 比较文件与数据库 |
+| `batch_compare` 工具 | ✅ | 2024-12-26 | 批量比较 |
+| `sync_inkmon` 工具 | ✅ | 2024-12-26 | 智能同步（新增/更新/跳过） |
 | `get_next_dex_number` 工具 | ✅ | 2024-12-26 | 获取下一个图鉴编号 |
 
 ### Commands 更新 ✅

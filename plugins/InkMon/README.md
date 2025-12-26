@@ -89,11 +89,13 @@ MCP Server 位于 `LomoMarketplace/lomo-mcp-servers/inkmon-server/`，提供以�
 
 | 工具 | 功能 |
 |------|------|
-| `add_inkmon` | 添加 InkMon 到数据库 |
 | `get_inkmon` | 按英文名查询 InkMon |
 | `get_next_dex_number` | 获取下一个可用图鉴编号 |
-| `list_inkmons_name_en` | 列出所有已入库的英文名 |
-| `update_inkmon` | 更新已存在的 InkMon |
+| `list_inkmons_name_en` | 列出数据库中所有英文名 |
+| `list_local_files` | 列出本地 JSON 文件 |
+| `compare_inkmon` | 比较文件与数据库 |
+| `batch_compare` | 批量比较所有文件 |
+| `sync_inkmon` | 智能同步（新增/更新/跳过） |
 
 ## 相关文档
 

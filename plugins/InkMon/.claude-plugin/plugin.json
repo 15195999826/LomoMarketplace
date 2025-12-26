@@ -1,7 +1,7 @@
 {
   "name": "InkMon",
   "description": "InkMon 生物设计助手，支持创建、进化、退化设计和数据管理",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Lomo"
   },

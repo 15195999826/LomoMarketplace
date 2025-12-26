@@ -46,10 +46,12 @@ LomoMarketplace/
 | 分类 | 工具 | 说明 |
 |------|------|------|
 | 基础 | `ping` | 测试连接 |
-| 管理 | `add_inkmon` | 添加 InkMon |
-| 管理 | `get_inkmon` | 按英文名查询 |
-| 管理 | `list_inkmons_name_en` | 列出所有英文名 |
-| 管理 | `update_inkmon` | 更新 InkMon |
+| 查询 | `get_inkmon` | 按英文名查询 |
+| 查询 | `list_inkmons_name_en` | 列出数据库英文名 |
+| 查询 | `list_local_files` | 列出本地文件 |
+| 同步 | `compare_inkmon` | 比较文件与数据库 |
+| 同步 | `batch_compare` | 批量比较 |
+| 同步 | `sync_inkmon` | 智能同步（新增/更新/跳过） |
 | 辅助 | `get_next_dex_number` | 获取下一个图鉴编号 |
 
 ### 已实现的 Commands
