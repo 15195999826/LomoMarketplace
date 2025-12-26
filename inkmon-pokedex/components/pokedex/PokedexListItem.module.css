@@ -1,0 +1,171 @@
+/* PokedexListItem - 列表项样式 */
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--paper);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-sm);
+  text-decoration: none;
+  color: inherit;
+  transition: var(--transition-normal);
+  position: relative;
+}
+
+.listItem:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-ink);
+  border-left-color: var(--ink-medium);
+  border-left-width: 4px;
+}
+
+.listItem:active {
+  transform: translateX(2px);
+}
+
+/* 缩略图 */
+.thumbnail {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--ink-light);
+}
+
+.thumbnailInner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 图鉴编号 */
+.dexNumber {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 50px;
+}
+
+/* 属性区域 */
+.elementWrapper {
+  min-width: 40px;
+}
+
+/* 名称区域 */
+.nameWrapper {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink-black);
+  margin: 0;
+}
+
+.nameEn {
+  font-size: 0.75rem;
+  color: var(--accent-light);
+  margin: 0;
+}
+
+/* 能力值预览 */
+.statsPreview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 100px;
+}
+
+.statBar {
+  flex: 1;
+  height: 6px;
+  background: var(--paper-dark);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.statBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: var(--transition-normal);
+}
+
+.statValue {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* 进化阶段 */
+.stage {
+  font-size: 0.75rem;
+  color: var(--accent);
+  padding: 0.25rem 0.5rem;
+  background: var(--paper-dark);
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+}
+
+/* 删除按钮 */
+.deleteButton {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--accent-light);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition-normal);
+}
+
+.listItem:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.deleteButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 响应式 */
+@media (max-width: 640px) {
+  .statsPreview,
+  .stage {
+    display: none;
+  }
+
+  .nameWrapper {
+    flex: 1;
+  }
+}

@@ -1,0 +1,78 @@
+/* AuthButton - 认证按钮样式 */
+
+.authButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: transparent;
+  border: 1px solid var(--ink-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--ink-black);
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.authButton:hover {
+  background: var(--paper-dark);
+  border-color: var(--ink-black);
+}
+
+.authButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 已认证状态 */
+.authenticated {
+  color: #16a34a;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.authenticated:hover {
+  background: #dcfce7;
+  border-color: #16a34a;
+}
+
+/* 认证状态容器 */
+.authContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* 退出按钮 */
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--accent);
+  cursor: pointer;
+  transition: var(--transition-normal);
+}
+
+.logoutButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.logoutButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 加载状态 */
+.loading {
+  opacity: 0.6;
+  cursor: wait;
+}

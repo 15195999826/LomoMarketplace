@@ -62,6 +62,11 @@ function rowToListItem(row: any): InkMonListItem {
     secondary_element: row.secondary_element as Element | null,
     evolution_stage: row.evolution_stage as EvolutionStage,
     color_palette: JSON.parse(row.color_palette),
+    base_stats: {
+      hp: row.hp,
+      attack: row.attack,
+      defense: row.defense,
+    },
   };
 }
 
@@ -72,7 +77,7 @@ export function getAllInkMons(): InkMonListItem[] {
   const db = getDatabase();
   const rows = db.prepare(`
     SELECT dex_number, name, name_en, primary_element, secondary_element,
-           evolution_stage, color_palette
+           evolution_stage, color_palette, hp, attack, defense
     FROM inkmons
     ORDER BY dex_number ASC
   `).all() as any[];
@@ -117,7 +122,7 @@ export function searchInkMons(query: string): InkMonListItem[] {
 
   const rows = db.prepare(`
     SELECT dex_number, name, name_en, primary_element, secondary_element,
-           evolution_stage, color_palette
+           evolution_stage, color_palette, hp, attack, defense
     FROM inkmons
     WHERE name LIKE ?
        OR name_en LIKE ?
@@ -161,7 +166,7 @@ export function filterInkMons(options: FilterOptions): InkMonListItem[] {
 
   const rows = db.prepare(`
     SELECT dex_number, name, name_en, primary_element, secondary_element,
-           evolution_stage, color_palette
+           evolution_stage, color_palette, hp, attack, defense
     FROM inkmons
     ${whereClause}
     ORDER BY dex_number ASC
@@ -405,6 +410,41 @@ export function updateInkMon(inkmon: InkMon): UpdateInkMonResult {
     if (error.message?.includes("UNIQUE constraint failed") && error.message.includes("dex_number")) {
       return { success: false, message: `图鉴编号 #${inkmon.dex_number} 已被其他 InkMon 使用` };
     }
+    return { success: false, message: `数据库错误: ${error.message}` };
+  }
+}
+
+export interface DeleteInkMonResult {
+  success: boolean;
+  message: string;
+  changes?: number;
+}
+
+/**
+ * 删除 InkMon
+ */
+export function deleteInkMon(nameEn: string): DeleteInkMonResult {
+  const db = getDatabase();
+
+  try {
+    // 先检查是否存在
+    const existing = db.prepare("SELECT name FROM inkmons WHERE name_en = ?").get(nameEn) as { name: string } | undefined;
+    if (!existing) {
+      return { success: false, message: `未找到 InkMon: ${nameEn}` };
+    }
+
+    const stmt = db.prepare("DELETE FROM inkmons WHERE name_en = ?");
+    const result = stmt.run(nameEn);
+
+    return {
+      success: true,
+      message: `InkMon "${existing.name}" (${nameEn}) 已删除`,
+      changes: typeof result.changes === 'bigint'
+        ? Number(result.changes)
+        : result.changes,
+    };
+
+  } catch (error: any) {
     return { success: false, message: `数据库错误: ${error.message}` };
   }
 }

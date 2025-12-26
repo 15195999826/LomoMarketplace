@@ -5,7 +5,7 @@ import {
   getInkMonCount,
 } from "@inkmon/core";
 import path from "path";
-import { PokedexGrid } from "@/components/pokedex/PokedexGrid";
+import { PokedexContainer } from "@/components/pokedex";
 import styles from "./page.module.css";
 
 // 设置数据库路径
@@ -23,12 +23,12 @@ export default async function HomePage() {
       <section className={styles.hero}>
         <h1 className={styles.title}>InkMon 图鉴</h1>
         <p className={styles.subtitle}>
-          探索墨水生物的世界，发现 {total} 种独特的生物
+          探索 InkWorld，发现 {total} 种独特的 InkMon
         </p>
       </section>
 
       <section className={`container ${styles.content}`}>
-        <PokedexGrid inkmons={inkmons} />
+        <PokedexContainer initialInkmons={inkmons} />
       </section>
     </div>
   );

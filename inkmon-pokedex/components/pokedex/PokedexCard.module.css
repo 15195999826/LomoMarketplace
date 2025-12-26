@@ -8,6 +8,7 @@
     transform var(--transition-normal),
     box-shadow var(--transition-normal);
   cursor: pointer;
+  position: relative;
 }
 
 .card:hover {
@@ -27,6 +28,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.cardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.card:hover .cardImage {
+  transform: scale(1.05);
 }
 
 .placeholderText {
@@ -75,4 +87,40 @@
 .palette {
   display: flex;
   justify-content: flex-start;
+}
+
+/* 删除按钮 */
+.deleteButton {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--ink-light);
+  border-radius: 50%;
+  color: var(--accent);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition-normal);
+  z-index: 10;
+}
+
+.card:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+  transform: scale(1.1);
+}
+
+.deleteButton svg {
+  width: 14px;
+  height: 14px;
 }

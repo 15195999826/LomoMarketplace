@@ -1,0 +1,84 @@
+/* PokedexList - 列表视图容器 */
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* 空状态 */
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+  color: var(--accent);
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--spacing-md);
+  color: var(--ink-light);
+}
+
+.emptyTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.emptyText {
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* 列表头部 - 可选 */
+.listHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px dashed var(--ink-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.listHeader span {
+  flex-shrink: 0;
+}
+
+.listHeader .headerThumbnail {
+  width: 48px;
+}
+
+.listHeader .headerDex {
+  min-width: 50px;
+}
+
+.listHeader .headerElement {
+  min-width: 40px;
+}
+
+.listHeader .headerName {
+  flex: 1;
+  min-width: 120px;
+}
+
+.listHeader .headerStats {
+  min-width: 100px;
+}
+
+.listHeader .headerStage {
+  min-width: 60px;
+}
+
+@media (max-width: 640px) {
+  .listHeader .headerStats,
+  .listHeader .headerStage {
+    display: none;
+  }
+}

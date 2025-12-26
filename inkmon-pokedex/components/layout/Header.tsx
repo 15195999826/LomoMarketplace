@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AuthButton } from "@/components/auth";
 import styles from "./Header.module.css";
 
 export function Header() {
@@ -16,6 +17,9 @@ export function Header() {
             图鉴
           </Link>
         </nav>
+        <div className={styles.actions}>
+          <AuthButton />
+        </div>
       </div>
     </header>
   );

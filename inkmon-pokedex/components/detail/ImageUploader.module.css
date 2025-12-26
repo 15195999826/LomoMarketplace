@@ -1,0 +1,238 @@
+/* ImageUploader - 图片上传组件 */
+
+.uploaderContainer {
+  margin-top: var(--spacing-lg);
+}
+
+.uploaderTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.uploaderTitle svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* 上传区域网格 */
+.uploadGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+/* 主立绘上传区 - 占满一列 */
+.mainUpload {
+  grid-row: span 2;
+}
+
+/* 视角图上传区 */
+.viewUploads {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-sm);
+}
+
+/* 单个上传区域 */
+.uploadZone {
+  position: relative;
+  border: 2px dashed var(--ink-light);
+  border-radius: var(--border-radius-organic);
+  background: var(--paper-light);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  overflow: hidden;
+}
+
+.uploadZone:hover {
+  border-color: var(--ink-medium);
+  background: var(--paper);
+}
+
+.uploadZone.dragOver {
+  border-color: var(--ink-black);
+  border-style: solid;
+  background: var(--paper);
+  box-shadow: var(--shadow-ink);
+}
+
+.uploadZone.hasImage {
+  border-style: solid;
+  border-color: var(--ink-light);
+}
+
+/* 主立绘区域尺寸 */
+.uploadZoneMain {
+  aspect-ratio: 1;
+  min-height: 200px;
+}
+
+/* 视角图区域尺寸 */
+.uploadZoneView {
+  aspect-ratio: 1;
+  min-height: 80px;
+}
+
+/* 上传占位内容 */
+.uploadPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.uploadIcon {
+  width: 32px;
+  height: 32px;
+  color: var(--accent-light);
+  margin-bottom: var(--spacing-sm);
+}
+
+.uploadZoneMain .uploadIcon {
+  width: 48px;
+  height: 48px;
+}
+
+.uploadLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-black);
+  margin-bottom: 2px;
+}
+
+.uploadHint {
+  font-size: 0.625rem;
+  color: var(--accent-light);
+}
+
+.uploadZoneMain .uploadLabel {
+  font-size: 0.875rem;
+}
+
+.uploadZoneMain .uploadHint {
+  font-size: 0.75rem;
+}
+
+/* 已上传图片预览 */
+.imagePreview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+}
+
+.previewImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* 图片操作按钮 */
+.imageActions {
+  position: absolute;
+  top: var(--spacing-xs);
+  right: var(--spacing-xs);
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: var(--transition-normal);
+}
+
+.uploadZone:hover .imageActions {
+  opacity: 1;
+}
+
+.actionButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--ink-light);
+  border-radius: 50%;
+  color: var(--accent);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.actionButton:hover {
+  background: #fff;
+  border-color: var(--ink-black);
+  color: var(--ink-black);
+}
+
+.actionButton.deleteButton:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.actionButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 隐藏的文件输入 */
+.fileInput {
+  display: none;
+}
+
+/* 上传进度 */
+.uploadProgress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--paper-dark);
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--ink-black);
+  transition: width 0.3s ease;
+}
+
+/* 上传状态 */
+.uploadStatus {
+  margin-top: var(--spacing-sm);
+  font-size: 0.75rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.uploadStatus.success {
+  color: #16a34a;
+}
+
+.uploadStatus.error {
+  color: #dc2626;
+}
+
+/* 支持格式提示 */
+.formatHint {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--paper-dark);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.formatHint strong {
+  color: var(--ink-black);
+}

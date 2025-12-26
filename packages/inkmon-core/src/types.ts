@@ -82,6 +82,11 @@ export interface InkMonListItem {
   secondary_element: Element | null;
   evolution_stage: EvolutionStage;
   color_palette: string[];
+  base_stats: {
+    hp: number;
+    attack: number;
+    defense: number;
+  };
 }
 
 // 筛选选项

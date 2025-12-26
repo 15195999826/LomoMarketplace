@@ -44,8 +44,10 @@ export {
   getInkMonCount,
   addInkMon,
   updateInkMon,
+  deleteInkMon,
   type AddInkMonResult,
   type UpdateInkMonResult,
+  type DeleteInkMonResult,
 } from "./queries.js";
 
 // File Operations

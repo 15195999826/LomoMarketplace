@@ -1,0 +1,101 @@
+/* DetailContent - 详情页内容 */
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.imageSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.loading {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper-light);
+  border: var(--border-sketch);
+  border-radius: var(--border-radius-organic);
+  color: var(--accent);
+  font-size: 0.875rem;
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.header {
+  margin-bottom: var(--spacing-sm);
+}
+
+.dexNumber {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--accent-light);
+  background: var(--paper-dark);
+  padding: 4px 12px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  color: var(--ink-black);
+  margin: var(--spacing-xs) 0;
+  line-height: 1.1;
+}
+
+.nameEn {
+  font-size: 1.125rem;
+  color: var(--accent);
+  margin: 0;
+}
+
+.description {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--ink-dark);
+  padding-left: var(--spacing-md);
+  border-left: 4px solid var(--ink-black);
+  margin: var(--spacing-md) 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-light);
+}
+
+.metaValue {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink-black);
+}

@@ -60,3 +60,9 @@
   background: var(--paper-dark);
   color: var(--ink-black);
 }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}

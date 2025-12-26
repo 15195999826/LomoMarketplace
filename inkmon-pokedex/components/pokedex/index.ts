@@ -1,2 +1,10 @@
 export { PokedexCard } from "./PokedexCard";
 export { PokedexGrid } from "./PokedexGrid";
+export { SearchFilter } from "./SearchFilter";
+export type { SearchFilterProps } from "./SearchFilter";
+export { ViewToggle } from "./ViewToggle";
+export type { ViewMode } from "./ViewToggle";
+export { PokedexList } from "./PokedexList";
+export { PokedexListItem } from "./PokedexListItem";
+export { DeleteConfirmModal } from "./DeleteConfirmModal";
+export { PokedexContainer } from "./PokedexContainer";

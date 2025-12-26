@@ -1,0 +1,19 @@
+/* PokedexContainer - 图鉴容器 */
+
+.container {
+  width: 100%;
+}
+
+.toolbar {
+  margin-bottom: var(--spacing-lg);
+}
+
+.viewControls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+}
+
+.content {
+  min-height: 400px;
+}

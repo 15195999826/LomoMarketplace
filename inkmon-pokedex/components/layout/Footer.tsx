@@ -16,7 +16,7 @@ export function Footer({ totalCount }: FooterProps) {
           )}
         </p>
         <p className={styles.copyright}>
-          InkMon 图鉴 - 墨水生物世界
+          InkMon 图鉴 - InkWorld
         </p>
       </div>
     </footer>

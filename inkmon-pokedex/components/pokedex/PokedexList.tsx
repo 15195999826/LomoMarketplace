@@ -1,19 +1,25 @@
 "use client";
 
 import type { InkMonListItem } from "@inkmon/core";
-import { PokedexCard } from "./PokedexCard";
-import styles from "./PokedexGrid.module.css";
+import { PokedexListItem } from "./PokedexListItem";
+import styles from "./PokedexList.module.css";
 
-interface PokedexGridProps {
+interface PokedexListProps {
   inkmons: InkMonListItem[];
   showDelete?: boolean;
   onDelete?: (nameEn: string) => void;
+  showHeader?: boolean;
 }
 
-export function PokedexGrid({ inkmons, showDelete = false, onDelete }: PokedexGridProps) {
+export function PokedexList({
+  inkmons,
+  showDelete = false,
+  onDelete,
+  showHeader = true,
+}: PokedexListProps) {
   if (inkmons.length === 0) {
     return (
-      <div className={styles.empty}>
+      <div className={styles.emptyState}>
         <svg
           className={styles.emptyIcon}
           viewBox="0 0 24 24"
@@ -34,9 +40,19 @@ export function PokedexGrid({ inkmons, showDelete = false, onDelete }: PokedexGr
   }
 
   return (
-    <div className={styles.grid}>
+    <div className={styles.listContainer}>
+      {showHeader && (
+        <div className={styles.listHeader}>
+          <span className={styles.headerThumbnail}></span>
+          <span className={styles.headerDex}>编号</span>
+          <span className={styles.headerElement}>属性</span>
+          <span className={styles.headerName}>名称</span>
+          <span className={styles.headerStats}>HP</span>
+          <span className={styles.headerStage}>阶段</span>
+        </div>
+      )}
       {inkmons.map((inkmon) => (
-        <PokedexCard
+        <PokedexListItem
           key={inkmon.name_en}
           inkmon={inkmon}
           showDelete={showDelete}

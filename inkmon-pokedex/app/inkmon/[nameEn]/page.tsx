@@ -6,7 +6,7 @@ import {
   getInkMonByNameEn,
 } from "@inkmon/core";
 import path from "path";
-import { InkmonHeader } from "@/components/detail/InkmonHeader";
+import { DetailContent } from "@/components/detail/DetailContent";
 import { StatsSection } from "@/components/detail/StatsSection";
 import { DesignSection } from "@/components/detail/DesignSection";
 import { EcologySection } from "@/components/detail/EcologySection";
@@ -36,7 +36,7 @@ export default async function DetailPage({ params }: PageProps) {
           ← 返回图鉴
         </Link>
 
-        <InkmonHeader inkmon={inkmon} />
+        <DetailContent inkmon={inkmon} />
 
         <div className={styles.sections}>
           <StatsSection stats={inkmon.stats} />
