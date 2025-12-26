@@ -1,35 +1,17 @@
-/* 世界地图页面样式 */
+/* 世界地图页面样式 - 固定定位，完全填充视口 */
 .pageWrapper {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  position: fixed;
+  top: 74px; /* header: 40px logo + 32px padding + 2px border */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.hero {
-  padding: var(--spacing-2xl) var(--spacing-lg);
-  text-align: center;
-  background:
-    radial-gradient(circle at 20% 50%, rgba(76, 175, 80, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 80% 50%, rgba(33, 150, 243, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 50% 80%, rgba(255, 193, 7, 0.03) 0%, transparent 40%);
-}
-
-.title {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--ink-black);
-  margin: 0 0 var(--spacing-sm);
-  letter-spacing: 0.02em;
-}
-
-.subtitle {
-  font-size: 1.125rem;
-  color: var(--accent);
-  margin: 0;
-}
-
-.content {
-  flex: 1;
-  padding: var(--spacing-xl) 0;
+/* 响应式 - 移动端 header 可能更小 */
+@media (max-width: 768px) {
+  .pageWrapper {
+    top: 60px;
+  }
 }

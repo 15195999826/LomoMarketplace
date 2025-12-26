@@ -12,16 +12,7 @@ export default function WorldPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <section className={styles.hero}>
-        <h1 className={styles.title}>InkWorld 世界地图</h1>
-        <p className={styles.subtitle}>
-          探索 {regions.length} 个独特区域，发现各地栖息的 InkMon
-        </p>
-      </section>
-
-      <section className={`container ${styles.content}`}>
-        <WorldMap regions={regions} />
-      </section>
+      <WorldMap regions={regions} />
     </div>
   );
 }

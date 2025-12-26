@@ -1,159 +1,185 @@
-/* RegionCard - 区域详情卡片 */
+/* RegionCard - 区域详情卡片内容 */
 .card {
-  background: var(--paper);
-  border: var(--border-sketch);
-  border-radius: var(--border-radius-organic);
-  padding: var(--spacing-lg);
-  box-shadow: var(--shadow-ink);
+  padding: 24px;
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px dashed var(--ink-light);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.12);
 }
 
-.biomeIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+/* 关闭按钮 */
+.closeButton {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--accent);
   flex-shrink: 0;
+  margin-left: 4px;
+  transition: all 0.2s ease;
 }
 
-.biomeIcon.forest { background: rgba(76, 175, 80, 0.15); }
-.biomeIcon.ocean { background: rgba(33, 150, 243, 0.15); }
-.biomeIcon.mountain { background: rgba(121, 85, 72, 0.15); }
-.biomeIcon.desert { background: rgba(255, 193, 7, 0.15); }
-.biomeIcon.tundra { background: rgba(179, 229, 252, 0.3); }
-.biomeIcon.swamp { background: rgba(139, 195, 74, 0.15); }
+.closeButton:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink-black);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.biomeIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.biomeIcon.forest { background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(129, 199, 132, 0.2) 100%); }
+.biomeIcon.ocean { background: linear-gradient(135deg, rgba(33, 150, 243, 0.2) 0%, rgba(100, 181, 246, 0.2) 100%); }
+.biomeIcon.mountain { background: linear-gradient(135deg, rgba(121, 85, 72, 0.2) 0%, rgba(161, 136, 127, 0.2) 100%); }
+.biomeIcon.desert { background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 224, 130, 0.2) 100%); }
+.biomeIcon.tundra { background: linear-gradient(135deg, rgba(179, 229, 252, 0.4) 0%, rgba(224, 247, 250, 0.4) 100%); }
+.biomeIcon.swamp { background: linear-gradient(135deg, rgba(139, 195, 74, 0.2) 0%, rgba(174, 213, 129, 0.2) 100%); }
 
 .titleSection {
   flex: 1;
+  min-width: 0;
 }
 
 .title {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   font-weight: 700;
   color: var(--ink-black);
   margin: 0 0 4px;
+  line-height: 1.2;
 }
 
 .titleEn {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--accent-light);
   margin: 0;
+  letter-spacing: 0.02em;
 }
 
 .biomeBadge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   color: white;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.biomeBadge.forest { background: var(--biome-forest); }
-.biomeBadge.ocean { background: var(--biome-ocean); }
-.biomeBadge.mountain { background: var(--biome-mountain); }
-.biomeBadge.desert { background: var(--biome-desert); }
-.biomeBadge.tundra { background: #64B5F6; color: var(--ink-black); }
-.biomeBadge.swamp { background: var(--biome-swamp); }
+.biomeBadge.forest { background: linear-gradient(135deg, var(--biome-forest) 0%, #66BB6A 100%); }
+.biomeBadge.ocean { background: linear-gradient(135deg, var(--biome-ocean) 0%, #42A5F5 100%); }
+.biomeBadge.mountain { background: linear-gradient(135deg, var(--biome-mountain) 0%, #8D6E63 100%); }
+.biomeBadge.desert { background: linear-gradient(135deg, var(--biome-desert) 0%, #FFCA28 100%); color: var(--ink-black); }
+.biomeBadge.tundra { background: linear-gradient(135deg, #64B5F6 0%, #90CAF9 100%); color: var(--ink-black); }
+.biomeBadge.swamp { background: linear-gradient(135deg, var(--biome-swamp) 0%, #9CCC65 100%); }
 
 /* 描述 */
 .description {
   font-size: 0.9375rem;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--accent);
-  margin: 0 0 var(--spacing-md);
+  margin: 0 0 20px;
 }
 
 /* 特点列表 */
 .featuresSection {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 20px;
 }
 
 .sectionTitle {
   font-family: var(--font-display);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--ink-black);
-  margin: 0 0 var(--spacing-sm);
+  margin: 0 0 10px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sectionIcon {
+  font-size: 0.875rem;
 }
 
 .features {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .feature {
-  padding: 4px 12px;
-  background: var(--paper-light);
-  border: 1px solid var(--ink-light);
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 20px;
   font-size: 0.8125rem;
   color: var(--accent);
+  transition: all 0.2s ease;
+}
+
+.feature:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 /* InkMon 列表 */
 .inkmonsSection {
-  padding-top: var(--spacing-md);
-  border-top: 1px dashed var(--ink-light);
+  padding-top: 20px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
 }
 
 .inkmons {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: 8px;
 }
 
 .inkmonTag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   background: var(--paper-dark);
-  border: var(--border-sketch);
-  border-radius: var(--border-radius-sm);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
   font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--ink-black);
   text-decoration: none;
-  transition: var(--transition-normal);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .inkmonTag:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-ink);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   background: var(--paper);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
-/* 空状态 */
-.emptyState {
-  text-align: center;
-  padding: var(--spacing-2xl);
-  color: var(--accent-light);
-}
-
-.emptyIcon {
-  font-size: 3rem;
-  margin-bottom: var(--spacing-md);
-}
-
-.emptyText {
-  font-size: 0.9375rem;
-  margin: 0;
+.inkmonTag:active {
+  transform: translateY(0);
 }

@@ -130,16 +130,6 @@ export function SvgMap({ regions, selectedRegion, onSelectRegion }: SvgMapProps)
           </div>
         ))}
       </div>
-
-      {/* 罗盘 */}
-      <div className={styles.compass}>
-        <svg className={styles.compassSvg} viewBox="0 0 50 50">
-          <circle cx="25" cy="25" r="23" fill="none" stroke="var(--ink-black)" strokeWidth="1" />
-          <path d="M25,5 L28,25 L25,22 L22,25 Z" fill="var(--ink-black)" />
-          <path d="M25,45 L28,25 L25,28 L22,25 Z" fill="var(--ink-light)" />
-          <text x="25" y="12" textAnchor="middle" fontSize="8" fill="var(--ink-black)">N</text>
-        </svg>
-      </div>
     </div>
   );
 }

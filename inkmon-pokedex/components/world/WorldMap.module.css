@@ -1,63 +1,321 @@
-/* WorldMap - 世界地图主容器 */
-.container {
-  display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: var(--spacing-xl);
-  align-items: start;
+/* WorldMap - 全屏沉浸式地图画布 */
+.mapCanvas {
+  position: relative;
+  width: 100%;
+  height: 100%; /* 填满父容器 */
+  background:
+    /* 羊皮纸纹理效果 */
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"),
+    /* 渐变背景 */
+    radial-gradient(ellipse at 30% 20%, rgba(76, 175, 80, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(33, 150, 243, 0.06) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 90%, rgba(255, 193, 7, 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse at 10% 80%, rgba(121, 85, 72, 0.04) 0%, transparent 35%),
+    linear-gradient(180deg, var(--paper-light) 0%, var(--paper) 100%);
+  overflow: hidden;
+  border-radius: var(--border-radius-lg);
+  box-shadow:
+    inset 0 0 100px rgba(139, 119, 101, 0.1),
+    0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.mapSection {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.mapHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
+/* 内嵌标题 */
 .mapTitle {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.title {
   font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 2rem;
+  font-weight: 700;
   color: var(--ink-black);
   margin: 0;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+  position: relative;
+}
+
+.title::before,
+.title::after {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.6em;
+  opacity: 0.5;
+}
+
+.title::before {
+  left: -2em;
+}
+
+.title::after {
+  right: -2em;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin: 4px 0 0;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+/* 地图主体容器 */
+.mapBody {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  justify-content: center;
 }
 
-.detailSection {
-  position: sticky;
-  top: var(--spacing-lg);
-}
-
-/* 区域统计 */
-.stats {
+/* 左下角统计数据 */
+.statsOverlay {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
   display: flex;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background: var(--paper);
-  border: var(--border-sketch);
-  border-radius: var(--border-radius-sm);
-  margin-top: var(--spacing-md);
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  z-index: 20;
 }
 
-.stat {
-  text-align: center;
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .statValue {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--ink-black);
-  display: block;
+  line-height: 1;
 }
 
 .statLabel {
-  font-size: 0.75rem;
-  color: var(--accent-light);
+  font-size: 0.65rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statDivider {
+  width: 1px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* 右下角控制区 */
+.controlsOverlay {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+}
+
+/* 装饰性罗盘 */
+.compass {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.compass:hover {
+  opacity: 1;
+}
+
+.compassSvg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 悬浮详情卡片 */
+.cardOverlay {
+  position: fixed;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%) translateX(calc(100% + 24px));
+  width: 360px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  opacity: 0;
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.25s ease;
+}
+
+.cardOverlay.visible {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+}
+
+/* 滚动条美化 */
+.cardOverlay::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cardOverlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cardOverlay::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+/* 装饰性边框角 */
+.borderDecor {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.cornerTL,
+.cornerTR,
+.cornerBL,
+.cornerBR {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  opacity: 0.3;
+}
+
+.cornerTL {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--ink-black);
+  border-left: 2px solid var(--ink-black);
+}
+
+.cornerTR {
+  top: 0;
+  right: 0;
+  border-top: 2px solid var(--ink-black);
+  border-right: 2px solid var(--ink-black);
+}
+
+.cornerBL {
+  bottom: 0;
+  left: 0;
+  border-bottom: 2px solid var(--ink-black);
+  border-left: 2px solid var(--ink-black);
+}
+
+.cornerBR {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid var(--ink-black);
+  border-right: 2px solid var(--ink-black);
+}
+
+/* 响应式调整 */
+@media (max-width: 1024px) {
+  .cardOverlay {
+    right: 20px;
+    width: 340px;
+  }
+
+  .statsOverlay {
+    left: 16px;
+    bottom: 16px;
+    padding: 10px 16px;
+  }
+
+  .controlsOverlay {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mapCanvas {
+    /* 高度由父容器控制 */
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .title::before,
+  .title::after {
+    display: none;
+  }
+
+  .cardOverlay {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 70vh;
+    border-radius: 24px 24px 0 0;
+    transform: translateY(100%);
+  }
+
+  .cardOverlay.visible {
+    transform: translateY(0);
+  }
+
+  .compass {
+    width: 48px;
+    height: 48px;
+    top: 16px;
+    right: 16px;
+  }
+
+  .statsOverlay {
+    left: 12px;
+    bottom: 12px;
+    padding: 8px 12px;
+    gap: 12px;
+  }
+
+  .statValue {
+    font-size: 1rem;
+  }
+
+  .statDivider {
+    height: 20px;
+  }
+
+  .borderDecor {
+    inset: 8px;
+  }
+
+  .cornerTL,
+  .cornerTR,
+  .cornerBL,
+  .cornerBR {
+    width: 24px;
+    height: 24px;
+  }
 }

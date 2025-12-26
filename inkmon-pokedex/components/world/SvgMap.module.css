@@ -1,26 +1,18 @@
 /* SvgMap - SVG 手绘风格地图 */
 .mapContainer {
-  position: relative;
-  width: 100%;
-  height: 400px;
-  background: var(--paper-light);
-  border: var(--border-sketch);
-  border-radius: var(--border-radius-organic);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
-.mapContainer::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-}
-
 .svgWrapper {
-  width: 100%;
-  height: 100%;
+  width: calc(100% - 160px);
+  max-width: 700px;
+  height: calc(100% - 160px);
+  max-height: 600px;
 }
 
 .mapSvg {
@@ -31,20 +23,21 @@
 /* 区域路径 */
 .regionPath {
   cursor: pointer;
-  transition: var(--transition-normal);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   stroke: var(--ink-black);
-  stroke-width: 2;
+  stroke-width: 2.5;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
 .regionPath:hover {
-  filter: brightness(1.1);
-  stroke-width: 3;
+  filter: brightness(1.1) saturate(1.1);
+  stroke-width: 3.5;
+  transform-origin: center;
 }
 
 .regionPath.selected {
-  filter: brightness(1.15);
+  filter: brightness(1.15) saturate(1.15);
   stroke-width: 4;
   stroke-dasharray: none;
 }
@@ -54,31 +47,30 @@
   stroke-dasharray: 4 2 8 3;
 }
 
-/* 生态类型填充 */
-.regionPath.forest { fill: var(--biome-forest); }
-.regionPath.ocean { fill: var(--biome-ocean); }
-.regionPath.mountain { fill: var(--biome-mountain); }
-.regionPath.desert { fill: var(--biome-desert); }
-.regionPath.tundra { fill: var(--biome-tundra); }
-.regionPath.swamp { fill: var(--biome-swamp); }
+/* 生态类型填充 - 更丰富的颜色 */
+.regionPath.forest { fill: var(--biome-forest); fill-opacity: 0.85; }
+.regionPath.ocean { fill: var(--biome-ocean); fill-opacity: 0.85; }
+.regionPath.mountain { fill: var(--biome-mountain); fill-opacity: 0.85; }
+.regionPath.desert { fill: var(--biome-desert); fill-opacity: 0.85; }
+.regionPath.tundra { fill: var(--biome-tundra); fill-opacity: 0.85; }
+.regionPath.swamp { fill: var(--biome-swamp); fill-opacity: 0.85; }
 
 /* 区域标签 */
 .regionLabel {
   font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   fill: var(--ink-black);
   text-anchor: middle;
   pointer-events: none;
-  text-shadow:
-    1px 1px 0 var(--paper),
-    -1px -1px 0 var(--paper),
-    1px -1px 0 var(--paper),
-    -1px 1px 0 var(--paper);
+  paint-order: stroke;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 .regionIcon {
-  font-size: 20px;
+  font-size: 24px;
   text-anchor: middle;
   pointer-events: none;
 }
@@ -89,52 +81,87 @@
   stroke: var(--ink-light);
   stroke-width: 1;
   stroke-dasharray: 3 5;
-  opacity: 0.5;
-}
-
-/* 罗盘 */
-.compass {
-  position: absolute;
-  bottom: var(--spacing-md);
-  right: var(--spacing-md);
-  width: 50px;
-  height: 50px;
-  opacity: 0.6;
-}
-
-.compassSvg {
-  width: 100%;
-  height: 100%;
+  opacity: 0.4;
 }
 
 /* 图例 */
 .legend {
   position: absolute;
-  top: var(--spacing-md);
-  left: var(--spacing-md);
-  background: rgba(245, 240, 230, 0.9);
-  border: 1px solid var(--ink-light);
-  border-radius: var(--border-radius-sm);
-  padding: var(--spacing-sm);
-  font-size: 0.6875rem;
+  top: 80px;
+  left: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  z-index: 10;
 }
 
 .legendTitle {
+  font-family: var(--font-display);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   color: var(--ink-black);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.legendItem:last-child {
+  margin-bottom: 0;
 }
 
 .legendColor {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid var(--ink-black);
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .svgWrapper {
+    width: calc(100% - 80px);
+    height: calc(100% - 120px);
+  }
+
+  .legend {
+    top: 60px;
+    left: 12px;
+    padding: 10px 12px;
+  }
+
+  .legendTitle {
+    font-size: 0.625rem;
+  }
+
+  .legendItem {
+    font-size: 0.6875rem;
+    gap: 6px;
+  }
+
+  .legendColor {
+    width: 12px;
+    height: 12px;
+  }
+
+  .regionLabel {
+    font-size: 11px;
+  }
+
+  .regionIcon {
+    font-size: 18px;
+  }
 }

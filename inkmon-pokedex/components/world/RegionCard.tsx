@@ -1,26 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import type { WorldRegion, Biome } from "@/data/mock-regions";
+import type { WorldRegion } from "@/data/mock-regions";
 import { BIOME_NAMES, BIOME_ICONS } from "@/data/mock-regions";
 import styles from "./RegionCard.module.css";
 
 interface RegionCardProps {
   region: WorldRegion | null;
+  onClose?: () => void;
 }
 
-export function RegionCard({ region }: RegionCardProps) {
+export function RegionCard({ region, onClose }: RegionCardProps) {
   if (!region) {
-    return (
-      <div className={styles.card}>
-        <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>🗺️</div>
-          <p className={styles.emptyText}>
-            点击地图上的区域查看详情
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -36,13 +28,23 @@ export function RegionCard({ region }: RegionCardProps) {
         <span className={`${styles.biomeBadge} ${styles[region.biome]}`}>
           {BIOME_NAMES[region.biome]}
         </span>
+        {onClose && (
+          <button className={styles.closeButton} onClick={onClose} title="关闭">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <p className={styles.description}>{region.description}</p>
 
       {region.features && region.features.length > 0 && (
         <div className={styles.featuresSection}>
-          <h3 className={styles.sectionTitle}>✨ 区域特点</h3>
+          <h3 className={styles.sectionTitle}>
+            <span className={styles.sectionIcon}>✨</span>
+            区域特点
+          </h3>
           <div className={styles.features}>
             {region.features.map((feature, index) => (
               <span key={index} className={styles.feature}>
@@ -55,7 +57,10 @@ export function RegionCard({ region }: RegionCardProps) {
 
       {region.inkmons.length > 0 && (
         <div className={styles.inkmonsSection}>
-          <h3 className={styles.sectionTitle}>🐾 栖息的 InkMon</h3>
+          <h3 className={styles.sectionTitle}>
+            <span className={styles.sectionIcon}>🐾</span>
+            栖息的 InkMon
+          </h3>
           <div className={styles.inkmons}>
             {region.inkmons.map((inkmon) => (
               <Link
