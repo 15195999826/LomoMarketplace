@@ -60,4 +60,5 @@ export {
   type CompareResult,
   type DiffItem,
   type BatchCompareItem,
+  type SyncResult,
 } from "./file-ops.js";

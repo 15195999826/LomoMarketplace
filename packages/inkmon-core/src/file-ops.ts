@@ -184,16 +184,26 @@ export function batchCompareInkMons(): BatchCompareItem[] {
 }
 
 /**
+ * 同步结果类型
+ */
+export interface SyncResult {
+  success: boolean;
+  action: "added" | "updated" | "skipped" | "failed";
+  message: string;
+  differences?: DiffItem[];
+}
+
+/**
  * 同步文件到数据库（根据比较结果）
  */
-export function syncInkMonFromFile(nameEn: string): { success: boolean; action: "added" | "updated" | "skipped" | "failed"; message: string } {
+export function syncInkMonFromFile(nameEn: string): SyncResult {
   const compareResult = compareInkMon(nameEn);
 
   if (!compareResult.success) {
     return { success: false, action: "failed", message: compareResult.error! };
   }
 
-  const { status } = compareResult.result!;
+  const { status, differences } = compareResult.result!;
 
   if (status === "identical") {
     return { success: true, action: "skipped", message: "内容一致" };
@@ -223,5 +233,6 @@ export function syncInkMonFromFile(nameEn: string): { success: boolean; action: 
     success: updateResult.success,
     action: updateResult.success ? "updated" : "failed",
     message: updateResult.message,
+    differences,
   };
 }
