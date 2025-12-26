@@ -18,14 +18,23 @@
       "mcp__inkmon-mcp__list_inkmons_name_en",
       "Bash(npx create-next-app@latest inkmon-pokedex --typescript --app --no-tailwind --eslint --no-src-dir --import-alias \"@/*\" --use-pnpm)",
       "Bash(pnpm run build:*)",
-      "mcp__inkmon-mcp__get_next_dex_number"
+      "mcp__inkmon-mcp__get_next_dex_number",
+      "Bash(powershell -Command \"cd ''E:\\talk\\LomoMarketplace\\packages\\inkmon-core''; pnpm build\")",
+      "Bash(powershell -Command \"cd ''E:\\talk\\LomoMarketplace\\lomo-mcp-servers\\inkmon-server''; npx tsc\")",
+      "Skill(frontend-design:frontend-design)",
+      "Bash(pnpm build:*)",
+      "Bash(npx tsc:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "inkmon-mcp"
+    "inkmon-mcp",
+    "chrome-devtools"
   ],
   "enabledPlugins": {
-    "InkMon@LomoMarketplace": true
+    "InkMon@LomoMarketplace": true,
+    "frontend-design@claude-plugins-official": true,
+    "plugin-dev@claude-plugins-official": true,
+    "context7@claude-plugins-official": true
   }
 }
