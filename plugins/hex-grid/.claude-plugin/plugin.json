@@ -1,0 +1,10 @@
+{
+  "name": "hex-grid",
+  "version": "1.0.0",
+  "description": "Comprehensive guide to hexagonal grids: coordinate systems, algorithms, and best practices for game development and data visualization",
+  "author": {
+    "name": "LomoMarketplace",
+    "url": "https://github.com/LomoMarketplace"
+  },
+  "keywords": ["hexagonal", "hex-grid", "game-development", "visualization", "algorithms", "coordinates"]
+}

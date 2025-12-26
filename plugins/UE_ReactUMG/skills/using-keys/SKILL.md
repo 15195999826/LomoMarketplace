@@ -1,6 +1,6 @@
 ---
 name: using-keys
-description: ReactUMG key 使用规范。在渲染列表、拖拽预览等场景时使用。key 标识组件身份，禁止使用坐标等频繁变化的值作为 key。
+description: ReactUMG key 使用规范。在渲染列表、map 循环、拖拽预览、动态组件等场景时激活。key 标识组件身份而非位置，禁止使用坐标/索引等频繁变化的值作为 key，避免性能问题和组件重建。
 ---
 
 # ReactUMG key 使用规范

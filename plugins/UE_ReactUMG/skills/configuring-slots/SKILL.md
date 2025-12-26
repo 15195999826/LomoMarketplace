@@ -1,6 +1,6 @@
 ---
 name: configuring-slots
-description: ReactUMG Slot 布局系统指南。在使用 CanvasPanel、设置组件位置和尺寸时使用。CanvasPanelSlot 有特殊的 Anchors/Offsets 映射规则。
+description: ReactUMG Slot 布局/定位系统指南。在配置 CanvasPanel、设置组件位置/坐标/尺寸/大小、使用锚点/Anchors/Offsets、或实现居中/全屏/侧边栏等布局需求时激活。CanvasPanelSlot 有特殊的 Position→Offsets 映射规则，其他 17 种 Slot 直接使用。
 ---
 
 # ReactUMG Slot 布局系统

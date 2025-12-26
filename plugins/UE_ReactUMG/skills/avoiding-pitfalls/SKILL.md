@@ -1,6 +1,6 @@
 ---
 name: avoiding-pitfalls
-description: ReactUMG 常见组件陷阱提醒。在使用 ComboBoxString、EditableTextBox 等复杂组件时使用。包含动态选项、ref 回调优化等关键技巧。
+description: ReactUMG 常见组件陷阱/坑/问题提醒。在使用 ComboBoxString、EditableTextBox、SpinBox、ScrollBox、ProgressBar 等复杂组件时激活。涵盖动态选项不生效、ref 回调重复调用、深色主题配置等常见问题的解决方案。
 ---
 
 # ReactUMG 常见组件陷阱

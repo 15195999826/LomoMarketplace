@@ -1,6 +1,6 @@
 ---
 name: handling-tarrays
-description: ReactUMG TArray 属性处理指南。在使用 GridPanel.ColumnFill/RowFill 等数组属性时使用。必须用 UE.NewArray() 而非 JS 数组。
+description: ReactUMG TArray/数组属性处理指南。在传递数组给 UE 组件、使用 GridPanel 的 ColumnFill/RowFill、或遇到"不能用 JS 数组"问题时激活。必须用 UE.NewArray() 创建原生数组，包含 BuiltinFloat/String/Int 等类型常量。
 ---
 
 # ReactUMG TArray 属性处理

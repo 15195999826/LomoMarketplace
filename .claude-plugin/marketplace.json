@@ -25,6 +25,14 @@
       "version": "1.0.0",
       "keywords": ["inkmon", "development"],
       "category": "productivity"
+    },
+    {
+      "name": "hex-grid",
+      "source": "./plugins/hex-grid",
+      "description": "六边形网格开发指南 - 坐标系统、算法、公式和最佳实践",
+      "version": "1.0.0",
+      "keywords": ["hexagonal", "hex-grid", "game-development", "coordinates", "pathfinding"],
+      "category": "productivity"
     }
   ]
 }

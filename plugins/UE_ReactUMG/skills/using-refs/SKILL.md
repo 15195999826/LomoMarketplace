@@ -1,6 +1,6 @@
 ---
 name: using-refs
-description: ReactUMG 两种 ref 区分指南。React ref 用于获取组件引用，PuerTS $ref/$unref 用于处理 UE C++ out 参数。这是两个完全不同的概念。
+description: ReactUMG 两种 ref/引用区分指南。React ref 用于获取组件/Widget 实例引用调用原生方法，PuerTS $ref/$unref 用于处理 UE C++ out 参数（如 GetDataTableRowNames、CaptureMouse）。这是两个完全不同的概念，混淆会导致类型错误。
 ---
 
 # ReactUMG 两种 ref 的区分

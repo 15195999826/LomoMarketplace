@@ -1,6 +1,17 @@
 ---
 name: designing-inkmon
-description: Guides the InkMon creature design process through multi-turn discussion. Use when user is in the InkMon creation workflow, discussing creature concepts, stats, evolution stage, or appearance design.
+description: |
+  InkMon 生物设计专家。通过多轮讨论引导用户设计新的 InkMon 生物，
+  包括进化阶段选择、属性/数值分配、外观设计和 AI 提示词生成。
+
+  当用户说"设计一个新 InkMon"、"创建 InkMon"、"我想做一个火系生物"、
+  "帮我设计进化链"、"这个 InkMon 的数值怎么分配"、"设计外观"、
+  "生成提示词"时，此技能应被激活。也适用于讨论生物概念、调整六维数值、
+  设计外观特征、配色方案等场景。
+
+  Guides the InkMon creature design process through multi-turn discussion.
+  Use when user is in the InkMon creation workflow, discussing creature concepts,
+  stats, evolution stage, or appearance design.
 allowed-tools: Read, Write, Bash
 ---
 

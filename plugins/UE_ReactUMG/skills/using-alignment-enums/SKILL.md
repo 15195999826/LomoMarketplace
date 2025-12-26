@@ -1,6 +1,6 @@
 ---
 name: using-alignment-enums
-description: ReactUMG 对齐与可见性枚举值速查。在设置 HorizontalAlignment、VerticalAlignment、Visibility 等属性时使用。帮助区分 Center=2（不是1）等常见混淆点。
+description: ReactUMG 对齐/居中与可见性/显隐枚举值速查。在设置水平对齐、垂直对齐、HorizontalAlignment、VerticalAlignment、Visibility、隐藏/显示组件时激活。注意 Center=2（不是1）、Visible=0、Collapsed=1 等常见混淆点。
 ---
 
 # ReactUMG 对齐枚举速查

@@ -1,6 +1,6 @@
 ---
 name: handling-colors
-description: ReactUMG 颜色类型速查。在设置 ColorAndOpacity、BrushColor、ForegroundColor 等颜色属性时使用。帮助区分 SlateColor 和 LinearColor 的正确用法。
+description: ReactUMG 颜色/色彩类型速查。在设置背景色、前景色、透明度、ColorAndOpacity、BrushColor、ForegroundColor 等颜色属性时激活。帮助区分 SlateColor（嵌套结构）和 LinearColor（直接结构）的正确用法，以及 ColorUseRule 的必要性。
 ---
 
 # ReactUMG 颜色类型速查
