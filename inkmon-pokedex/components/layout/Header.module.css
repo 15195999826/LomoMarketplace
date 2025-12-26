@@ -50,15 +50,51 @@
 .navLink {
   font-family: var(--font-body);
   font-size: 1rem;
-  color: var(--ink-dark);
+  color: var(--accent);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-sm);
-  transition: background var(--transition-fast);
+  transition: all var(--transition-normal);
+  position: relative;
+}
+
+/* 下划线指示器 - 默认隐藏 */
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 60%;
+  height: 3px;
+  background: var(--ink-black);
+  border-radius: 2px 2px 0 0;
+  opacity: 0;
+  transition:
+    transform var(--transition-normal) ease-out,
+    opacity var(--transition-normal) ease-out;
 }
 
 .navLink:hover {
   background: var(--paper-dark);
   color: var(--ink-black);
+}
+
+/* hover 时显示淡淡的下划线 */
+.navLink:hover::after {
+  transform: translateX(-50%) scaleX(0.5);
+  opacity: 0.3;
+}
+
+.navLinkActive {
+  color: var(--ink-black);
+  font-weight: 600;
+  background: var(--paper-dark);
+}
+
+/* 激活状态完整显示下划线 */
+.navLinkActive::after {
+  transform: translateX(-50%) scaleX(1);
+  opacity: 1;
 }
 
 .actions {
