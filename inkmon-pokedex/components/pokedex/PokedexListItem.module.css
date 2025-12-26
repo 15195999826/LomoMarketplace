@@ -27,12 +27,18 @@
 
 /* 缩略图 */
 .thumbnail {
+  position: relative;
   width: 48px;
   height: 48px;
   border-radius: var(--border-radius-sm);
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--ink-light);
+  background: var(--paper-dark);
+}
+
+.thumbnailImage {
+  object-fit: cover;
 }
 
 .thumbnailInner {

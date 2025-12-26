@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { InkMonListItem } from "@inkmon/core";
 import { ElementBadge } from "../common/ElementBadge";
 import styles from "./PokedexListItem.module.css";
@@ -14,6 +16,9 @@ const STAGE_NAMES: Record<string, string> = {
   Mega: "超级",
 };
 
+// 尝试的图片格式
+const IMAGE_EXTENSIONS = ["png", "jpg", "webp"];
+
 interface PokedexListItemProps {
   inkmon: InkMonListItem;
   showDelete?: boolean;
@@ -25,11 +30,25 @@ export function PokedexListItem({
   showDelete = false,
   onDelete,
 }: PokedexListItemProps) {
+  const [imageError, setImageError] = useState(false);
+  const [currentExtIndex, setCurrentExtIndex] = useState(0);
+
   // 使用配色板生成渐变背景
   const gradientBg =
     inkmon.color_palette.length >= 2
       ? `linear-gradient(135deg, ${inkmon.color_palette[0]} 0%, ${inkmon.color_palette[1]} 100%)`
       : inkmon.color_palette[0] || "#ccc";
+
+  // 当前尝试的图片 URL
+  const imageUrl = `/images/inkmon/${inkmon.name_en}/main.${IMAGE_EXTENSIONS[currentExtIndex]}`;
+
+  const handleImageError = () => {
+    if (currentExtIndex < IMAGE_EXTENSIONS.length - 1) {
+      setCurrentExtIndex((prev) => prev + 1);
+    } else {
+      setImageError(true);
+    }
+  };
 
   // HP 能力值颜色
   const getStatColor = (value: number) => {
@@ -49,9 +68,20 @@ export function PokedexListItem({
     <Link href={`/inkmon/${inkmon.name_en}`} className={styles.listItem}>
       {/* 缩略图 */}
       <div className={styles.thumbnail}>
-        <div className={styles.thumbnailInner} style={{ background: gradientBg }}>
-          {inkmon.name.charAt(0)}
-        </div>
+        {!imageError ? (
+          <Image
+            src={imageUrl}
+            alt={inkmon.name}
+            fill
+            sizes="48px"
+            className={styles.thumbnailImage}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className={styles.thumbnailInner} style={{ background: gradientBg }}>
+            {inkmon.name.charAt(0)}
+          </div>
+        )}
       </div>
 
       {/* 图鉴编号 */}

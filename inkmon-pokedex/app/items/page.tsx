@@ -1,5 +1,5 @@
-import { getAllItems, getItemCount } from "@/data/mock-items";
 import { ItemContainer } from "@/components/items";
+import { ItemsPageWrapper } from "./ItemsPageWrapper";
 import styles from "./page.module.css";
 
 export const metadata = {
@@ -8,20 +8,11 @@ export const metadata = {
 };
 
 export default function ItemsPage() {
-  const items = getAllItems();
-  const total = getItemCount();
-
   return (
     <div className={styles.pageWrapper}>
-      <section className={styles.hero}>
-        <h1 className={styles.title}>物品图鉴</h1>
-        <p className={styles.subtitle}>
-          收集 InkWorld 中的 {total} 种珍贵物品
-        </p>
-      </section>
-
+      <ItemsPageWrapper />
       <section className={`container ${styles.content}`}>
-        <ItemContainer initialItems={items} />
+        <ItemContainer />
       </section>
     </div>
   );

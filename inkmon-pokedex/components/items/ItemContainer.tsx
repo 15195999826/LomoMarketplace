@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import type { Item, ItemCategory, ItemRarity } from "@/data/mock-items";
+import type { Item } from "@/data/mock-items";
 import { useAuth } from "@/hooks/useAuth";
+import { useItems } from "@/contexts";
 import { ItemSearchFilter, type ItemFilters } from "./ItemSearchFilter";
 import { ViewToggle, type ViewMode } from "@/components/pokedex/ViewToggle";
 import { ItemGrid } from "./ItemGrid";
@@ -10,13 +11,9 @@ import { ItemList } from "./ItemList";
 import { DeleteConfirmModal } from "@/components/pokedex/DeleteConfirmModal";
 import styles from "./ItemContainer.module.css";
 
-interface ItemContainerProps {
-  initialItems: Item[];
-}
-
-export function ItemContainer({ initialItems }: ItemContainerProps) {
+export function ItemContainer() {
   const { isAuthenticated } = useAuth();
-  const [items, setItems] = useState<Item[]>(initialItems);
+  const { items, isLoading, isLoaded, removeItem } = useItems();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [filters, setFilters] = useState<ItemFilters>({
     search: "",
@@ -75,15 +72,15 @@ export function ItemContainer({ initialItems }: ItemContainerProps) {
       // 模拟 API 调用 (实际物品系统暂未实现后端)
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      // 从本地列表移除
-      setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+      // 从全局缓存中移除
+      removeItem(deleteTarget.id);
       setDeleteTarget(null);
     } catch (error) {
       console.error("删除失败:", error);
     } finally {
       setIsDeleting(false);
     }
-  }, [deleteTarget]);
+  }, [deleteTarget, removeItem]);
 
   // 关闭删除弹窗
   const handleCloseDeleteModal = useCallback(() => {
@@ -91,6 +88,18 @@ export function ItemContainer({ initialItems }: ItemContainerProps) {
       setDeleteTarget(null);
     }
   }, [isDeleting]);
+
+  // 加载中状态
+  if (isLoading && !isLoaded) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingState}>
+          <div className={styles.loadingSpinner} />
+          <p>Loading items...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

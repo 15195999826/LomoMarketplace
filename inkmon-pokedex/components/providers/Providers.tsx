@@ -1,8 +1,14 @@
 "use client";
 
-import { DataProvider } from "@/contexts";
+import { DataProvider, ItemsProvider, InkMonsProvider } from "@/contexts";
 import type { ReactNode } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <DataProvider>{children}</DataProvider>;
+  return (
+    <DataProvider>
+      <InkMonsProvider>
+        <ItemsProvider>{children}</ItemsProvider>
+      </InkMonsProvider>
+    </DataProvider>
+  );
 }

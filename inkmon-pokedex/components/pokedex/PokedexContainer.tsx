@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import type { InkMonListItem } from "@inkmon/core";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useDataProgress } from "@/contexts";
+import { useInkMons, useDataProgress } from "@/contexts";
 import { SearchFilter } from "./SearchFilter";
 import { ViewToggle, type ViewMode } from "./ViewToggle";
 import { PokedexGrid } from "./PokedexGrid";
@@ -11,120 +10,26 @@ import { PokedexList } from "./PokedexList";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import styles from "./PokedexContainer.module.css";
 
-interface PokedexContainerProps {
-  initialInkmons: InkMonListItem[];
-  total: number;
-  pageSize: number;
-  hasMore: boolean;
-}
-
-export function PokedexContainer({
-  initialInkmons,
-  total: initialTotal,
-  pageSize,
-  hasMore: initialHasMore,
-}: PokedexContainerProps) {
+export function PokedexContainer() {
   const { isAuthenticated } = useAuth();
-  const { setProgress, refreshToken } = useDataProgress();
-  const [inkmons, setInkmons] = useState(initialInkmons);
-  const [totalCount, setTotalCount] = useState(initialTotal);
+  const { inkmons, total, isLoading, isLoaded, removeInkmon } = useInkMons();
+  const { setProgress } = useDataProgress();
+
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [hasMore, setHasMore] = useState(initialHasMore);
-  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     search: "",
     element: "",
     stage: "",
   });
 
-  // 用于跟踪是否正在自动加载
-  const isAutoLoading = useRef(false);
-  const shouldStopRef = useRef(false);
-
-  // 更新全局进度
+  // 同步进度到 DataContext
   useEffect(() => {
     setProgress({
       loaded: inkmons.length,
-      total: totalCount,
-      isLoading: hasMore,
+      total: total,
+      isLoading: isLoading,
     });
-  }, [inkmons.length, totalCount, hasMore, setProgress]);
-
-  // 当 initialInkmons 变化时（路由切换回来），重置所有状态
-  useEffect(() => {
-    shouldStopRef.current = false;
-    isAutoLoading.current = false;
-    setInkmons(initialInkmons);
-    setTotalCount(initialTotal);
-    setCurrentPage(1);
-    setHasMore(initialHasMore);
-  }, [initialInkmons, initialTotal, initialHasMore]);
-
-  // 分批加载剩余数据
-  useEffect(() => {
-    if (!hasMore) return;
-
-    const loadNextBatch = async () => {
-      if (isAutoLoading.current || shouldStopRef.current) return;
-      isAutoLoading.current = true;
-
-      const nextPage = currentPage + 1;
-      try {
-        const res = await fetch(`/api/inkmon?page=${nextPage}&pageSize=${pageSize}`);
-        const result = await res.json();
-
-        if (shouldStopRef.current) {
-          isAutoLoading.current = false;
-          return;
-        }
-
-        if (result.data && result.data.length > 0) {
-          setInkmons((prev) => [...prev, ...result.data]);
-          setTotalCount(result.total);
-          setCurrentPage(nextPage);
-          setHasMore(result.hasMore);
-        } else {
-          setHasMore(false);
-        }
-      } catch (error) {
-        console.error("加载更多数据失败:", error);
-        setHasMore(false);
-      } finally {
-        isAutoLoading.current = false;
-      }
-    };
-
-    // 延迟加载下一批，让 UI 有时间渲染
-    const timer = setTimeout(loadNextBatch, 50);
-    return () => clearTimeout(timer);
-  }, [currentPage, hasMore, pageSize]);
-
-  // 响应刷新按钮
-  useEffect(() => {
-    if (refreshToken === 0) return; // 初始渲染不触发
-
-    const refresh = async () => {
-      // 停止当前加载
-      shouldStopRef.current = true;
-      isAutoLoading.current = false;
-
-      try {
-        const res = await fetch(`/api/inkmon?page=1&pageSize=${pageSize}`);
-        const result = await res.json();
-
-        setInkmons(result.data);
-        setTotalCount(result.total);
-        setCurrentPage(1);
-        setHasMore(result.hasMore);
-        shouldStopRef.current = false;
-      } catch (error) {
-        console.error("刷新数据失败:", error);
-        shouldStopRef.current = false;
-      }
-    };
-
-    refresh();
-  }, [refreshToken, pageSize]);
+  }, [inkmons.length, total, isLoading, setProgress]);
 
   // 删除相关状态
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -196,15 +101,26 @@ export function PokedexContainer({
       throw new Error(data.error || "删除失败");
     }
 
-    // 从列表中移除，并更新总数
-    setInkmons((prev) => prev.filter((i) => i.name_en !== deleteTarget.nameEn));
-    setTotalCount((prev) => prev - 1);
+    // 从全局缓存中移除
+    removeInkmon(deleteTarget.nameEn);
     setDeleteTarget(null);
-  }, [deleteTarget]);
+  }, [deleteTarget, removeInkmon]);
 
   // 显示的数量
   const displayCount = filteredInkmons.length;
   const isFiltering = filters.search || filters.element || filters.stage;
+
+  // 加载中状态
+  if (!isLoaded && inkmons.length === 0) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loadingState}>
+          <div className={styles.loadingSpinner} />
+          <p>Loading InkMon data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -213,9 +129,9 @@ export function PokedexContainer({
         <SearchFilter
           onFilterChange={handleFilterChange}
           resultCount={displayCount}
-          totalCount={totalCount}
-          isLoading={hasMore}
-          isLoadingMore={hasMore && !isFiltering}
+          totalCount={total}
+          isLoading={isLoading}
+          isLoadingMore={isLoading && !isFiltering}
         />
         <div className={styles.viewControls}>
           <ViewToggle mode={viewMode} onChange={setViewMode} />
