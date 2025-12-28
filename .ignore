@@ -1,3 +1,10 @@
+# Dependencies
 **/node_modules/
-node_modules
-inkmo-pokedex/node_modules/
+
+# Next.js build output
+**/.next/
+inkmon-pokedex/.next/
+
+# Build artifacts
+**/dist/
+**/.turbo/
