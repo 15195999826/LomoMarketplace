@@ -26,7 +26,8 @@
       "Bash(npx tsc:*)",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\inkmon-pokedex''; pnpm run build\")",
       "Bash(findstr:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(pnpm test:run:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
