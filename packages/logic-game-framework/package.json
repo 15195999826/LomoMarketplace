@@ -1,7 +1,7 @@
 {
-  "name": "@battle/framework",
+  "name": "@lomo/logic-game-framework",
   "version": "0.1.0",
-  "description": "Logic-performance separated battle framework",
+  "description": "Logic-performance separated game framework",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

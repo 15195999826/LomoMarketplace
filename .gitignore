@@ -30,3 +30,4 @@ packages/*/dist/
 
 # Lock files (optional, can be committed for reproducibility)
 # pnpm-lock.yaml
+backup_lomo_mcp

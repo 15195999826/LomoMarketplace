@@ -27,7 +27,8 @@
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\inkmon-pokedex''; pnpm run build\")",
       "Bash(findstr:*)",
       "Bash(mkdir:*)",
-      "Bash(pnpm test:run:*)"
+      "Bash(pnpm test:run:*)",
+      "Bash(powershell -Command \"Rename-Item -Path ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\battle-framework'' -NewName ''logic-game-framework''\")"
     ]
   },
   "enableAllProjectMcpServers": true,
@@ -39,6 +40,7 @@
     "InkMon@LomoMarketplace": true,
     "frontend-design@claude-plugins-official": true,
     "plugin-dev@claude-plugins-official": true,
-    "context7@claude-plugins-official": true
+    "context7@claude-plugins-official": true,
+    "claude-mem@thedotmack": true
   }
 }
