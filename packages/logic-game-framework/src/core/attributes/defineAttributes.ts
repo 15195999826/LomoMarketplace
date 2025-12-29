@@ -89,6 +89,7 @@ export type IAttributeModifierTarget = {
  *
  * - `attrs.xxx` → 返回 currentValue (number)
  * - `attrs.$xxx` → 返回 ModifierBreakdown
+ * - `attrs.xxxAttribute` → 返回属性名字符串字面量（用于 StatModifier）
  * - `attrs.setBase(name, value)` → 设置基础值
  *
  * 注意：Modifier 管理方法已移至内部接口，外部无法直接调用
@@ -99,6 +100,23 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
 } & {
   /** $ 前缀访问返回完整 breakdown */
   readonly [K in keyof T as `$${string & K}`]: ModifierBreakdown;
+} & {
+  /**
+   * Attribute 后缀返回属性名字符串字面量
+   *
+   * 类似 UE 的 GetMaxHPAttribute()，用于类型安全地引用属性名
+   *
+   * @example
+   * ```typescript
+   * hero.attackAttribute  // → 'attack'
+   *
+   * // 用于 StatModifierComponent
+   * new StatModifierComponent([
+   *   { attributeName: hero.attackAttribute, modifierType: 'AddBase', value: 20 }
+   * ])
+   * ```
+   */
+  readonly [K in keyof T as `${string & K}Attribute`]: K;
 } & {
   // ========== 基础值操作 ==========
 
@@ -254,6 +272,14 @@ export function defineAttributes<T extends AttributesConfig>(
         }
       }
 
+      // xxxAttribute: 返回属性名字符串（类似 UE GetXxxAttribute）
+      if (prop.endsWith('Attribute')) {
+        const attrName = prop.slice(0, -9); // 移除 'Attribute' 后缀
+        if (attrNames.has(attrName)) {
+          return attrName;
+        }
+      }
+
       // xxx: 如果是属性名，返回 currentValue
       if (attrNames.has(prop)) {
         return set.getCurrentValue(prop);
@@ -353,6 +379,14 @@ export function restoreAttributes<T extends AttributesConfig>(
         const attrName = prop.slice(1);
         if (attrNames.has(attrName)) {
           return set.getBreakdown(attrName);
+        }
+      }
+
+      // xxxAttribute: 返回属性名字符串（类似 UE GetXxxAttribute）
+      if (prop.endsWith('Attribute')) {
+        const attrName = prop.slice(0, -9); // 移除 'Attribute' 后缀
+        if (attrNames.has(attrName)) {
+          return attrName;
         }
       }
 

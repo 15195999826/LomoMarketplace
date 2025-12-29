@@ -1,6 +1,6 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.5 (defineAttributes API)
+> 文档版本：v0.6 (xxxAttribute 属性引用)
 > 创建日期：2025-12-27
 > 更新日期：2025-12-30
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
@@ -741,12 +741,16 @@ hero.$attack.base       // → 50
 hero.$attack.bodyValue  // → 50
 hero.$attack.addBaseSum // → 0
 
+// Attribute 后缀获取属性名引用（用于 StatModifier）
+hero.attackAttribute    // → 'attack' ✅ 类型安全
+hero.defenseAttribute   // → 'defense' ✅ IDE 补全
+
 // 修改基础值
 hero.setBase('attack', 60);    // ✅ 类型安全
 hero.modifyBase('attack', 10);
 
-// 添加 Modifier
-hero.addModifier(createAddBaseModifier('buff', 'attack', 20));
+// 添加 Modifier（通过内部接口，外部使用 StatModifierComponent）
+hero._modifierTarget.addModifier(createAddBaseModifier('buff', 'attack', 20));
 hero.attack  // → 90
 
 // 序列化/反序列化
@@ -760,6 +764,7 @@ const restored = restoreAttributes(saved);
 |-------------|------------|
 | `ATTRIBUTE_ACCESSORS(Class, MaxHP)` | `defineAttributes({ maxHp: {...} })` |
 | `GetMaxHP()` | `hero.maxHp` |
+| `GetMaxHPAttribute()` | `hero.maxHpAttribute` |
 | `SetMaxHP(v)` | `hero.setBase('maxHp', v)` |
 
 #### Breakdown 结构
@@ -792,6 +797,31 @@ const restored = restoreAttributes(saved);
 - **装备需求检测**：检查 `hero.$strength.bodyValue`，避免"穿装备才能穿装备"悖论
 - **Modifier依赖**："增加10%基础攻击力"依赖 `bodyValue`
 - **UI分层显示**：根据需要选择显示粒度
+
+#### 属性引用（xxxAttribute）
+
+通过 `属性名Attribute` 后缀获取属性名的字符串字面量类型，类似 UE 的 `GetMaxHPAttribute()`：
+
+```typescript
+// 返回属性名字符串字面量（带 IDE 补全）
+hero.attackAttribute   // → 'attack'
+hero.defenseAttribute  // → 'defense'
+hero.maxHpAttribute    // → 'maxHp'
+
+// 用于 StatModifierComponent 的类型安全配置
+new StatModifierComponent([
+  { attributeName: hero.attackAttribute, modifierType: 'AddBase', value: 20 },
+  //              ^^^^^^^^^^^^^^^^^^^^^ IDE 自动补全，拼写错误会编译报错
+])
+```
+
+**三种访问模式汇总**：
+
+| 访问方式 | 返回类型 | 用途 |
+|---------|---------|------|
+| `hero.attack` | `number` | 获取 currentValue（最常用） |
+| `hero.$attack` | `ModifierBreakdown` | 获取详细分层数据 |
+| `hero.attackAttribute` | `'attack'` | 获取属性名引用（用于 StatModifier） |
 
 ### 5.10 变化钩子
 
@@ -1335,6 +1365,7 @@ interface BattleSaveData {
 6. **属性系统实现**：
    - `AttributeSet` 核心类（四层公式、缓存、脏标记、钩子）
    - `defineAttributes()` 工厂函数（类型安全、IDE 自动补全）
+   - `xxxAttribute` 属性引用（类似 UE `GetXxxAttribute()`，用于 StatModifier）
    - Modifier 创建辅助函数
 
 ### 待实现

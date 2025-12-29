@@ -35,6 +35,27 @@ describe('defineAttributes', () => {
       expect(breakdown.mulBaseProduct).toBe(1);
     });
 
+    it('应该能通过 xxxAttribute 后缀获取属性名引用', () => {
+      const attrs = defineAttributes({
+        maxHp: { baseValue: 100 },
+        attack: { baseValue: 50 },
+        defense: { baseValue: 30 },
+      });
+
+      // 返回属性名字符串
+      expect(attrs.maxHpAttribute).toBe('maxHp');
+      expect(attrs.attackAttribute).toBe('attack');
+      expect(attrs.defenseAttribute).toBe('defense');
+
+      // 可用于 StatModifierConfig 的 attributeName
+      const config = {
+        attributeName: attrs.attackAttribute,
+        modifierType: 'AddBase' as const,
+        value: 20,
+      };
+      expect(config.attributeName).toBe('attack');
+    });
+
     it('应该能使用 getBase 和 setBase', () => {
       const attrs = defineAttributes({
         attack: { baseValue: 50 },
@@ -208,6 +229,20 @@ describe('defineAttributes', () => {
 
       expect(restored.maxHp).toBe(100);
       expect(restored.attack).toBe(70); // 50 + 20
+    });
+
+    it('restoreAttributes 也应该支持 xxxAttribute', () => {
+      const attrs = defineAttributes({
+        attack: { baseValue: 50 },
+        defense: { baseValue: 30 },
+      });
+
+      const data = attrs.serialize();
+      const restored = restoreAttributes<typeof attrs>(data);
+
+      // 验证 xxxAttribute 也能正常工作
+      expect(restored.attackAttribute).toBe('attack');
+      expect(restored.defenseAttribute).toBe('defense');
     });
   });
 
