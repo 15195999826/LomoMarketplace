@@ -25,6 +25,27 @@ export interface AttributeChangeEvent {
 }
 
 /**
+ * 属性变化钩子结果
+ * 返回 false 可阻止变化（仅 Pre 钩子有效）
+ * 返回 number 可修改即将应用的值（仅 Pre 钩子有效）
+ */
+export type AttributeHookResult = void | boolean | number;
+
+/**
+ * 属性变化钩子
+ */
+export interface AttributeHooks {
+  /** 基础值变化前（可阻止或修改） */
+  preBaseChange?: (event: AttributeChangeEvent) => AttributeHookResult;
+  /** 基础值变化后 */
+  postBaseChange?: (event: AttributeChangeEvent) => void;
+  /** 当前值变化前（可阻止或修改） */
+  preCurrentChange?: (event: AttributeChangeEvent) => AttributeHookResult;
+  /** 当前值变化后 */
+  postCurrentChange?: (event: AttributeChangeEvent) => void;
+}
+
+/**
  * 属性变化监听器
  */
 export type AttributeChangeListener = (event: AttributeChangeEvent) => void;
@@ -67,6 +88,12 @@ export class AttributeSet {
 
   /** 变化监听器 */
   private listeners: AttributeChangeListener[] = [];
+
+  /** 属性钩子（按属性名分组） */
+  private hooks: Map<string, AttributeHooks> = new Map();
+
+  /** 全局钩子（对所有属性生效） */
+  private globalHooks: AttributeHooks = {};
 
   /**
    * 构造函数
@@ -124,16 +151,45 @@ export class AttributeSet {
     const oldValue = this.baseValues.get(name)!;
     const clampedValue = this.clampValue(name, value);
 
-    if (oldValue !== clampedValue) {
-      this.baseValues.set(name, clampedValue);
-      this.markDirty(name);
-      this.notifyChange({
-        attributeName: name,
-        oldValue,
-        newValue: clampedValue,
-        changeType: 'base',
-      });
+    if (oldValue === clampedValue) {
+      return;
     }
+
+    // 创建变化事件
+    const event: AttributeChangeEvent = {
+      attributeName: name,
+      oldValue,
+      newValue: clampedValue,
+      changeType: 'base',
+    };
+
+    // 调用 preBaseChange 钩子
+    const hookResult = this.invokePreHook('preBaseChange', event);
+    if (hookResult === false) {
+      // 钩子阻止了变化
+      return;
+    }
+
+    // 如果钩子返回数字，使用该值
+    const finalValue = typeof hookResult === 'number'
+      ? this.clampValue(name, hookResult)
+      : clampedValue;
+
+    // 应用变化
+    this.baseValues.set(name, finalValue);
+    this.markDirty(name);
+
+    // 更新事件的新值
+    const finalEvent: AttributeChangeEvent = {
+      ...event,
+      newValue: finalValue,
+    };
+
+    // 调用 postBaseChange 钩子
+    this.invokePostHook('postBaseChange', finalEvent);
+
+    // 通知监听器
+    this.notifyChange(finalEvent);
   }
 
   /**
@@ -397,6 +453,53 @@ export class AttributeSet {
     }
   }
 
+  // ========== 钩子管理 ==========
+
+  /**
+   * 设置属性钩子
+   * @param name 属性名
+   * @param hooks 钩子配置
+   */
+  setHooks(name: string, hooks: Partial<AttributeHooks>): void {
+    const existing = this.hooks.get(name) ?? {};
+    this.hooks.set(name, { ...existing, ...hooks });
+  }
+
+  /**
+   * 获取属性钩子
+   */
+  getHooks(name: string): AttributeHooks | undefined {
+    return this.hooks.get(name);
+  }
+
+  /**
+   * 移除属性钩子
+   */
+  removeHooks(name: string): void {
+    this.hooks.delete(name);
+  }
+
+  /**
+   * 设置全局钩子（对所有属性生效）
+   */
+  setGlobalHooks(hooks: Partial<AttributeHooks>): void {
+    this.globalHooks = { ...this.globalHooks, ...hooks };
+  }
+
+  /**
+   * 获取全局钩子
+   */
+  getGlobalHooks(): AttributeHooks {
+    return this.globalHooks;
+  }
+
+  /**
+   * 清除全局钩子
+   */
+  clearGlobalHooks(): void {
+    this.globalHooks = {};
+  }
+
   // ========== 序列化 ==========
 
   /**
@@ -460,6 +563,71 @@ export class AttributeSet {
         listener(event);
       } catch (error) {
         getLogger().error('Error in attribute change listener', { error });
+      }
+    }
+  }
+
+  /**
+   * 调用 Pre 钩子
+   * @returns false 阻止变化，number 修改值，其他继续
+   */
+  private invokePreHook(
+    hookName: 'preBaseChange' | 'preCurrentChange',
+    event: AttributeChangeEvent
+  ): AttributeHookResult {
+    const attrHooks = this.hooks.get(event.attributeName);
+
+    // 先调用属性特定钩子
+    if (attrHooks?.[hookName]) {
+      try {
+        const result = attrHooks[hookName]!(event);
+        if (result === false || typeof result === 'number') {
+          return result;
+        }
+      } catch (error) {
+        getLogger().error(`Error in attribute hook ${hookName}`, { error });
+      }
+    }
+
+    // 再调用全局钩子
+    if (this.globalHooks[hookName]) {
+      try {
+        const result = this.globalHooks[hookName]!(event);
+        if (result === false || typeof result === 'number') {
+          return result;
+        }
+      } catch (error) {
+        getLogger().error(`Error in global attribute hook ${hookName}`, { error });
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * 调用 Post 钩子
+   */
+  private invokePostHook(
+    hookName: 'postBaseChange' | 'postCurrentChange',
+    event: AttributeChangeEvent
+  ): void {
+    const attrHooks = this.hooks.get(event.attributeName);
+
+    // 先调用属性特定钩子
+    if (attrHooks?.[hookName]) {
+      try {
+        attrHooks[hookName]!(event);
+      } catch (error) {
+        getLogger().error(`Error in attribute hook ${hookName}`, { error });
+      }
+    }
+
+    // 再调用全局钩子
+    if (this.globalHooks[hookName]) {
+      try {
+        this.globalHooks[hookName]!(event);
+      } catch (error) {
+        getLogger().error(`Error in global attribute hook ${hookName}`, { error });
       }
     }
   }

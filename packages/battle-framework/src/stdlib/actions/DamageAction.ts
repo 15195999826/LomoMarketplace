@@ -31,7 +31,7 @@ export interface IDamageCalculator {
     source: ActorRef,
     target: ActorRef,
     ctx: ExecutionContext
-  ): { damage: number; isCritical: boolean };
+  ): { damage: number; isCritical: boolean; isKill?: boolean };
 }
 
 /**
@@ -138,16 +138,35 @@ export class DamageAction extends BaseAction {
     }
 
     // 使用伤害计算器
-    const { damage, isCritical } = damageCalculator.calculate(
+    const calcResult = damageCalculator.calculate(
       baseValue,
       ctx.source,
       target,
       ctx as ExecutionContext
     );
 
-    // 检查目标是否死亡（简化：假设伤害 >= 目标当前 HP）
-    // 实际实现需要获取目标的 HP
-    const isKill = false; // 需要外部判断
+    const { damage, isCritical } = calcResult;
+
+    // 判断是否击杀
+    // 优先使用计算器返回的结果，否则尝试从目标Actor获取HP判断
+    let isKill = calcResult.isKill ?? false;
+    if (calcResult.isKill === undefined) {
+      // 尝试从 battle 实例获取目标 Actor 的 HP
+      const targetActor = ctx.battle.getActor(target.id);
+      if (targetActor && typeof targetActor === 'object') {
+        const actor = targetActor as { hp?: number; attributes?: { getCurrentValue?(name: string): number } };
+        // 检查是否有 hp 属性或 attributes.getCurrentValue 方法
+        let targetHp: number | undefined;
+        if (typeof actor.hp === 'number') {
+          targetHp = actor.hp;
+        } else if (actor.attributes?.getCurrentValue) {
+          targetHp = actor.attributes.getCurrentValue(StandardAttributes.HP);
+        }
+        if (targetHp !== undefined) {
+          isKill = targetHp <= damage;
+        }
+      }
+    }
 
     // 发出事件
     const event = ctx.eventCollector.emitDamage(ctx.source, target, damage, {

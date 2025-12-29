@@ -52,6 +52,9 @@ export interface ExecutionContext {
 
   /** 自定义数据（用于在 Action 链中传递信息） */
   customData?: Record<string, unknown>;
+
+  /** 回调深度（用于防止无限递归） */
+  callbackDepth?: number;
 }
 
 /**
@@ -76,6 +79,7 @@ export function createExecutionContext(params: {
     affectedTargets: [],
     triggerSource: params.triggerSource,
     customData: {},
+    callbackDepth: 0,
   };
 }
 

@@ -44,6 +44,11 @@ export interface ActionCallback {
 }
 
 /**
+ * 回调递归深度限制
+ */
+const MAX_CALLBACK_DEPTH = 10;
+
+/**
  * Action 基类
  * 提供通用功能，具体 Action 继承此类实现
  */
@@ -110,6 +115,16 @@ export abstract class BaseAction implements IAction {
       return result;
     }
 
+    // 检查递归深度
+    const currentDepth = ctx.callbackDepth ?? 0;
+    if (currentDepth >= MAX_CALLBACK_DEPTH) {
+      getLogger().warn(`Callback depth exceeded maximum (${MAX_CALLBACK_DEPTH}), skipping further callbacks`, {
+        actionType: this.type,
+        depth: currentDepth,
+      });
+      return result;
+    }
+
     const additionalEvents = [...result.events];
     const additionalTriggers = [...result.callbackTriggers];
     const additionalTargets = [...result.affectedTargets];
@@ -143,6 +158,7 @@ export abstract class BaseAction implements IAction {
             ...ctx,
             primaryTarget: target,
             affectedTargets: [],
+            callbackDepth: currentDepth + 1,  // 递增深度
           };
 
           const callbackResult = callback.action.execute(callbackCtx);

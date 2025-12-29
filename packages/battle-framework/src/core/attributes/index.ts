@@ -19,4 +19,6 @@ export {
   AttributeConfig,
   AttributeChangeEvent,
   AttributeChangeListener,
+  AttributeHooks,
+  AttributeHookResult,
 } from './AttributeSet.js';
