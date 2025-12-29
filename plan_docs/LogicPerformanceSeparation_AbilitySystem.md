@@ -1,8 +1,8 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.4 (框架化)
+> 文档版本：v0.5 (defineAttributes API)
 > 创建日期：2025-12-27
-> 更新日期：2025-12-29
+> 更新日期：2025-12-30
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
 
 **相关文档**：
@@ -718,33 +718,79 @@ Buff2: DEF.AddBase = ATK肉体属性 × 10%
 
 包含天生能力、肉体强化、潜能发挥，不包含装备和状态效率。
 
-**框架层提供的接口**：
+#### 推荐接口：`defineAttributes()` 工厂函数
 
-| 接口 | 返回值 | 说明 |
-|------|--------|------|
-| `getBase(attr)` | Base | 天生值 |
-| `getAddBaseSum(attr)` | ΣAddBase | 肉体强化总和 |
-| `getMulBaseProduct(attr)` | 1 + ΣMulBase | 肉体潜能乘数（如1.25表示+25%） |
-| `getBodyValue(attr)` | (Base + AddBase) × MulBase | 肉体属性 |
-| `getAddFinalSum(attr)` | ΣAddFinal | 装备加成总和 |
-| `getMulFinalProduct(attr)` | 1 + ΣMulFinal | 效率乘数（如0.7表示-30%） |
-| `getCurrentValue(attr)` | 最终值 | 实际生效值 |
+框架提供类型安全的工厂函数，支持 IDE 自动补全，类似 UE 的 `ATTRIBUTE_ACCESSORS` 宏：
+
+```typescript
+import { defineAttributes, createAddBaseModifier } from '@lomo/logic-game-framework';
+
+// 定义属性（IDE 自动补全属性名）
+const hero = defineAttributes({
+  maxHp: { baseValue: 100, minValue: 0 },
+  attack: { baseValue: 50 },
+  defense: { baseValue: 30 },
+});
+
+// 直接访问 currentValue（最常用）
+hero.maxHp          // → 100 ✅ IDE 提示
+hero.attack         // → 50  ✅ IDE 提示
+
+// $ 前缀访问 breakdown（需要详情时）
+hero.$attack.base       // → 50
+hero.$attack.bodyValue  // → 50
+hero.$attack.addBaseSum // → 0
+
+// 修改基础值
+hero.setBase('attack', 60);    // ✅ 类型安全
+hero.modifyBase('attack', 10);
+
+// 添加 Modifier
+hero.addModifier(createAddBaseModifier('buff', 'attack', 20));
+hero.attack  // → 90
+
+// 序列化/反序列化
+const saved = hero.serialize();
+const restored = restoreAttributes(saved);
+```
+
+**对比 UE 方式**：
+
+| UE (C++ 宏) | TypeScript |
+|-------------|------------|
+| `ATTRIBUTE_ACCESSORS(Class, MaxHP)` | `defineAttributes({ maxHp: {...} })` |
+| `GetMaxHP()` | `hero.maxHp` |
+| `SetMaxHP(v)` | `hero.setBase('maxHp', v)` |
+
+#### Breakdown 结构
+
+通过 `$属性名` 访问完整的分层数据：
+
+| 字段 | 说明 |
+|------|------|
+| `base` | 天生值 |
+| `addBaseSum` | 肉体强化总和 |
+| `mulBaseProduct` | 肉体潜能乘数（1 + ΣMulBase） |
+| `bodyValue` | 肉体属性 = (Base + AddBase) × MulBase |
+| `addFinalSum` | 装备加成总和 |
+| `mulFinalProduct` | 效率乘数（1 + ΣMulFinal） |
+| `currentValue` | 最终值 |
 
 **UI显示示例**：
 
 ```
 攻击力: 105
-├─ 肉体: 100
-│   ├─ 天生: 80          ← getBase()
-│   ├─ 强化: +10         ← getAddBaseSum()
-│   └─ 潜能: ×1.25       ← getMulBaseProduct()
-├─ 装备: +50             ← getAddFinalSum()
-└─ 效率: ×0.7 (-30%)     ← getMulFinalProduct()
+├─ 肉体: 100              ← hero.$attack.bodyValue
+│   ├─ 天生: 80           ← hero.$attack.base
+│   ├─ 强化: +10          ← hero.$attack.addBaseSum
+│   └─ 潜能: ×1.25        ← hero.$attack.mulBaseProduct
+├─ 装备: +50              ← hero.$attack.addFinalSum
+└─ 效率: ×0.7 (-30%)      ← hero.$attack.mulFinalProduct
 ```
 
 **应用场景**：
-- **装备需求检测**：检查`getBodyValue()`，避免"穿装备才能穿装备"悖论
-- **Modifier依赖**："增加10%基础攻击力"依赖`getBodyValue()`
+- **装备需求检测**：检查 `hero.$strength.bodyValue`，避免"穿装备才能穿装备"悖论
+- **Modifier依赖**："增加10%基础攻击力"依赖 `bodyValue`
 - **UI分层显示**：根据需要选择显示粒度
 
 ### 5.10 变化钩子
@@ -1286,11 +1332,15 @@ interface BattleSaveData {
 3. **Ability架构设计**：EC模式、Component类型定义
 4. **事件策略确定**：避免事件订阅，使用主动分发钩子
 5. **Action系统设计**：工厂模式、链式调用、回调机制
+6. **属性系统实现**：
+   - `AttributeSet` 核心类（四层公式、缓存、脏标记、钩子）
+   - `defineAttributes()` 工厂函数（类型安全、IDE 自动补全）
+   - Modifier 创建辅助函数
 
 ### 待实现
 
 1. **原型验证**：用简化版实现验证核心流程
-   - 实现AttributeSet基础版
+   - ~~实现AttributeSet基础版~~ ✅
    - 实现Ability + Component基础版
    - 实现Action工厂基础版
    - 实现简单的BattleInstance流程

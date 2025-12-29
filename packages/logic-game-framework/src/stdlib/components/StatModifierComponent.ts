@@ -2,12 +2,16 @@
  * StatModifierComponent - 属性修改组件
  *
  * 给持有者添加属性修改器
+ *
+ * Modifier 的应用/移除在 onActivate/onDeactivate 时自动处理，
+ * 外部无需手动调用 addModifier。
  */
 
 import {
   BaseAbilityComponent,
   ComponentTypes,
   type IAbilityForComponent,
+  type ComponentLifecycleContext,
 } from '../../core/abilities/AbilityComponent.js';
 import type { AttributeModifier, ModifierType } from '../../core/attributes/AttributeModifier.js';
 import { generateId } from '../../core/utils/IdGenerator.js';
@@ -15,24 +19,51 @@ import { generateId } from '../../core/utils/IdGenerator.js';
 /**
  * 属性修改配置
  */
-export interface StatModifierConfig {
+export type StatModifierConfig = {
   /** 目标属性名 */
   attributeName: string;
   /** 修改器类型 */
   modifierType: ModifierType;
   /** 修改值 */
   value: number;
-}
+};
 
 /**
  * StatModifierComponent
+ *
+ * @example
+ * ```typescript
+ * const ability = new Ability({ configId: 'buff_strength' }, ownerRef);
+ *
+ * // 添加属性修改组件
+ * ability.addComponent(
+ *   new StatModifierComponent([
+ *     { attributeName: 'attack', modifierType: 'AddBase', value: 30 },
+ *     { attributeName: 'defense', modifierType: 'MulBase', value: 0.2 },
+ *   ])
+ * );
+ *
+ * // 激活时自动应用 Modifier
+ * ability.activate(context);
+ *
+ * // 失效时自动移除 Modifier
+ * ability.expire();
+ * ```
  */
 export class StatModifierComponent extends BaseAbilityComponent {
   readonly type = ComponentTypes.STAT_MODIFIER;
 
-  private configs: StatModifierConfig[];
-  private createdModifiers: AttributeModifier[] = [];
-  private modifierPrefix: string;
+  /** 静态配置（构造时确定） */
+  private readonly configs: StatModifierConfig[];
+
+  /** Modifier ID 前缀 */
+  private readonly modifierPrefix: string;
+
+  /** 当前应用的 Modifier 列表 */
+  private appliedModifiers: AttributeModifier[] = [];
+
+  /** 当前缩放倍数（用于层数） */
+  private currentScale: number = 1;
 
   constructor(configs: StatModifierConfig[]) {
     super();
@@ -42,59 +73,93 @@ export class StatModifierComponent extends BaseAbilityComponent {
 
   onAttach(ability: IAbilityForComponent): void {
     super.onAttach(ability);
-
-    // 创建 Modifier（实际应用需要外部处理）
-    this.createdModifiers = this.configs.map((config, index) => ({
-      id: `${this.modifierPrefix}_${index}`,
-      attributeName: config.attributeName,
-      modifierType: config.modifierType,
-      value: config.value,
-      source: ability.id,
-    }));
+    // 不在 onAttach 时创建 Modifier，只保存引用
   }
 
   onDetach(): void {
-    // 清理创建的 Modifier（实际移除需要外部处理）
-    this.createdModifiers = [];
+    this.appliedModifiers = [];
     super.onDetach();
   }
 
   /**
-   * 获取创建的 Modifier 列表
+   * Ability 激活时调用
+   * 创建并应用 Modifier 到 owner 的 AttributeSet
    */
-  getModifiers(): readonly AttributeModifier[] {
-    return this.createdModifiers;
+  onActivate(context: ComponentLifecycleContext): void {
+    // 创建 Modifier
+    this.appliedModifiers = this.configs.map((config, index) => ({
+      id: `${this.modifierPrefix}_${index}`,
+      attributeName: config.attributeName,
+      modifierType: config.modifierType,
+      value: config.value * this.currentScale,
+      source: context.ability.id,
+    }));
+
+    // 应用到 AttributeSet
+    for (const modifier of this.appliedModifiers) {
+      context.attributes.addModifier(modifier);
+    }
   }
 
   /**
-   * 获取 Modifier ID 列表（用于移除）
+   * Ability 失效时调用
+   * 从 owner 的 AttributeSet 移除 Modifier
+   */
+  onDeactivate(context: ComponentLifecycleContext): void {
+    // 按来源移除所有 Modifier
+    context.attributes.removeModifiersBySource(context.ability.id);
+    this.appliedModifiers = [];
+  }
+
+  /**
+   * 获取当前应用的 Modifier 列表（只读）
+   */
+  getModifiers(): readonly AttributeModifier[] {
+    return this.appliedModifiers;
+  }
+
+  /**
+   * 获取 Modifier ID 列表（用于查询）
    */
   getModifierIds(): string[] {
-    return this.createdModifiers.map((m) => m.id);
+    return this.appliedModifiers.map((m) => m.id);
+  }
+
+  /**
+   * 设置缩放倍数（用于层数）
+   * 如果 Ability 已激活，需要重新应用 Modifier
+   */
+  setScale(scale: number): void {
+    this.currentScale = scale;
   }
 
   /**
    * 按层数缩放 Modifier 值
+   * 注意：如果 Ability 已激活，需要手动重新激活以应用新值
    */
   scaleByStacks(stacks: number): void {
-    this.createdModifiers = this.configs.map((config, index) => ({
-      id: `${this.modifierPrefix}_${index}`,
-      attributeName: config.attributeName,
-      modifierType: config.modifierType,
-      value: config.value * stacks,
-      source: this.ability?.id,
-    }));
+    this.setScale(stacks);
+  }
+
+  /**
+   * 获取原始配置（只读）
+   */
+  getConfigs(): readonly StatModifierConfig[] {
+    return this.configs;
   }
 
   serialize(): object {
     return {
       configs: this.configs,
+      scale: this.currentScale,
     };
   }
 
   deserialize(data: object): void {
-    const d = data as { configs: StatModifierConfig[] };
-    this.configs = d.configs;
+    const d = data as { configs: StatModifierConfig[]; scale?: number };
+    // configs 是 readonly，不能重新赋值
+    // 只恢复 scale
+    this.currentScale = d.scale ?? 1;
   }
 }
 

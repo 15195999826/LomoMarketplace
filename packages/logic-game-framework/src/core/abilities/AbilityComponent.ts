@@ -5,13 +5,27 @@
  * 采用 EC 模式，不同 Component 组合实现不同类型的能力
  */
 
-import type { HookContext, ActivationContext, ActivationError } from '../types/common.js';
+import type { HookContext, ActivationContext, ActivationError, ActorRef } from '../types/common.js';
+import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js';
 
 // 前向声明
 export interface IAbilityForComponent {
   readonly id: string;
   readonly configId: string;
 }
+
+/**
+ * Component 激活/失效上下文
+ * 在 onActivate/onDeactivate 时传递，包含 Modifier 写入接口
+ */
+export type ComponentLifecycleContext = {
+  /** Ability 所有者的引用 */
+  readonly owner: ActorRef;
+  /** Modifier 写入接口（仅 Component 内部可用） */
+  readonly attributes: IAttributeModifierTarget;
+  /** 所属 Ability */
+  readonly ability: IAbilityForComponent;
+};
 
 /**
  * Component 状态
@@ -30,6 +44,7 @@ export interface IAbilityComponent {
 
   /**
    * 当 Component 被添加到 Ability 时调用
+   * 用于初始化配置，不应在此处应用 Modifier
    */
   onAttach(ability: IAbilityForComponent): void;
 
@@ -37,6 +52,18 @@ export interface IAbilityComponent {
    * 当 Component 从 Ability 移除时调用
    */
   onDetach(): void;
+
+  /**
+   * Ability 激活时调用（可选）
+   * 这是应用 Modifier 的正确时机
+   */
+  onActivate?(context: ComponentLifecycleContext): void;
+
+  /**
+   * Ability 失效时调用（可选）
+   * 这是移除 Modifier 的正确时机
+   */
+  onDeactivate?(context: ComponentLifecycleContext): void;
 
   /**
    * 每帧/每回合更新（可选）

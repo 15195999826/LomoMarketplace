@@ -8,7 +8,7 @@
 import { generateId } from '../utils/IdGenerator.js';
 import { getLogger } from '../utils/Logger.js';
 import type { ActorRef, HookContext, ActivationContext, ActivationError } from '../types/common.js';
-import type { IAbilityComponent, IAbilityForComponent } from './AbilityComponent.js';
+import type { IAbilityComponent, IAbilityForComponent, ComponentLifecycleContext } from './AbilityComponent.js';
 
 /**
  * Ability 状态
@@ -202,19 +202,73 @@ export class Ability implements IAbilityForComponent {
 
   // ========== 生命周期 ==========
 
+  /** 保存激活时的上下文，用于 deactivate */
+  private lifecycleContext?: ComponentLifecycleContext;
+
   /**
    * 激活能力
+   * @param context 激活上下文，包含 owner 的 AttributeSet 写入接口
    */
-  activate(): void {
+  activate(context: ComponentLifecycleContext): void {
+    if (this._state === 'active') {
+      getLogger().warn(`Ability already active: ${this.id}`);
+      return;
+    }
+
     this._state = 'active';
+    this.lifecycleContext = context;
+
+    // 通知所有 Component
+    for (const component of this.components) {
+      if (component.onActivate) {
+        try {
+          component.onActivate(context);
+        } catch (error) {
+          getLogger().error(`Component onActivate error: ${component.type}`, { error });
+        }
+      }
+    }
   }
 
   /**
-   * 标记为过期
+   * 失效能力（移除 Modifier）
+   * @param context 可选，如果没有提供则使用激活时保存的上下文
+   */
+  deactivate(context?: ComponentLifecycleContext): void {
+    const ctx = context ?? this.lifecycleContext;
+    if (!ctx) {
+      getLogger().warn(`No lifecycle context available for deactivate: ${this.id}`);
+      return;
+    }
+
+    // 通知所有 Component
+    for (const component of this.components) {
+      if (component.onDeactivate) {
+        try {
+          component.onDeactivate(ctx);
+        } catch (error) {
+          getLogger().error(`Component onDeactivate error: ${component.type}`, { error });
+        }
+      }
+    }
+
+    this.lifecycleContext = undefined;
+  }
+
+  /**
+   * 标记为过期（会先调用 deactivate）
    */
   expire(): void {
+    if (this._state === 'expired') {
+      return;
+    }
+
+    // 先 deactivate（移除 Modifier）
+    this.deactivate();
+
     this._state = 'expired';
-    // 通知所有 Component
+
+    // 通知所有 Component detach
     for (const component of this.components) {
       component.onDetach();
     }

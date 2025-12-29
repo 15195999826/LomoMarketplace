@@ -5,6 +5,7 @@ export {
   ComponentState,
   ComponentTypes,
   ComponentType,
+  ComponentLifecycleContext,
 } from './AbilityComponent.js';
 
 export {

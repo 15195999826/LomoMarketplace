@@ -22,3 +22,12 @@ export {
   AttributeHooks,
   AttributeHookResult,
 } from './AttributeSet.js';
+
+export {
+  defineAttributes,
+  restoreAttributes,
+  AttributeDefConfig,
+  AttributesConfig,
+  TypedAttributeSet,
+  IAttributeModifierTarget,
+} from './defineAttributes.js';
