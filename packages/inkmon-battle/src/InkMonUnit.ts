@@ -9,6 +9,18 @@ import type { AxialCoord } from '@lomo/hex-grid';
 import type { InkMon, Element } from '@inkmon/core';
 import type { IATBUnit } from './atb/index.js';
 
+// ========== ID 生成 ==========
+
+/** 自增 ID 计数器 */
+let unitIdCounter = 0;
+
+/**
+ * 重置 ID 计数器（用于测试）
+ */
+export function resetUnitIdCounter(): void {
+  unitIdCounter = 0;
+}
+
 /**
  * InkMon 战斗单位配置
  */
@@ -64,7 +76,7 @@ export class InkMonUnit extends BattleUnit implements IATBUnit {
 
   constructor(config: InkMonUnitConfig) {
     const battleConfig: BattleUnitConfig = {
-      id: `inkmon_${config.inkmon.name_en}_${Date.now()}`,
+      id: `inkmon_${config.inkmon.name_en}_${++unitIdCounter}`,
       name: config.inkmon.name,
       team: config.team,
       stats: {

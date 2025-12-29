@@ -1,0 +1,10 @@
+{
+  "name": "typescript-style",
+  "version": "1.0.0",
+  "description": "严格的 TypeScript 编码规范指南，提供命名规范、类型使用、代码结构和最佳实践指导",
+  "author": {
+    "name": "LomoMarketplace",
+    "email": "lomo@example.com"
+  },
+  "keywords": ["typescript", "style-guide", "coding-standards", "best-practices"]
+}

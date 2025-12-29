@@ -33,6 +33,22 @@
       "version": "1.0.0",
       "keywords": ["hexagonal", "hex-grid", "game-development", "coordinates", "pathfinding"],
       "category": "productivity"
+    },
+    {
+      "name": "linus-coding-standards",
+      "source": "./plugins/linus-coding-standards",
+      "description": "Linus 风格编码规范 - 简洁、数据结构优先、实用主义",
+      "version": "1.0.0",
+      "keywords": ["coding-standards", "code-review", "linus-style", "simplicity", "best-practices"],
+      "category": "productivity"
+    },
+    {
+      "name": "typescript-style",
+      "source": "./plugins/typescript-style",
+      "description": "TypeScript 严格编码规范 - 类型安全、Type优先、Zod验证、命名约定",
+      "version": "1.0.0",
+      "keywords": ["typescript", "coding-standards", "type-safety", "zod", "naming-conventions"],
+      "category": "productivity"
     }
   ]
 }

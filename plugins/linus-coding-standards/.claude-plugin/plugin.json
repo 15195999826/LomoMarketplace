@@ -1,0 +1,10 @@
+{
+  "name": "linus-coding-standards",
+  "version": "1.0.0",
+  "description": "Linus Torvalds style coding standards - emphasizing simplicity, data structure priority, and practical problem-solving",
+  "author": {
+    "name": "LomoMarketplace",
+    "email": "dev@lomo.dev"
+  },
+  "keywords": ["coding-standards", "code-review", "linus-style", "simplicity", "best-practices"]
+}

@@ -11,6 +11,7 @@ export { ATBSystem, type ATBConfig, type IATBUnit } from './atb/index.js';
 export {
   InkMonUnit,
   createInkMonUnit,
+  resetUnitIdCounter,
   type InkMonUnitConfig,
 } from './InkMonUnit.js';
 
