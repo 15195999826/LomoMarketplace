@@ -1,6 +1,6 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.6 (xxxAttribute 属性引用)
+> 文档版本：v0.7 (onXxxChanged 委托 & API 分层导出)
 > 创建日期：2025-12-27
 > 更新日期：2025-12-30
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
@@ -712,9 +712,102 @@ Buff2: DEF.AddBase = ATK肉体属性 × 10%
 读取ATK时：ATK=111, DEF=110（DEF计算时ATK还是缓存值100）
 ```
 
-### 5.9 属性值分层与接口设计
+### 5.9 属性系统对外 API
 
-**肉体属性定义**：`(Base + AddBase) × MulBase`
+#### 导出结构
+
+属性系统采用分层导出，区分对外 API 和内部 API：
+
+**对外 API（游戏开发者使用）**：
+```typescript
+import {
+  // 核心函数
+  defineAttributes,      // 创建属性集
+  restoreAttributes,     // 反序列化
+} from '@lomo/logic-game-framework';
+
+import type {
+  // 类型定义
+  TypedAttributeSet,     // 属性集类型
+  AttributesConfig,      // 配置类型
+  AttributeDefConfig,    // 单个属性配置
+  ModifierBreakdown,     // $xxx 返回类型
+  AttributeChangeEvent,  // 变化事件类型
+} from '@lomo/logic-game-framework';
+```
+
+**内部 API（标记为 `@internal`，框架内部使用）**：
+- `AttributeModifier`, `ModifierType` - Modifier 类型
+- `createAddBaseModifier` 等 - Modifier 创建函数
+- `AttributeSet` - 底层类
+- `IAttributeModifierTarget` - 内部接口
+
+#### 角色使用示例
+
+```typescript
+import { defineAttributes, TypedAttributeSet } from '@lomo/logic-game-framework';
+
+// 1. 定义属性配置
+const heroConfig = {
+  maxHp: { baseValue: 100, minValue: 0 },
+  currentHp: { baseValue: 100, minValue: 0 },
+  attack: { baseValue: 50 },
+  defense: { baseValue: 30 },
+  speed: { baseValue: 10 },
+} as const;
+
+// 2. 创建角色类
+class Character {
+  readonly name: string;
+  readonly attributes: TypedAttributeSet<typeof heroConfig>;
+
+  constructor(name: string) {
+    this.name = name;
+    this.attributes = defineAttributes(heroConfig);
+
+    // 3. 订阅属性变化
+    this.attributes.onCurrentHpChanged((event) => {
+      console.log(`${this.name} HP: ${event.oldValue} → ${event.newValue}`);
+      if (event.newValue <= 0) {
+        console.log(`${this.name} 已阵亡！`);
+      }
+    });
+  }
+
+  // 4. 获取属性值
+  get hp() { return this.attributes.currentHp; }
+  get maxHp() { return this.attributes.maxHp; }
+  get attack() { return this.attributes.attack; }
+
+  // 5. 直接修改基础值（少数情况）
+  takeDamage(damage: number) {
+    const newHp = Math.max(0, this.attributes.currentHp - damage);
+    this.attributes.setBase('currentHp', newHp);
+  }
+
+  // 6. 查看属性详情
+  showAttackBreakdown() {
+    const breakdown = this.attributes.$attack;
+    console.log(`攻击力分解：`);
+    console.log(`  基础值: ${breakdown.base}`);
+    console.log(`  肉体强化: +${breakdown.addBaseSum}`);
+    console.log(`  肉体潜能: ×${breakdown.mulBaseProduct}`);
+    console.log(`  外物附加: +${breakdown.addFinalSum}`);
+    console.log(`  最终值: ${breakdown.currentValue}`);
+  }
+}
+
+// 7. 使用 StatModifierComponent 修改属性（推荐方式）
+const hero = new Character('勇者');
+const buffAbility = new Ability('power-buff');
+buffAbility.addComponent(new StatModifierComponent([
+  { attributeName: hero.attributes.attackAttribute, modifierType: 'AddBase', value: 20 },
+]));
+```
+
+#### 肉体属性定义
+
+`(Base + AddBase) × MulBase`
 
 包含天生能力、肉体强化、潜能发挥，不包含装备和状态效率。
 
@@ -815,13 +908,36 @@ new StatModifierComponent([
 ])
 ```
 
-**三种访问模式汇总**：
+**四种访问模式汇总**：
 
 | 访问方式 | 返回类型 | 用途 |
 |---------|---------|------|
 | `hero.attack` | `number` | 获取 currentValue（最常用） |
 | `hero.$attack` | `ModifierBreakdown` | 获取详细分层数据 |
 | `hero.attackAttribute` | `'attack'` | 获取属性名引用（用于 StatModifier） |
+| `hero.onAttackChanged(cb)` | `() => void` | 订阅变化事件，返回 unsubscribe |
+
+#### 属性变化委托（onXxxChanged）
+
+通过 `on属性名Changed` 订阅特定属性的变化事件，类似 UE 的 `OnMaxHPChanged` 委托：
+
+```typescript
+// 订阅 HP 变化
+const unsubscribe = hero.onCurrentHpChanged((event) => {
+  console.log(`HP: ${event.oldValue} → ${event.newValue}`);
+  if (event.newValue <= 0) {
+    console.log('角色阵亡！');
+  }
+});
+
+// 取消订阅
+unsubscribe();
+```
+
+**特点**：
+- 返回取消订阅函数，无需保存 callback 引用
+- 只监听特定属性，不会收到其他属性的变化通知
+- 支持驼峰命名（`onMaxHpChanged`、`onCriticalRateChanged`）
 
 ### 5.10 变化钩子
 
@@ -1366,6 +1482,8 @@ interface BattleSaveData {
    - `AttributeSet` 核心类（四层公式、缓存、脏标记、钩子）
    - `defineAttributes()` 工厂函数（类型安全、IDE 自动补全）
    - `xxxAttribute` 属性引用（类似 UE `GetXxxAttribute()`，用于 StatModifier）
+   - `onXxxChanged` 属性变化委托（类似 UE `OnXxxChanged`，返回 unsubscribe）
+   - API 分层导出（对外 API vs 内部 API）
    - Modifier 创建辅助函数
 
 ### 待实现
