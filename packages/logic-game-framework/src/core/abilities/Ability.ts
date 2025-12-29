@@ -18,7 +18,7 @@ export type AbilityState = 'idle' | 'active' | 'channeling' | 'executing' | 'coo
 /**
  * Ability 配置
  */
-export interface AbilityConfig {
+export type AbilityConfig = {
   /** 配置表 ID */
   configId: string;
   /** 显示名称 */
@@ -29,7 +29,7 @@ export interface AbilityConfig {
   icon?: string;
   /** 标签 */
   tags?: string[];
-}
+};
 
 /**
  * Ability 实例

@@ -7,6 +7,7 @@
 
 import { Actor } from '../../core/entity/Actor.js';
 import { AttributeSet, type AttributeConfig } from '../../core/attributes/AttributeSet.js';
+import type { AttributeModifier } from '../../core/attributes/AttributeModifier.js';
 import type { Ability } from '../../core/abilities/Ability.js';
 import type { IAbilityActor } from '../../core/abilities/AbilitySystem.js';
 import { StandardAttributes, BasicUnitAttributeTemplates } from '../attributes/StandardAttributes.js';
@@ -14,7 +15,7 @@ import { StandardAttributes, BasicUnitAttributeTemplates } from '../attributes/S
 /**
  * 战斗单位配置
  */
-export interface BattleUnitConfig {
+export type BattleUnitConfig = {
   /** 单位 ID（可选） */
   id?: string;
   /** 显示名称 */
@@ -25,13 +26,13 @@ export interface BattleUnitConfig {
   stats?: Partial<Record<string, number>>;
   /** 自定义属性配置 */
   attributeConfigs?: AttributeConfig[];
-}
+};
 
 /**
  * BattleUnit
  */
 export class BattleUnit extends Actor implements IAbilityActor {
-  readonly type = 'BattleUnit';
+  readonly type: string = 'BattleUnit';
 
   /** 属性集合 */
   attributes: AttributeSet;
@@ -230,9 +231,9 @@ export class BattleUnit extends Actor implements IAbilityActor {
     // 查找 StatModifierComponent 并应用
     const statMod = ability.getComponent('statModifier');
     if (statMod && 'getModifiers' in statMod) {
-      const modifiers = (statMod as { getModifiers(): readonly object[] }).getModifiers();
+      const modifiers = (statMod as { getModifiers(): readonly AttributeModifier[] }).getModifiers();
       for (const mod of modifiers) {
-        this.attributes.addModifier(mod as any);
+        this.attributes.addModifier(mod);
       }
     }
   }

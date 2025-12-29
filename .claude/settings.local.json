@@ -30,7 +30,8 @@
       "Bash(pnpm test:run:*)",
       "Bash(powershell -Command \"Rename-Item -Path ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\battle-framework'' -NewName ''logic-game-framework''\")",
       "Skill(hex-grid:hexagonal-grids)",
-      "Bash(pnpm --filter @lomo/logic-game-framework test:run:*)"
+      "Bash(pnpm --filter @lomo/logic-game-framework test:run:*)",
+      "Bash(pnpm --filter @lomo/hex-grid build:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
@@ -43,7 +44,8 @@
     "frontend-design@claude-plugins-official": true,
     "plugin-dev@claude-plugins-official": true,
     "context7@claude-plugins-official": true,
-    "claude-mem@thedotmack": false,
-    "hex-grid@LomoMarketplace": true
+    "hex-grid@LomoMarketplace": true,
+    "linus-coding-standards@LomoMarketplace": true,
+    "typescript-style@LomoMarketplace": true
   }
 }

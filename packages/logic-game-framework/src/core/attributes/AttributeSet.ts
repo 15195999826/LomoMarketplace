@@ -17,12 +17,12 @@ import { calculateAttribute, calculateBodyValue } from './AttributeCalculator.js
 /**
  * 属性变化事件
  */
-export interface AttributeChangeEvent {
+export type AttributeChangeEvent = {
   readonly attributeName: string;
   readonly oldValue: number;
   readonly newValue: number;
   readonly changeType: 'base' | 'modifier' | 'current';
-}
+};
 
 /**
  * 属性变化钩子结果
@@ -34,7 +34,7 @@ export type AttributeHookResult = void | boolean | number;
 /**
  * 属性变化钩子
  */
-export interface AttributeHooks {
+export type AttributeHooks = {
   /** 基础值变化前（可阻止或修改） */
   preBaseChange?: (event: AttributeChangeEvent) => AttributeHookResult;
   /** 基础值变化后 */
@@ -43,7 +43,7 @@ export interface AttributeHooks {
   preCurrentChange?: (event: AttributeChangeEvent) => AttributeHookResult;
   /** 当前值变化后 */
   postCurrentChange?: (event: AttributeChangeEvent) => void;
-}
+};
 
 /**
  * 属性变化监听器
@@ -53,7 +53,7 @@ export type AttributeChangeListener = (event: AttributeChangeEvent) => void;
 /**
  * 属性配置
  */
-export interface AttributeConfig {
+export type AttributeConfig = {
   /** 属性名 */
   name: string;
   /** 初始基础值 */
@@ -62,7 +62,7 @@ export interface AttributeConfig {
   minValue?: number;
   /** 最大值（可选） */
   maxValue?: number;
-}
+};
 
 /**
  * 属性集合

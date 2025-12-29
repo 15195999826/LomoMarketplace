@@ -12,28 +12,28 @@
  * q: 列方向
  * r: 行方向
  */
-export interface AxialCoord {
+export type AxialCoord = {
   readonly q: number;
   readonly r: number;
-}
+};
 
 /**
  * Cube 坐标（算法计算用）
  * 约束: q + r + s = 0
  */
-export interface CubeCoord {
+export type CubeCoord = {
   readonly q: number;
   readonly r: number;
   readonly s: number;
-}
+};
 
 /**
  * 像素坐标
  */
-export interface PixelCoord {
+export type PixelCoord = {
   readonly x: number;
   readonly y: number;
-}
+};
 
 // ========== 坐标创建 ==========
 

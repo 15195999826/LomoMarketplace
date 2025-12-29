@@ -13,7 +13,7 @@ export type ModifierType = 'AddBase' | 'MulBase' | 'AddFinal' | 'MulFinal';
  * 属性修改器
  * 描述"如何修改某个属性"的数据结构
  */
-export interface AttributeModifier {
+export type AttributeModifier = {
   /** 修改器唯一标识 */
   readonly id: string;
 
@@ -35,7 +35,7 @@ export interface AttributeModifier {
 
   /** 优先级（同类型内的排序，数值越大越先应用） */
   readonly priority?: number;
-}
+};
 
 /**
  * 创建 AddBase 修改器
@@ -117,7 +117,7 @@ export function createMulFinalModifier(
  * Modifier 聚合结果
  * 用于 UI 显示属性分层
  */
-export interface ModifierBreakdown {
+export type ModifierBreakdown = {
   /** 基础值 */
   base: number;
   /** 肉体强化总和 */
@@ -132,4 +132,4 @@ export interface ModifierBreakdown {
   mulFinalProduct: number;
   /** 最终值 = (bodyValue + addFinalSum) * mulFinalProduct */
   currentValue: number;
-}
+};

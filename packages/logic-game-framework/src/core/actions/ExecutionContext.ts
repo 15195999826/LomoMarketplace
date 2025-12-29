@@ -25,7 +25,7 @@ export interface IAbility {
  * 执行上下文
  * Action 执行时可访问的所有信息
  */
-export interface ExecutionContext {
+export type ExecutionContext = {
   /** 战斗实例引用 */
   readonly battle: IGameplayInstance;
 
@@ -55,7 +55,7 @@ export interface ExecutionContext {
 
   /** 回调深度（用于防止无限递归） */
   callbackDepth?: number;
-}
+};
 
 /**
  * 创建执行上下文

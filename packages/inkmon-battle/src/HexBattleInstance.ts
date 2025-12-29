@@ -26,7 +26,7 @@ export type BattleResult = 'ongoing' | 'teamA_win' | 'teamB_win' | 'draw';
 /**
  * 六边形战斗配置
  */
-export interface HexBattleConfig {
+export type HexBattleConfig = {
   /** 网格宽度（默认 15） */
   gridWidth?: number;
   /** 网格高度（默认 15） */
@@ -35,7 +35,7 @@ export interface HexBattleConfig {
   atbConfig?: ATBConfig;
   /** 最大回合数（默认 100） */
   maxTurns?: number;
-}
+};
 
 /**
  * 行动类型
@@ -45,11 +45,11 @@ export type ActionType = 'move' | 'attack' | 'skip';
 /**
  * 行动结果
  */
-export interface ActionResult {
+export type ActionResult = {
   success: boolean;
   events: BattleEvent[];
   message?: string;
-}
+};
 
 /**
  * HexBattleInstance - 六边形战斗实例

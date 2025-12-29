@@ -34,14 +34,14 @@ export interface IAction {
 /**
  * 回调 Action 配置
  */
-export interface ActionCallback {
+export type ActionCallback = {
   /** 触发条件 */
   readonly trigger: string;
   /** 要执行的 Action */
   readonly action: IAction;
   /** 回调目标策略 */
   readonly targetStrategy: 'affected' | 'source' | 'none';
-}
+};
 
 /**
  * 回调递归深度限制
@@ -203,7 +203,7 @@ export class NoopAction extends BaseAction {
 /**
  * Action 配置接口（用于数据驱动）
  */
-export interface ActionConfig {
+export type ActionConfig = {
   /** Action 类型 */
   type: string;
   /** 目标引用 */
@@ -216,7 +216,7 @@ export interface ActionConfig {
     action: ActionConfig;
     targetStrategy?: ActionCallback['targetStrategy'];
   }>;
-}
+};
 
 /**
  * Action 工厂接口
