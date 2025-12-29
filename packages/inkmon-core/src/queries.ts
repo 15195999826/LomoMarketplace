@@ -1,20 +1,69 @@
 import { getDatabase } from "./database.js";
-import { InkMonSchema, type InkMon, type InkMonListItem, type FilterOptions, type Element, type EvolutionStage } from "./types.js";
+import { InkMonSchema, type InkMon, type InkMonListItem, type FilterOptions, type Element, type EvolutionStage, type DietType } from "./types.js";
 import { validateInkMon } from "./validators.js";
 import { z } from "zod";
 
 /**
+ * 数据库行类型（SQLite 查询返回的原始数据）
+ */
+type InkMonRow = {
+  name: string;
+  name_en: string;
+  dex_number: number;
+  description: string;
+  primary_element: string;
+  secondary_element: string | null;
+  hp: number;
+  attack: number;
+  defense: number;
+  sp_attack: number;
+  sp_defense: number;
+  speed: number;
+  bst: number;
+  base_animal: string;
+  features: string; // JSON string
+  color_palette: string; // JSON string
+  evolution_stage: string;
+  evolves_from: string | null;
+  evolves_to: string; // JSON string
+  evolution_method: string | null;
+  habitat: string;
+  diet: string;
+  predators: string; // JSON string
+  prey: string; // JSON string
+  symbiosis: string | null; // JSON string
+  competition: string | null; // JSON string
+  design_prompt: string;
+};
+
+/**
+ * 列表项数据库行类型
+ */
+type InkMonListRow = Pick<InkMonRow,
+  | 'dex_number'
+  | 'name'
+  | 'name_en'
+  | 'primary_element'
+  | 'secondary_element'
+  | 'evolution_stage'
+  | 'color_palette'
+  | 'hp'
+  | 'attack'
+  | 'defense'
+>;
+
+/**
  * 数据库行转 InkMon 对象
  */
-export function rowToInkMon(row: any): InkMon {
+export function rowToInkMon(row: InkMonRow): InkMon {
   return {
     name: row.name,
     name_en: row.name_en,
     dex_number: row.dex_number,
     description: row.description,
     elements: {
-      primary: row.primary_element,
-      secondary: row.secondary_element,
+      primary: row.primary_element as Element,
+      secondary: row.secondary_element as Element | null,
     },
     stats: {
       hp: row.hp,
@@ -27,22 +76,22 @@ export function rowToInkMon(row: any): InkMon {
     },
     design: {
       base_animal: row.base_animal,
-      features: JSON.parse(row.features),
-      color_palette: JSON.parse(row.color_palette),
+      features: JSON.parse(row.features) as string[],
+      color_palette: JSON.parse(row.color_palette) as string[],
     },
     evolution: {
-      stage: row.evolution_stage,
+      stage: row.evolution_stage as EvolutionStage,
       evolves_from: row.evolves_from,
-      evolves_to: JSON.parse(row.evolves_to),
+      evolves_to: JSON.parse(row.evolves_to) as string[],
       evolution_method: row.evolution_method,
     },
     ecology: {
       habitat: row.habitat,
-      diet: row.diet,
-      predators: JSON.parse(row.predators),
-      prey: JSON.parse(row.prey),
-      symbiosis: row.symbiosis ? JSON.parse(row.symbiosis) : [],
-      competition: row.competition ? JSON.parse(row.competition) : [],
+      diet: row.diet as DietType,
+      predators: JSON.parse(row.predators) as string[],
+      prey: JSON.parse(row.prey) as string[],
+      symbiosis: row.symbiosis ? JSON.parse(row.symbiosis) as string[] : [],
+      competition: row.competition ? JSON.parse(row.competition) as string[] : [],
     },
     image_prompts: {
       design: row.design_prompt,
@@ -53,7 +102,7 @@ export function rowToInkMon(row: any): InkMon {
 /**
  * 数据库行转列表项
  */
-function rowToListItem(row: any): InkMonListItem {
+function rowToListItem(row: InkMonListRow): InkMonListItem {
   return {
     dex_number: row.dex_number,
     name: row.name,
@@ -80,7 +129,7 @@ export function getAllInkMons(): InkMonListItem[] {
            evolution_stage, color_palette, hp, attack, defense
     FROM inkmons
     ORDER BY dex_number ASC
-  `).all() as any[];
+  `).all() as InkMonListRow[];
 
   return rows.map(rowToListItem);
 }
@@ -102,7 +151,7 @@ export function getInkMonsPaginated(page: number, pageSize: number): {
     FROM inkmons
     ORDER BY dex_number ASC
     LIMIT ? OFFSET ?
-  `).all(pageSize, offset) as any[];
+  `).all(pageSize, offset) as InkMonListRow[];
 
   const countRow = db.prepare("SELECT COUNT(*) as count FROM inkmons").get() as { count: number };
   const total = countRow.count;
@@ -119,7 +168,7 @@ export function getInkMonsPaginated(page: number, pageSize: number): {
  */
 export function getInkMonByNameEn(nameEn: string): InkMon | null {
   const db = getDatabase();
-  const row = db.prepare("SELECT * FROM inkmons WHERE name_en = ?").get(nameEn) as any;
+  const row = db.prepare("SELECT * FROM inkmons WHERE name_en = ?").get(nameEn) as InkMonRow | undefined;
 
   if (!row) {
     return null;
@@ -133,7 +182,7 @@ export function getInkMonByNameEn(nameEn: string): InkMon | null {
  */
 export function getInkMonByDexNumber(dexNumber: number): InkMon | null {
   const db = getDatabase();
-  const row = db.prepare("SELECT * FROM inkmons WHERE dex_number = ?").get(dexNumber) as any;
+  const row = db.prepare("SELECT * FROM inkmons WHERE dex_number = ?").get(dexNumber) as InkMonRow | undefined;
 
   if (!row) {
     return null;
@@ -157,7 +206,7 @@ export function searchInkMons(query: string): InkMonListItem[] {
        OR name_en LIKE ?
        OR CAST(dex_number AS TEXT) LIKE ?
     ORDER BY dex_number ASC
-  `).all(searchPattern, searchPattern, searchPattern) as any[];
+  `).all(searchPattern, searchPattern, searchPattern) as InkMonListRow[];
 
   return rows.map(rowToListItem);
 }
@@ -168,7 +217,7 @@ export function searchInkMons(query: string): InkMonListItem[] {
 export function filterInkMons(options: FilterOptions): InkMonListItem[] {
   const db = getDatabase();
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: (string | number)[] = [];
 
   // 搜索条件
   if (options.search) {
@@ -199,7 +248,7 @@ export function filterInkMons(options: FilterOptions): InkMonListItem[] {
     FROM inkmons
     ${whereClause}
     ORDER BY dex_number ASC
-  `).all(...params) as any[];
+  `).all(...params) as InkMonListRow[];
 
   return rows.map(rowToListItem);
 }
@@ -319,16 +368,17 @@ export function addInkMon(inkmon: InkMon): AddInkMonResult {
         : result.lastInsertRowid,
     };
 
-  } catch (error: any) {
-    if (error.message?.includes("UNIQUE constraint failed")) {
-      if (error.message.includes("name_en")) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("UNIQUE constraint failed")) {
+      if (errorMessage.includes("name_en")) {
         return { success: false, message: `英文名称 "${inkmon.name_en}" 已存在` };
       }
-      if (error.message.includes("dex_number")) {
+      if (errorMessage.includes("dex_number")) {
         return { success: false, message: `图鉴编号 #${inkmon.dex_number} 已存在` };
       }
     }
-    return { success: false, message: `数据库错误: ${error.message}` };
+    return { success: false, message: `数据库错误: ${errorMessage}` };
   }
 }
 
@@ -435,11 +485,12 @@ export function updateInkMon(inkmon: InkMon): UpdateInkMonResult {
         : result.changes,
     };
 
-  } catch (error: any) {
-    if (error.message?.includes("UNIQUE constraint failed") && error.message.includes("dex_number")) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("UNIQUE constraint failed") && errorMessage.includes("dex_number")) {
       return { success: false, message: `图鉴编号 #${inkmon.dex_number} 已被其他 InkMon 使用` };
     }
-    return { success: false, message: `数据库错误: ${error.message}` };
+    return { success: false, message: `数据库错误: ${errorMessage}` };
   }
 }
 
@@ -473,7 +524,8 @@ export function deleteInkMon(nameEn: string): DeleteInkMonResult {
         : result.changes,
     };
 
-  } catch (error: any) {
-    return { success: false, message: `数据库错误: ${error.message}` };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { success: false, message: `数据库错误: ${errorMessage}` };
   }
 }
