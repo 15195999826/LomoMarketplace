@@ -61,6 +61,28 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/hex-grid:
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+
+  packages/inkmon-battle:
+    dependencies:
+      '@inkmon/core':
+        specifier: workspace:*
+        version: link:../inkmon-core
+      '@lomo/hex-grid':
+        specifier: workspace:*
+        version: link:../hex-grid
+      '@lomo/logic-game-framework':
+        specifier: workspace:*
+        version: link:../logic-game-framework
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.3
+
   packages/inkmon-core:
     dependencies:
       zod:

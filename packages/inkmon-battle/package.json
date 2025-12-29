@@ -1,0 +1,36 @@
+{
+  "name": "@inkmon/battle",
+  "version": "0.1.0",
+  "description": "InkMon Battle System - Hexagonal Grid ATB Battle",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@lomo/logic-game-framework": "workspace:*",
+    "@lomo/hex-grid": "workspace:*",
+    "@inkmon/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
