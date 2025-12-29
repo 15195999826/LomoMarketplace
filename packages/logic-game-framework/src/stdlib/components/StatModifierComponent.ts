@@ -13,7 +13,7 @@ import {
   type IAbilityForComponent,
   type ComponentLifecycleContext,
 } from '../../core/abilities/AbilityComponent.js';
-import type { AttributeModifier, ModifierType } from '../../core/attributes/AttributeModifier.js';
+import { ModifierType, type AttributeModifier } from '../../core/attributes/AttributeModifier.js';
 import { generateId } from '../../core/utils/IdGenerator.js';
 
 /**
@@ -38,8 +38,8 @@ export type StatModifierConfig = {
  * // 添加属性修改组件
  * ability.addComponent(
  *   new StatModifierComponent([
- *     { attributeName: 'attack', modifierType: 'AddBase', value: 30 },
- *     { attributeName: 'defense', modifierType: 'MulBase', value: 0.2 },
+ *     { attributeName: 'attack', modifierType: ModifierType.AddBase, value: 30 },
+ *     { attributeName: 'defense', modifierType: ModifierType.MulBase, value: 0.2 },
  *   ])
  * );
  *
@@ -155,11 +155,34 @@ export class StatModifierComponent extends BaseAbilityComponent {
     };
   }
 
+  /**
+   * @deprecated 由于 configs 是 readonly，此方法无法完整恢复状态
+   * 请使用静态方法 StatModifierComponent.fromSerialized() 代替
+   */
   deserialize(data: object): void {
     const d = data as { configs: StatModifierConfig[]; scale?: number };
     // configs 是 readonly，不能重新赋值
     // 只恢复 scale
     this.currentScale = d.scale ?? 1;
+  }
+
+  /**
+   * 从序列化数据创建新的 StatModifierComponent 实例
+   *
+   * @param data 序列化数据
+   * @returns 新的 StatModifierComponent 实例
+   *
+   * @example
+   * ```typescript
+   * const saved = component.serialize();
+   * const restored = StatModifierComponent.fromSerialized(saved);
+   * ```
+   */
+  static fromSerialized(data: object): StatModifierComponent {
+    const d = data as { configs: StatModifierConfig[]; scale?: number };
+    const component = new StatModifierComponent(d.configs ?? []);
+    component.currentScale = d.scale ?? 1;
+    return component;
   }
 }
 
@@ -175,7 +198,7 @@ export function statModifier(configs: StatModifierConfig[]): StatModifierCompone
  */
 export function addBaseStat(attributeName: string, value: number): StatModifierComponent {
   return new StatModifierComponent([
-    { attributeName, modifierType: 'AddBase', value },
+    { attributeName, modifierType: ModifierType.AddBase, value },
   ]);
 }
 
@@ -184,7 +207,7 @@ export function addBaseStat(attributeName: string, value: number): StatModifierC
  */
 export function mulBaseStat(attributeName: string, value: number): StatModifierComponent {
   return new StatModifierComponent([
-    { attributeName, modifierType: 'MulBase', value },
+    { attributeName, modifierType: ModifierType.MulBase, value },
   ]);
 }
 
@@ -193,7 +216,7 @@ export function mulBaseStat(attributeName: string, value: number): StatModifierC
  */
 export function addFinalStat(attributeName: string, value: number): StatModifierComponent {
   return new StatModifierComponent([
-    { attributeName, modifierType: 'AddFinal', value },
+    { attributeName, modifierType: ModifierType.AddFinal, value },
   ]);
 }
 
@@ -202,6 +225,6 @@ export function addFinalStat(attributeName: string, value: number): StatModifier
  */
 export function mulFinalStat(attributeName: string, value: number): StatModifierComponent {
   return new StatModifierComponent([
-    { attributeName, modifierType: 'MulFinal', value },
+    { attributeName, modifierType: ModifierType.MulFinal, value },
   ]);
 }

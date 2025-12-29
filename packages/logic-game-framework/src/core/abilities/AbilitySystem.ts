@@ -9,6 +9,7 @@ import { System, SystemPriority } from '../entity/System.js';
 import type { Actor } from '../entity/Actor.js';
 import type { HookContext, ActorRef } from '../types/common.js';
 import type { Ability } from './Ability.js';
+import type { ComponentLifecycleContext } from './AbilityComponent.js';
 import { getLogger } from '../utils/Logger.js';
 
 /**
@@ -145,10 +146,13 @@ export class AbilitySystem extends System {
 
   /**
    * 向 Actor 添加 Ability
+   * @param actor 目标 Actor
+   * @param ability 要添加的 Ability
+   * @param context 生命周期上下文（包含 AttributeModifierTarget）
    */
-  addAbilityToActor(actor: IAbilityActor, ability: Ability): void {
+  addAbilityToActor(actor: IAbilityActor, ability: Ability, context: ComponentLifecycleContext): void {
     actor.abilities.push(ability);
-    ability.activate();
+    ability.activate(context);
   }
 
   /**

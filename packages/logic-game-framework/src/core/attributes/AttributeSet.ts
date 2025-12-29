@@ -453,6 +453,15 @@ export class AttributeSet {
     }
   }
 
+  /**
+   * 移除所有变化监听器
+   *
+   * 用于清理所有订阅，防止内存泄漏
+   */
+  removeAllChangeListeners(): void {
+    this.listeners = [];
+  }
+
   // ========== 钩子管理 ==========
 
   /**

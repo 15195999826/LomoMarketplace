@@ -112,7 +112,7 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
    *
    * // 用于 StatModifierComponent
    * new StatModifierComponent([
-   *   { attributeName: hero.attackAttribute, modifierType: 'AddBase', value: 20 }
+   *   { attributeName: hero.attackAttribute, modifierType: ModifierType.AddBase, value: 20 }
    * ])
    * ```
    */
@@ -178,6 +178,19 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
    */
   removeChangeListener(listener: AttributeChangeListener): void;
 
+  /**
+   * 移除所有变化监听器
+   *
+   * 用于清理所有订阅（包括 onXxxChanged 创建的监听器），防止内存泄漏
+   *
+   * @example
+   * ```typescript
+   * // 清理角色销毁时的所有监听器
+   * character.attributes.removeAllChangeListeners();
+   * ```
+   */
+  removeAllChangeListeners(): void;
+
   // ========== 钩子 ==========
 
   /**
@@ -212,62 +225,33 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
   readonly _modifierTarget: IAttributeModifierTarget;
 };
 
+// ========== 内部辅助函数 ==========
+
 /**
- * 定义类型安全的属性集合
- *
- * @param config 属性配置对象，键为属性名，值为属性配置
- * @returns 类型安全的属性集合代理
- *
- * @example
- * ```typescript
- * // 定义角色属性
- * const hero = defineAttributes({
- *   maxHp: { baseValue: 100, minValue: 0 },
- *   currentHp: { baseValue: 100, minValue: 0, maxValue: 100 },
- *   attack: { baseValue: 50 },
- *   defense: { baseValue: 30 },
- *   speed: { baseValue: 10 },
- * });
- *
- * // 访问当前值
- * console.log(hero.attack);  // 50
- *
- * // 添加 Buff
- * hero.addModifier(createAddBaseModifier('str-buff', 'attack', 20));
- * console.log(hero.attack);  // 70
- *
- * // 查看详情
- * console.log(hero.$attack.addBaseSum);  // 20
- * ```
+ * 创建 Modifier 写入接口
  */
-export function defineAttributes<T extends AttributesConfig>(
-  config: T
-): TypedAttributeSet<T> {
-  // 创建底层 AttributeSet
-  const set = new AttributeSet(
-    Object.entries(config).map(([name, cfg]) => ({
-      name,
-      baseValue: cfg.baseValue,
-      minValue: cfg.minValue,
-      maxValue: cfg.maxValue,
-    }))
-  );
-
-  // 缓存属性名集合，用于快速判断
-  const attrNames = new Set(Object.keys(config));
-
-  // 创建 Modifier 写入接口（内部使用）
-  const modifierTarget: IAttributeModifierTarget = {
+function createModifierTarget(set: AttributeSet): IAttributeModifierTarget {
+  return {
     addModifier: (modifier: AttributeModifier) => set.addModifier(modifier),
     removeModifier: (modifierId: string) => set.removeModifier(modifierId),
     removeModifiersBySource: (source: string) => set.removeModifiersBySource(source),
     getModifiers: (name: string) => set.getModifiers(name),
     hasModifier: (modifierId: string) => set.hasModifier(modifierId),
   };
+}
 
-  // 创建 Proxy
-  return new Proxy(set as unknown as TypedAttributeSet<T>, {
-    get(target, prop: string | symbol) {
+/**
+ * 创建 TypedAttributeSet 的 Proxy handler
+ *
+ * 此函数提取了 defineAttributes 和 restoreAttributes 共用的 Proxy 逻辑
+ */
+function createAttributeProxyHandler<T extends AttributesConfig>(
+  set: AttributeSet,
+  attrNames: Set<string>,
+  modifierTarget: IAttributeModifierTarget
+): ProxyHandler<TypedAttributeSet<T>> {
+  return {
+    get(_target, prop: string | symbol) {
       // symbol 属性直接透传
       if (typeof prop === 'symbol') {
         return (set as any)[prop];
@@ -338,7 +322,7 @@ export function defineAttributes<T extends AttributesConfig>(
       return value;
     },
 
-    set(_target, prop: string | symbol, value) {
+    set(_target, prop: string | symbol, _value) {
       // 禁止直接赋值属性（应该用 setBase）
       if (typeof prop === 'string' && attrNames.has(prop)) {
         throw new Error(
@@ -369,7 +353,63 @@ export function defineAttributes<T extends AttributesConfig>(
       }
       return undefined;
     },
-  });
+  };
+}
+
+// ========== 对外 API ==========
+
+/**
+ * 定义类型安全的属性集合
+ *
+ * @param config 属性配置对象，键为属性名，值为属性配置
+ * @returns 类型安全的属性集合代理
+ *
+ * @example
+ * ```typescript
+ * // 定义角色属性
+ * const hero = defineAttributes({
+ *   maxHp: { baseValue: 100, minValue: 0 },
+ *   currentHp: { baseValue: 100, minValue: 0, maxValue: 100 },
+ *   attack: { baseValue: 50 },
+ *   defense: { baseValue: 30 },
+ *   speed: { baseValue: 10 },
+ * });
+ *
+ * // 访问当前值
+ * console.log(hero.attack);  // 50
+ *
+ * // 添加 Buff（通过内部接口）
+ * hero._modifierTarget.addModifier(createAddBaseModifier('str-buff', 'attack', 20));
+ * console.log(hero.attack);  // 70
+ *
+ * // 查看详情
+ * console.log(hero.$attack.addBaseSum);  // 20
+ * ```
+ */
+export function defineAttributes<T extends AttributesConfig>(
+  config: T
+): TypedAttributeSet<T> {
+  // 创建底层 AttributeSet
+  const set = new AttributeSet(
+    Object.entries(config).map(([name, cfg]) => ({
+      name,
+      baseValue: cfg.baseValue,
+      minValue: cfg.minValue,
+      maxValue: cfg.maxValue,
+    }))
+  );
+
+  // 缓存属性名集合，用于快速判断
+  const attrNames = new Set(Object.keys(config));
+
+  // 创建 Modifier 写入接口（内部使用）
+  const modifierTarget = createModifierTarget(set);
+
+  // 创建 Proxy
+  return new Proxy(
+    set as unknown as TypedAttributeSet<T>,
+    createAttributeProxyHandler(set, attrNames, modifierTarget)
+  );
 }
 
 /**
@@ -394,85 +434,11 @@ export function restoreAttributes<T extends AttributesConfig>(
   const attrNames = new Set(Object.keys(data));
 
   // 创建 Modifier 写入接口（内部使用）
-  const modifierTarget: IAttributeModifierTarget = {
-    addModifier: (modifier: AttributeModifier) => set.addModifier(modifier),
-    removeModifier: (modifierId: string) => set.removeModifier(modifierId),
-    removeModifiersBySource: (source: string) => set.removeModifiersBySource(source),
-    getModifiers: (name: string) => set.getModifiers(name),
-    hasModifier: (modifierId: string) => set.hasModifier(modifierId),
-  };
+  const modifierTarget = createModifierTarget(set);
 
-  return new Proxy(set as unknown as TypedAttributeSet<T>, {
-    get(target, prop: string | symbol) {
-      if (typeof prop === 'symbol') {
-        return (set as any)[prop];
-      }
-
-      if (prop === '_raw') {
-        return set;
-      }
-
-      if (prop === '_modifierTarget') {
-        return modifierTarget;
-      }
-
-      if (prop.startsWith('$')) {
-        const attrName = prop.slice(1);
-        if (attrNames.has(attrName)) {
-          return set.getBreakdown(attrName);
-        }
-      }
-
-      // xxxAttribute: 返回属性名字符串（类似 UE GetXxxAttribute）
-      if (prop.endsWith('Attribute')) {
-        const attrName = prop.slice(0, -9); // 移除 'Attribute' 后缀
-        if (attrNames.has(attrName)) {
-          return attrName;
-        }
-      }
-
-      // onXxxChanged: 返回订阅函数（类似 UE OnXxxChanged 委托）
-      if (prop.startsWith('on') && prop.endsWith('Changed')) {
-        const capitalizedName = prop.slice(2, -7); // 移除 'on' 前缀和 'Changed' 后缀
-        const attrName = capitalizedName.charAt(0).toLowerCase() + capitalizedName.slice(1);
-        if (attrNames.has(attrName)) {
-          return (callback: (event: AttributeChangeEvent) => void) => {
-            const filteredListener: AttributeChangeListener = (event) => {
-              if (event.attributeName === attrName) {
-                callback(event);
-              }
-            };
-            set.addChangeListener(filteredListener);
-            return () => {
-              set.removeChangeListener(filteredListener);
-            };
-          };
-        }
-      }
-
-      if (attrNames.has(prop)) {
-        return set.getCurrentValue(prop);
-      }
-
-      // 排除 Modifier 方法
-      if (prop === 'addModifier' || prop === 'removeModifier' || prop === 'removeModifiersBySource') {
-        return undefined;
-      }
-
-      const value = (set as any)[prop];
-      if (typeof value === 'function') {
-        return value.bind(set);
-      }
-      return value;
-    },
-
-    set(_target, prop: string | symbol, _value) {
-      if (typeof prop === 'string' && attrNames.has(prop)) {
-        throw new Error(
-          `Cannot directly set attribute "${prop}". Use setBase("${prop}", value) instead.`
-        );
-      }
-      return false;
-    },
-  });
+  // 创建 Proxy（复用公共 handler）
+  return new Proxy(
+    set as unknown as TypedAttributeSet<T>,
+    createAttributeProxyHandler(set, attrNames, modifierTarget)
+  );
 }

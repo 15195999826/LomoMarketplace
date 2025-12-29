@@ -76,7 +76,7 @@
  * const hero = new Character('勇者');
  * const buffAbility = new Ability('power-buff');
  * buffAbility.addComponent(new StatModifierComponent([
- *   { attributeName: hero.attributes.attackAttribute, modifierType: 'AddBase', value: 20 },
+ *   { attributeName: hero.attributes.attackAttribute, modifierType: ModifierType.AddBase, value: 20 },
  * ]));
  * ```
  *
@@ -120,9 +120,10 @@ export type {
 // ============================================================
 
 /**
- * @internal Modifier 类型定义
+ * @internal Modifier 类型枚举（值 + 类型）
  */
-export type { ModifierType, AttributeModifier } from './AttributeModifier.js';
+export { ModifierType } from './AttributeModifier.js';
+export type { AttributeModifier } from './AttributeModifier.js';
 
 /**
  * @internal Modifier 创建辅助函数（供 StatModifierComponent 使用）

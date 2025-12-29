@@ -21,6 +21,7 @@ import {
   createMulBaseModifier,
   createAddFinalModifier,
   createMulFinalModifier,
+  ModifierType,
 } from '../../../src/core/attributes/index.js';
 
 describe('defineAttributes（高层 API）', () => {
@@ -65,7 +66,7 @@ describe('defineAttributes（高层 API）', () => {
       // 可用于 StatModifierConfig 的 attributeName
       const config = {
         attributeName: attrs.attackAttribute,
-        modifierType: 'AddBase' as const,
+        modifierType: ModifierType.AddBase,
         value: 20,
       };
       expect(config.attributeName).toBe('attack');
@@ -294,6 +295,36 @@ describe('defineAttributes（高层 API）', () => {
 
       unsub1();
       unsub2();
+    });
+
+    it('removeAllChangeListeners 应该清理所有监听器', () => {
+      const attrs = defineAttributes({
+        attack: { baseValue: 100 },
+        defense: { baseValue: 50 },
+      });
+
+      const changes: number[] = [];
+
+      // 添加多个监听器
+      attrs.addChangeListener(() => changes.push(1));
+      attrs.onAttackChanged(() => changes.push(2));
+      attrs.onDefenseChanged(() => changes.push(3));
+
+      // 修改属性，应该收到通知
+      attrs.setBase('attack', 110);
+      expect(changes.length).toBeGreaterThan(0);
+
+      // 清空记录
+      changes.length = 0;
+
+      // 移除所有监听器
+      attrs.removeAllChangeListeners();
+
+      // 再次修改属性，不应该收到通知
+      attrs.setBase('attack', 120);
+      attrs.setBase('defense', 60);
+
+      expect(changes).toHaveLength(0);
     });
   });
 

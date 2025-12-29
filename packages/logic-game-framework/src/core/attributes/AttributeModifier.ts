@@ -6,8 +6,29 @@
  * 2. MulBase  - 肉体潜能（基础乘法）
  * 3. AddFinal - 外物附加（最终加法）
  * 4. MulFinal - 状态效率（最终乘法）
+ *
+ * @example
+ * ```typescript
+ * // 使用枚举值（推荐，IDE 自动补全）
+ * { modifierType: ModifierType.AddBase }
+ *
+ * // 也支持字符串（兼容旧代码）
+ * { modifierType: 'AddBase' }
+ * ```
  */
-export type ModifierType = 'AddBase' | 'MulBase' | 'AddFinal' | 'MulFinal';
+export const ModifierType = {
+  /** 肉体强化（基础加法） */
+  AddBase: 'AddBase',
+  /** 肉体潜能（基础乘法） */
+  MulBase: 'MulBase',
+  /** 外物附加（最终加法） */
+  AddFinal: 'AddFinal',
+  /** 状态效率（最终乘法） */
+  MulFinal: 'MulFinal',
+} as const;
+
+/** 修改器类型 */
+export type ModifierType = (typeof ModifierType)[keyof typeof ModifierType];
 
 /**
  * 属性修改器
@@ -50,7 +71,7 @@ export function createAddBaseModifier(
   return {
     id,
     attributeName,
-    modifierType: 'AddBase',
+    modifierType: ModifierType.AddBase,
     value,
     source,
   };
@@ -69,7 +90,7 @@ export function createMulBaseModifier(
   return {
     id,
     attributeName,
-    modifierType: 'MulBase',
+    modifierType: ModifierType.MulBase,
     value,
     source,
   };
@@ -88,7 +109,7 @@ export function createAddFinalModifier(
   return {
     id,
     attributeName,
-    modifierType: 'AddFinal',
+    modifierType: ModifierType.AddFinal,
     value,
     source,
   };
@@ -107,7 +128,7 @@ export function createMulFinalModifier(
   return {
     id,
     attributeName,
-    modifierType: 'MulFinal',
+    modifierType: ModifierType.MulFinal,
     value,
     source,
   };
