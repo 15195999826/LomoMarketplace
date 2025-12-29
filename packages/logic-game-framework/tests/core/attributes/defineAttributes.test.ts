@@ -1,3 +1,18 @@
+/**
+ * defineAttributes 高层 API 测试
+ *
+ * 本文件测试 defineAttributes() 工厂函数，这是游戏开发者应使用的推荐 API。
+ *
+ * 主要特性：
+ * - 类型安全：IDE 自动补全属性名
+ * - `attrs.xxx` → 直接访问 currentValue
+ * - `attrs.$xxx` → 访问 ModifierBreakdown 详情
+ * - `attrs.xxxAttribute` → 获取属性名引用（类似 UE GetXxxAttribute）
+ * - `attrs.onXxxChanged(cb)` → 订阅属性变化（类似 UE OnXxxChanged 委托）
+ * - Modifier 操作通过 `_modifierTarget` 内部接口（仅供 AbilityComponent 使用）
+ *
+ * 底层实现测试参见 AttributeSet.test.ts
+ */
 import { describe, it, expect } from 'vitest';
 import {
   defineAttributes,
@@ -8,7 +23,7 @@ import {
   createMulFinalModifier,
 } from '../../../src/core/attributes/index.js';
 
-describe('defineAttributes', () => {
+describe('defineAttributes（高层 API）', () => {
   describe('基础功能', () => {
     it('应该能定义属性并直接访问 currentValue', () => {
       const attrs = defineAttributes({
@@ -210,35 +225,107 @@ describe('defineAttributes', () => {
       expect(changes[0]).toEqual({ old: 100, new: 120 });
       expect(changes[1]).toEqual({ old: 120, new: 150 });
     });
+
+    it('应该能通过 onXxxChanged 订阅特定属性变化', () => {
+      const attrs = defineAttributes({
+        attack: { baseValue: 100 },
+        defense: { baseValue: 50 },
+      });
+
+      const attackChanges: { old: number; new: number }[] = [];
+      const defenseChanges: { old: number; new: number }[] = [];
+
+      // 订阅 attack 变化
+      const unsubAttack = attrs.onAttackChanged((event) => {
+        attackChanges.push({ old: event.oldValue, new: event.newValue });
+      });
+
+      // 订阅 defense 变化
+      const unsubDefense = attrs.onDefenseChanged((event) => {
+        defenseChanges.push({ old: event.oldValue, new: event.newValue });
+      });
+
+      // 修改 attack
+      attrs.setBase('attack', 120);
+      expect(attackChanges).toHaveLength(1);
+      expect(attackChanges[0]).toEqual({ old: 100, new: 120 });
+      expect(defenseChanges).toHaveLength(0); // defense 没有变化
+
+      // 修改 defense
+      attrs.setBase('defense', 60);
+      expect(defenseChanges).toHaveLength(1);
+      expect(defenseChanges[0]).toEqual({ old: 50, new: 60 });
+
+      // 取消订阅 attack
+      unsubAttack();
+      attrs.setBase('attack', 150);
+      expect(attackChanges).toHaveLength(1); // 不再收到通知
+
+      // defense 仍然订阅中
+      attrs.setBase('defense', 70);
+      expect(defenseChanges).toHaveLength(2);
+
+      // 清理
+      unsubDefense();
+    });
+
+    it('onXxxChanged 应该支持驼峰命名的属性', () => {
+      const attrs = defineAttributes({
+        maxHp: { baseValue: 100 },
+        criticalRate: { baseValue: 0.1 },
+      });
+
+      const maxHpChanges: number[] = [];
+      const critChanges: number[] = [];
+
+      const unsub1 = attrs.onMaxHpChanged((event) => {
+        maxHpChanges.push(event.newValue);
+      });
+
+      const unsub2 = attrs.onCriticalRateChanged((event) => {
+        critChanges.push(event.newValue);
+      });
+
+      attrs.setBase('maxHp', 150);
+      attrs.setBase('criticalRate', 0.2);
+
+      expect(maxHpChanges).toEqual([150]);
+      expect(critChanges).toEqual([0.2]);
+
+      unsub1();
+      unsub2();
+    });
   });
 
   describe('序列化功能', () => {
     it('应该能序列化和反序列化', () => {
-      const attrs = defineAttributes({
+      const config = {
         maxHp: { baseValue: 100 },
         attack: { baseValue: 50 },
-      });
+      };
+      const attrs = defineAttributes(config);
 
       attrs._modifierTarget.addModifier(createAddBaseModifier('buff', 'attack', 20));
 
       // 序列化
       const data = attrs.serialize();
 
-      // 反序列化
-      const restored = restoreAttributes<typeof attrs>(data);
+      // 反序列化（泛型参数应该是配置类型）
+      const restored = restoreAttributes<typeof config>(data);
 
       expect(restored.maxHp).toBe(100);
       expect(restored.attack).toBe(70); // 50 + 20
     });
 
     it('restoreAttributes 也应该支持 xxxAttribute', () => {
-      const attrs = defineAttributes({
+      const config = {
         attack: { baseValue: 50 },
         defense: { baseValue: 30 },
-      });
+      };
+      const attrs = defineAttributes(config);
 
       const data = attrs.serialize();
-      const restored = restoreAttributes<typeof attrs>(data);
+      const restored = restoreAttributes<typeof config>(data);
 
       // 验证 xxxAttribute 也能正常工作
       expect(restored.attackAttribute).toBe('attack');

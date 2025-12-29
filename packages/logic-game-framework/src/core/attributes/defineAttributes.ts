@@ -31,7 +31,7 @@
  */
 
 import type { AttributeModifier, ModifierBreakdown } from './AttributeModifier.js';
-import type { AttributeChangeListener, AttributeHooks } from './AttributeSet.js';
+import type { AttributeChangeEvent, AttributeChangeListener, AttributeHooks } from './AttributeSet.js';
 import { AttributeSet } from './AttributeSet.js';
 
 /**
@@ -117,6 +117,25 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
    * ```
    */
   readonly [K in keyof T as `${string & K}Attribute`]: K;
+} & {
+  /**
+   * onXxxChanged 委托：订阅特定属性的变化事件
+   *
+   * 类似 UE 的 OnMaxHPChanged 委托，返回取消订阅函数
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = hero.onAttackChanged((event) => {
+   *   console.log(`Attack: ${event.oldValue} → ${event.newValue}`);
+   * });
+   *
+   * // 取消订阅
+   * unsubscribe();
+   * ```
+   */
+  readonly [K in keyof T as `on${Capitalize<string & K>}Changed`]: (
+    callback: (event: AttributeChangeEvent) => void
+  ) => () => void;
 } & {
   // ========== 基础值操作 ==========
 
@@ -280,6 +299,28 @@ export function defineAttributes<T extends AttributesConfig>(
         }
       }
 
+      // onXxxChanged: 返回订阅函数（类似 UE OnXxxChanged 委托）
+      if (prop.startsWith('on') && prop.endsWith('Changed')) {
+        const capitalizedName = prop.slice(2, -7); // 移除 'on' 前缀和 'Changed' 后缀
+        const attrName = capitalizedName.charAt(0).toLowerCase() + capitalizedName.slice(1);
+        if (attrNames.has(attrName)) {
+          return (callback: (event: AttributeChangeEvent) => void) => {
+            // 创建过滤监听器，只监听特定属性
+            const filteredListener: AttributeChangeListener = (event) => {
+              if (event.attributeName === attrName) {
+                callback(event);
+              }
+            };
+            // 添加监听器
+            set.addChangeListener(filteredListener);
+            // 返回取消订阅函数
+            return () => {
+              set.removeChangeListener(filteredListener);
+            };
+          };
+        }
+      }
+
       // xxx: 如果是属性名，返回 currentValue
       if (attrNames.has(prop)) {
         return set.getCurrentValue(prop);
@@ -387,6 +428,25 @@ export function restoreAttributes<T extends AttributesConfig>(
         const attrName = prop.slice(0, -9); // 移除 'Attribute' 后缀
         if (attrNames.has(attrName)) {
           return attrName;
+        }
+      }
+
+      // onXxxChanged: 返回订阅函数（类似 UE OnXxxChanged 委托）
+      if (prop.startsWith('on') && prop.endsWith('Changed')) {
+        const capitalizedName = prop.slice(2, -7); // 移除 'on' 前缀和 'Changed' 后缀
+        const attrName = capitalizedName.charAt(0).toLowerCase() + capitalizedName.slice(1);
+        if (attrNames.has(attrName)) {
+          return (callback: (event: AttributeChangeEvent) => void) => {
+            const filteredListener: AttributeChangeListener = (event) => {
+              if (event.attributeName === attrName) {
+                callback(event);
+              }
+            };
+            set.addChangeListener(filteredListener);
+            return () => {
+              set.removeChangeListener(filteredListener);
+            };
+          };
         }
       }
 
