@@ -51,11 +51,11 @@
       "category": "productivity"
     },
     {
-      "name": "git-utils",
-      "source": "./plugins/git-utils",
-      "description": "Git 分析工具 - 项目变更摘要和提交洞察",
-      "version": "1.0.0",
-      "keywords": ["git", "analysis", "changelog", "commits"],
+      "name": "dev-helper",
+      "source": "./plugins/dev-helper",
+      "description": "项目开发助手 - 架构文档管理、Git变化总结、对话记录与待办追踪",
+      "version": "0.1.0",
+      "keywords": ["project-management", "architecture", "git", "todo", "session-notes"],
       "category": "productivity"
     },
     {

@@ -1,0 +1,10 @@
+{
+  "name": "dev-helper",
+  "version": "0.1.0",
+  "description": "项目开发助手：架构文档管理、Git变化总结、对话记录与待办追踪",
+  "author": {
+    "name": "LomoMarketplace",
+    "email": "lomo@example.com"
+  },
+  "keywords": ["project-management", "architecture", "git", "todo", "session-notes"]
+}
