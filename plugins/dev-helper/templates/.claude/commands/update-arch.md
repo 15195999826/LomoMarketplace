@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Write, Glob, Grep, Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(python:*)
+allowed-tools: Read, Write, Glob, Grep, Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git status:*), Bash(git add:*), Bash(git commit:*), Bash(python:*)
 description: Incremental update of project architecture documentation based on git commits
 ---
 
@@ -131,7 +131,40 @@ This will automatically:
 - Update SKILL.md's Generated References section
 - Update Core Modules table
 
-### 7. Output report
+### 7. Commit architecture changes
+
+After sync_skill.py completes, check if there are any changes to commit:
+
+```bash
+git status --porcelain .claude/skills/exploring-project/
+```
+
+**If no changes** → Skip to step 8 (output report).
+
+**If there are changes** → Commit them:
+
+```bash
+git add .claude/skills/exploring-project/
+git commit -m "docs(arch): 更新项目架构文档
+
+Updated:
+{list of updated files}
+
+Triggered by: /update-arch
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+```
+
+Replace `{list of updated files}` with actual file list, e.g.:
+```
+- SKILL.md (sync)
+- references/overview.md (tech stack)
+- references/module_auth.md (3 files changed)
+```
+
+### 8. Output report
 
 ```
 ✅ Architecture documentation updated
@@ -150,6 +183,8 @@ Skipped (no changes):
 SKILL.md synced:
 - last_tracked_commit: {new_commit}
 - last_updated: {today}
+
+Git commit: {commit_hash} (or "No changes to commit")
 ```
 
 ## Important Notes
@@ -158,3 +193,5 @@ SKILL.md synced:
 - Always run sync_skill.py even if no documents were changed (to update commit tracking)
 - Use Chinese for document content, English for code/technical terms
 - Keep SKILL.md body under 500 lines
+- Architecture changes are auto-committed to keep the repository clean
+- Only files under `.claude/skills/exploring-project/` are included in the commit
