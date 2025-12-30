@@ -123,7 +123,7 @@ After updating documents, run the sync script with the new commit:
 
 ```bash
 git rev-parse HEAD
-python ${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py . --commit {HEAD_COMMIT}
+python "${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py" . --commit {HEAD_COMMIT}
 ```
 
 This will automatically:

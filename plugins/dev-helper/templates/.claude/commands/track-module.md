@@ -31,14 +31,14 @@ Use AskUserQuestion to collect:
 ### Step 2: Create module document using script
 
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py . {module_name} \
+python "${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py" . {module_name} \
   --description "{description}" \
   --paths "{path1}" --paths "{path2}"
 ```
 
 Example:
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py . auth-system \
+python "${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py" . auth-system \
   --description "用户认证与授权模块" \
   --paths "src/auth/" --paths "src/middleware/auth.ts"
 ```
@@ -66,7 +66,7 @@ Use Edit tool to update each section in the module file.
 ### Step 4: Sync SKILL.md
 
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py .
+python "${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py" .
 ```
 
 This automatically updates:

@@ -14,7 +14,7 @@ Initialize dev-helper development environment in the current project.
 Execute the Python script to check Git and copy templates:
 
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/init_project.py .
+python "${CLAUDE_PLUGIN_ROOT}/scripts/init_project.py" .
 ```
 
 **If Git is not initialized** → Stop and inform user to run `git init` first.
@@ -60,7 +60,7 @@ Check if `CLAUDE.md` exists using Glob.
 ### Step 3: Run validation script
 
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/validate_init.py .
+python "${CLAUDE_PLUGIN_ROOT}/scripts/validate_init.py" .
 ```
 
 If validation fails, fix the reported issues before proceeding.
@@ -154,14 +154,14 @@ Options:
 For each selected module, use the create_module.py script:
 
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py . {module-name} \
+python "${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py" . {module-name} \
   --description "{description}" \
   --paths "{path1}" --paths "{path2}"
 ```
 
 Example:
 ```bash
-python ${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py . auth-system \
+python "${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py" . auth-system \
   --description "用户认证模块" \
   --paths "src/auth/" --paths "src/middleware/auth.ts"
 ```
@@ -183,7 +183,7 @@ After generating all documents, run the sync script to update SKILL.md:
 
 ```bash
 git rev-parse HEAD
-python ${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py . --commit {HEAD_COMMIT}
+python "${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py" . --commit {HEAD_COMMIT}
 ```
 
 This will automatically:
