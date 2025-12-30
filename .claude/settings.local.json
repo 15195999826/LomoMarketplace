@@ -32,9 +32,14 @@
       "Skill(hex-grid:hexagonal-grids)",
       "Bash(pnpm --filter @lomo/logic-game-framework test:run:*)",
       "Bash(pnpm --filter @lomo/hex-grid build:*)",
-      "Bash(powershell -Command \"New-Item -Path ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\browser-bridge\\\\src'' -ItemType Directory -Force\")",
-      "Bash(powershell:*)",
-      "Bash(pnpm approve-builds:*)"
+      "Skill(linus-coding-standards:linus-coding-standards)",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\hex-grid''; pnpm build\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\inkmon-battle''; pnpm build\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\lomo-mcp-servers\\\\inkmon-server''; npx tsc --noEmit\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\inkmon-pokedex''; npx tsc --noEmit\")",
+      "Bash(git show:*)",
+      "Bash(python:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

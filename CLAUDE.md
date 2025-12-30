@@ -161,3 +161,20 @@ claude --plugin-dir ./plugins/InkMon
 
 - `plan_docs/LogicPerformanceSeparation_AbilitySystem.md` - Framework design doc
 - `dev_docs/` - Claude Code plugin development docs
+
+## Dev Helper
+
+本项目使用 dev-helper 进行项目管理。
+
+### 必须激活的 Skill
+
+探索项目时必须激活：`skill:exploring-project`
+
+### 可用命令
+
+| 命令 | 说明 |
+|------|------|
+| `/update-arch` | 更新项目架构文档 |
+| `/session-summary [主题]` | 总结当前对话 |
+| `/whats-next` | 查看待办事项和工作建议 |
+| `/track-module <模块名>` | 追踪复杂模块 |
