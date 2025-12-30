@@ -1,5 +1,5 @@
 ---
-allowed-tools: Write, Read, Bash(mkdir:*), Bash(python:*), Glob
+allowed-tools: Write, Read, Bash(mkdir:*), Glob
 description: 初始化项目的 dev-helper 结构（架构 skill、命令、笔记目录）
 ---
 
@@ -11,49 +11,32 @@ description: 初始化项目的 dev-helper 结构（架构 skill、命令、笔�
 
 ```
 项目根目录/
-├── .claude-plugin/
-│   └── plugin.json         # 创建或合并
-├── skills/
-│   └── exploring-project/
-│       ├── SKILL.md
-│       └── references/
-│           └── .gitkeep
-├── commands/
-│   ├── update-arch.md
-│   ├── session-summary.md
-│   └── whats-next.md
+├── .claude/
+│   ├── commands/
+│   │   ├── update-arch.md       → /update-arch
+│   │   ├── session-summary.md   → /session-summary
+│   │   └── whats-next.md        → /whats-next
+│   └── skills/
+│       └── exploring-project/
+│           ├── SKILL.md
+│           └── references/
+│               └── .gitkeep
 ├── project-notes/
 │   └── .gitkeep
-└── CLAUDE.md               # 创建或追加
+└── CLAUDE.md                    # 创建或追加
 ```
 
 ### 步骤
 
-## 1. 检查并处理 .claude-plugin/plugin.json
-
-使用 Glob 检查 `.claude-plugin/plugin.json` 是否存在：
-
-**如果不存在**：创建新文件
-```json
-{
-  "name": "project-local",
-  "version": "0.1.0",
-  "description": "项目本地插件 - 由 dev-helper 生成"
-}
-```
-
-**如果已存在**：读取现有内容，保留原有配置，不覆盖。只需确保目录结构存在即可。
-
-## 2. 创建目录结构
+## 1. 创建目录结构
 
 ```bash
-mkdir -p .claude-plugin
-mkdir -p skills/exploring-project/references
-mkdir -p commands
+mkdir -p .claude/commands
+mkdir -p .claude/skills/exploring-project/references
 mkdir -p project-notes
 ```
 
-## 3. 创建 skills/exploring-project/SKILL.md
+## 2. 创建 .claude/skills/exploring-project/SKILL.md
 
 根据 Skill 最佳实践规范：
 - `name`: 使用 kebab-case，最多64字符
@@ -84,11 +67,11 @@ description: Provides project architecture overview including directory structur
 - [references/modules.md](references/modules.md) - 模块职责说明
 ```
 
-## 4. 创建 skills/exploring-project/references/.gitkeep
+## 3. 创建 .claude/skills/exploring-project/references/.gitkeep
 
 （空文件，保持目录结构）
 
-## 5. 创建 commands/update-arch.md
+## 4. 创建 .claude/commands/update-arch.md
 
 ```markdown
 ---
@@ -98,7 +81,7 @@ description: 分析项目结构，更新架构文档
 
 ## Your task
 
-分析当前项目结构，更新 `skills/exploring-project/` 下的文档。
+分析当前项目结构，更新 `.claude/skills/exploring-project/` 下的文档。
 
 ## Skill 更新规范（基于最佳实践）
 
@@ -109,7 +92,7 @@ description: 分析项目结构，更新架构文档
 
 ### 文件结构
 ```
-skills/exploring-project/
+.claude/skills/exploring-project/
 ├── SKILL.md              # 概览（< 500 行）
 └── references/
     ├── overview.md       # 项目概览、技术栈
@@ -163,13 +146,13 @@ skills/exploring-project/
 ### 5. 报告
 ```
 ✅ 架构文档已更新
-- skills/exploring-project/SKILL.md
-- skills/exploring-project/references/overview.md
-- skills/exploring-project/references/modules.md
+- .claude/skills/exploring-project/SKILL.md
+- .claude/skills/exploring-project/references/overview.md
+- .claude/skills/exploring-project/references/modules.md
 ```
 ```
 
-## 6. 创建 commands/session-summary.md
+## 5. 创建 .claude/commands/session-summary.md
 
 ```markdown
 ---
@@ -224,7 +207,7 @@ argument-hint: "[主题] 可选的笔记主题"
    告知用户笔记已保存的路径
 ```
 
-## 7. 创建 commands/whats-next.md
+## 6. 创建 .claude/commands/whats-next.md
 
 ```markdown
 ---
@@ -258,7 +241,7 @@ description: 读取待办事项，给出工作建议
    - 问用户想从哪个任务开始
 ```
 
-## 8. 处理 CLAUDE.md
+## 7. 处理 CLAUDE.md
 
 使用 Glob 检查 `CLAUDE.md` 是否存在：
 
@@ -277,18 +260,18 @@ description: 读取待办事项，给出工作建议
 
 本项目使用 dev-helper 进行项目管理。
 
+### 必须激活的 Skill
+
+探索项目时必须激活：`skill:exploring-project`
+
 ### 可用命令
 
 - `/update-arch` - 更新项目架构文档
 - `/session-summary [主题]` - 总结当前对话
 - `/whats-next` - 查看待办事项和工作建议
-
-### 项目架构
-
-启用 `skill:exploring-project`，当询问项目结构时自动激活。
 ```
 
-## 9. 运行校验脚本
+## 8. 运行校验脚本
 
 执行 dev-helper 插件中的校验脚本，验证初始化结果：
 
@@ -298,7 +281,7 @@ python ${CLAUDE_PLUGIN_ROOT}/scripts/validate_init.py .
 
 如果校验失败，根据脚本输出的错误信息修复问题。
 
-## 10. 完成报告
+## 9. 完成报告
 
 校验通过后，告知用户初始化完成：
 
@@ -306,12 +289,11 @@ python ${CLAUDE_PLUGIN_ROOT}/scripts/validate_init.py .
 ✅ dev-helper 初始化完成！
 
 创建的文件：
-- .claude-plugin/plugin.json [新建/已存在]
-- skills/exploring-project/SKILL.md
-- skills/exploring-project/references/.gitkeep
-- commands/update-arch.md
-- commands/session-summary.md
-- commands/whats-next.md
+- .claude/skills/exploring-project/SKILL.md
+- .claude/skills/exploring-project/references/.gitkeep
+- .claude/commands/update-arch.md
+- .claude/commands/session-summary.md
+- .claude/commands/whats-next.md
 - project-notes/.gitkeep
 - CLAUDE.md [新建/已追加]
 

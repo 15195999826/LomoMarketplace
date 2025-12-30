@@ -4,7 +4,6 @@ dev-helper 初始化校验脚本
 验证项目的 dev-helper 初始化结果是否符合规范
 """
 
-import json
 import os
 import sys
 import re
@@ -43,12 +42,13 @@ def validate_directory_structure(root: Path, result: ValidationResult):
     print("\n📁 目录结构校验")
 
     required_paths = [
-        (".claude-plugin/plugin.json", "文件"),
-        ("skills/exploring-project/SKILL.md", "文件"),
-        ("skills/exploring-project/references", "目录"),
-        ("commands/update-arch.md", "文件"),
-        ("commands/session-summary.md", "文件"),
-        ("commands/whats-next.md", "文件"),
+        (".claude/commands", "目录"),
+        (".claude/skills/exploring-project", "目录"),
+        (".claude/skills/exploring-project/references", "目录"),
+        (".claude/skills/exploring-project/SKILL.md", "文件"),
+        (".claude/commands/update-arch.md", "文件"),
+        (".claude/commands/session-summary.md", "文件"),
+        (".claude/commands/whats-next.md", "文件"),
         ("project-notes", "目录"),
         ("CLAUDE.md", "文件"),
     ]
@@ -71,13 +71,12 @@ def validate_skill_md(root: Path, result: ValidationResult):
     """校验 SKILL.md 规范"""
     print("\n📄 SKILL.md 规范校验")
 
-    skill_path = root / "skills/exploring-project/SKILL.md"
+    skill_path = root / ".claude/skills/exploring-project/SKILL.md"
     if not skill_path.is_file():
         result.fail("SKILL.md 不存在，跳过内容校验")
         return
 
     content = skill_path.read_text(encoding="utf-8")
-    lines = content.split("\n")
 
     # 检查 frontmatter
     if not content.startswith("---"):
@@ -177,33 +176,40 @@ def validate_claude_md(root: Path, result: ValidationResult):
             result.fail(f"未列出 {cmd} 命令")
 
 
-def validate_plugin_json(root: Path, result: ValidationResult):
-    """校验 plugin.json"""
-    print("\n⚙️ plugin.json 校验")
+def validate_command_md(root: Path, result: ValidationResult):
+    """校验命令文件"""
+    print("\n⚙️ 命令文件校验")
 
-    plugin_path = root / ".claude-plugin/plugin.json"
-    if not plugin_path.is_file():
-        result.fail("plugin.json 不存在")
-        return
+    commands = [
+        "update-arch.md",
+        "session-summary.md",
+        "whats-next.md",
+    ]
 
-    try:
-        content = plugin_path.read_text(encoding="utf-8")
-        data = json.loads(content)
-        result.ok("JSON 格式有效")
+    for cmd in commands:
+        cmd_path = root / ".claude/commands" / cmd
+        if not cmd_path.is_file():
+            result.fail(f"{cmd} 不存在")
+            continue
 
-        if "name" in data:
-            result.ok(f"包含 name 字段: {data['name']}")
+        content = cmd_path.read_text(encoding="utf-8")
+
+        # 检查 frontmatter
+        if content.startswith("---"):
+            try:
+                end_idx = content.index("---", 3)
+                frontmatter = content[3:end_idx].strip()
+
+                # 检查 description
+                if re.search(r'^description:\s*\S+', frontmatter, re.MULTILINE):
+                    result.ok(f"{cmd} description 存在")
+                else:
+                    result.fail(f"{cmd} 缺少 description")
+
+            except ValueError:
+                result.fail(f"{cmd} frontmatter 格式错误")
         else:
-            result.fail("缺少 name 字段")
-
-        if "version" in data:
-            result.ok(f"包含 version 字段: {data['version']}")
-
-        if "description" in data:
-            result.ok("包含 description 字段")
-
-    except json.JSONDecodeError as e:
-        result.fail(f"JSON 解析失败: {e}")
+            result.fail(f"{cmd} 缺少 frontmatter")
 
 
 def main():
@@ -222,7 +228,7 @@ def main():
     validate_directory_structure(root, result)
     validate_skill_md(root, result)
     validate_claude_md(root, result)
-    validate_plugin_json(root, result)
+    validate_command_md(root, result)
 
     # 输出总结
     total = result.passed + result.failed
