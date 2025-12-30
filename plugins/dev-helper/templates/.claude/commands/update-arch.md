@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Write, Glob, Grep, Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(tree:*), Bash(python:*)
+allowed-tools: Read, Write, Glob, Grep, Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(python:*)
 description: Incremental update of project architecture documentation based on git commits
 ---
 
@@ -100,7 +100,7 @@ For each affected document:
 # Directory Structure
 
 ## Overview
-[Simplified tree output from `tree /F /A`, max 3 levels]
+[Simplified directory structure from Glob, max 3 levels]
 
 ## Key Directories
 | Directory | Purpose |

@@ -1,5 +1,5 @@
 ---
-allowed-tools: Write, Read, Bash(python:*), Bash(git rev-parse:*), Bash(tree:*), Bash(dir:*), Glob, Grep, AskUserQuestion
+allowed-tools: Write, Read, Bash(python:*), Bash(git rev-parse:*), Glob, Grep, AskUserQuestion
 description: 初始化项目的 dev-helper 结构（模板复制、探索项目、核心模块识别）
 ---
 
@@ -70,10 +70,9 @@ If validation fails, fix the reported issues before proceeding.
 Perform a comprehensive project exploration:
 
 1. **Get directory structure**
-   ```bash
-   tree /F /A
-   ```
-   Note: Limit to first 3 levels for readability in documentation.
+   Use Glob tool with pattern `**/*` to explore the project structure.
+   Filter out common ignored directories (node_modules, .git, dist, build, etc.).
+   Limit to first 3 levels for readability in documentation.
 
 2. **Identify tech stack**
    - Read `package.json`, `Cargo.toml`, `pyproject.toml`, etc.
@@ -107,7 +106,7 @@ Perform a comprehensive project exploration:
    # Directory Structure
 
    ## Overview
-   [tree output, simplified]
+   [directory structure from Glob, simplified]
 
    ## Key Directories
    | Directory | Purpose |
@@ -116,7 +115,7 @@ Perform a comprehensive project exploration:
 
 5. **Update SKILL.md body**
    - Fill in Overview section (project name + one-line description)
-   - Fill in Directory Structure section (simplified tree)
+   - Fill in Directory Structure section (simplified directory structure)
 
 ### Step 5: Identify core modules
 
