@@ -1416,7 +1416,100 @@ scripts/start-browser-control.bat
 
 ---
 
-## 9. 参考资源
+## 9. 已知问题 (2025-12-30)
+
+### 9.1 架构问题：MCP Server 无法连接 Bridge Server
+
+**问题描述**：
+- `browser-control` MCP Server 需要连接到 Bridge Server 才能发送命令给浏览器扩展
+- 但 MCP Server 是由 Claude Code 通过 stdio 启动的独立进程
+- 当前 MCP 模式启动时没有 Bridge Server 实例
+
+**影响**：
+- Side Panel 中的 Claude Code 无法使用 `browser_*` 工具控制当前浏览器
+- Claude Code 会 fallback 到 `chrome-devtools` MCP（启动独立 Chrome 实例）
+
+**解决方案**（待实现）：
+1. Bridge Server 暴露 HTTP API（如 `http://localhost:9528`）
+2. MCP Server 通过 HTTP 连接到 Bridge Server
+3. 或使用 IPC/共享内存通信
+
+### 9.2 已修复的问题
+
+| 问题 | 原因 | 修复 |
+|------|------|------|
+| WebSocket 反复连接断开 | App.tsx 回调函数未稳定化 | 使用 `useMemo` 包装 wsOptions |
+| 终端每字符发送，无回显 | 使用 spawn+pipe 而非 PTY | 改用 `node-pty` |
+
+---
+
+## 10. 测试计划
+
+### 10.1 功能模块状态
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| Bridge Server 启动 | ✅ 已完成 | WebSocket 服务正常启动 |
+| Chrome Extension 加载 | ✅ 已完成 | 扩展可正常加载 |
+| WebSocket 连接 | ✅ 已完成 | 扩展能连接到 Bridge Server |
+| PTY 终端 | ✅ 已完成 | 输入回显正常，交互正常 (2025-12-30) |
+| Claude Code CLI 启动 | ✅ 已完成 | CLI 正常运行 (2025-12-30) |
+| 终端输入/输出 | ✅ 已完成 | 双向通信正常 (2025-12-30) |
+| 终端尺寸调整 | ✅ 已完成 | resize 事件正常触发 (2025-12-30) |
+| 连接稳定性 | ✅ 已完成 | 长时间运行无断连 (2025-12-30) |
+| browser-control MCP | ❌ 未完成 | 架构问题，见 9.1 |
+
+### 10.2 当前可测试功能
+
+#### 测试 1：PTY 终端交互
+
+**测试步骤**：
+1. 启动 Bridge Server：
+   ```bash
+   cd E:\talk\LomoMarketplace
+   node lomo-mcp-servers/browser-control-server/dist/index.js
+   ```
+2. 刷新 Chrome 扩展（chrome://extensions/ → 刷新按钮）
+3. 打开 Side Panel
+4. 等待显示 "Welcome to Claude Code!"
+5. 尝试输入文字，观察是否有回显
+6. 按回车，观察 Claude Code 是否响应
+
+**预期结果**：
+- 输入字符时应该看到回显
+- 按回车后 Claude Code 应处理输入并给出响应
+- 终端应支持彩色输出
+
+#### 测试 2：终端尺寸调整
+
+**测试步骤**：
+1. 连接成功后，调整 Side Panel 宽度
+2. 观察终端是否自适应
+
+**预期结果**：
+- 终端内容应自动换行/重排
+- 不应出现显示错乱
+
+#### 测试 3：连接稳定性
+
+**测试步骤**：
+1. 保持 Side Panel 打开 5 分钟
+2. 正常使用 Claude Code
+
+**预期结果**：
+- 连接应保持稳定
+- 不应出现反复断开/重连
+
+### 10.3 暂不可测试功能
+
+- `browser_screenshot` - 需要 MCP→Bridge 连接
+- `browser_click` - 需要 MCP→Bridge 连接
+- `browser_read_page` - 需要 MCP→Bridge 连接
+- 其他 browser_* 工具 - 需要 MCP→Bridge 连接
+
+---
+
+## 11. 参考资源
 
 - [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/)
 - [MCP SDK (TypeScript)](https://github.com/anthropics/mcp-typescript-sdk)

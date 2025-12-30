@@ -53,17 +53,19 @@ async function main() {
 `);
 
     // 优雅关闭
-    process.on("SIGINT", () => {
-      console.log("\n[Main] 收到 SIGINT，正在关闭...");
+    const shutdown = (signal: string) => {
+      console.log(`\n[Main] 收到 ${signal}，正在关闭...`);
       bridgeServer.stop();
-      process.exit(0);
-    });
 
-    process.on("SIGTERM", () => {
-      console.log("\n[Main] 收到 SIGTERM，正在关闭...");
-      bridgeServer.stop();
-      process.exit(0);
-    });
+      // 确保进程退出（给一点时间让清理完成）
+      setTimeout(() => {
+        console.log("[Main] 强制退出");
+        process.exit(0);
+      }, 1000);
+    };
+
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
   }
 }
 

@@ -26,9 +26,15 @@ node_modules/
 
 # Build outputs
 packages/*/dist/
+apps/*/dist/
+lomo-mcp-servers/*/dist/
 .next/
+
+# Temporary conversation/note files (root level)
+/2025-*.txt
 
 # Lock files (optional, can be committed for reproducibility)
 # pnpm-lock.yaml
 backup_lomo_mcp
 inkmon-pokedex/public/images/inkmon/MossBear/main.png
+plugins/dev-helper/scripts/__pycache__

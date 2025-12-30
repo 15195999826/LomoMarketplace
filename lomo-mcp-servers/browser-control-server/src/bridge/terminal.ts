@@ -1,9 +1,9 @@
 /**
  * Claude Code CLI 子进程管理
- * 启动和管理 Claude Code CLI 作为后台子进程
+ * 使用 node-pty 提供真正的伪终端支持
  */
 
-import { spawn, type ChildProcess } from "child_process";
+import * as pty from "node-pty";
 import { EventEmitter } from "events";
 
 export interface ClaudeCodeManagerEvents {
@@ -13,84 +13,83 @@ export interface ClaudeCodeManagerEvents {
 }
 
 export class ClaudeCodeManager extends EventEmitter {
-  private process: ChildProcess | null = null;
+  private ptyProcess: pty.IPty | null = null;
   private autoRestart = false;
+  private cols = 80;
+  private rows = 24;
 
   constructor() {
     super();
   }
 
   /**
-   * 启动 Claude Code CLI 作为后台子进程
-   * - 不显示 cmd 窗口（Windows）
-   * - 通过 stdin/stdout 进行通信
+   * 启动 Claude Code CLI
+   * 使用 node-pty 提供真正的伪终端，支持：
+   * - 输入回显
+   * - 交互模式
+   * - 彩色输出
+   * - 终端尺寸调整
    */
   async start(): Promise<void> {
-    if (this.process) {
+    if (this.ptyProcess) {
       console.log("[Terminal] Claude Code 已在运行中");
       return;
     }
 
-    console.log("[Terminal] 启动 Claude Code CLI...");
+    console.log("[Terminal] 启动 Claude Code CLI (PTY 模式)...");
 
-    // 使用 spawn 启动 claude 命令
-    this.process = spawn("claude", [], {
-      stdio: ["pipe", "pipe", "pipe"], // 管道控制输入输出
-      shell: true, // 通过 shell 启动（Windows 需要）
-      windowsHide: true, // Windows 下隐藏窗口
-      env: {
-        ...process.env,
-        // 设置终端类型，让 claude 输出彩色
-        TERM: "xterm-256color",
-        // 强制启用颜色输出
-        FORCE_COLOR: "1",
-      },
-    });
+    try {
+      // 使用 node-pty 创建伪终端
+      // Windows 上使用 cmd.exe 或 powershell.exe 启动
+      const shell = process.platform === "win32" ? "cmd.exe" : "bash";
+      const shellArgs = process.platform === "win32" ? ["/c", "claude"] : ["-c", "claude"];
 
-    // 监听 Claude Code 的标准输出
-    this.process.stdout?.on("data", (data: Buffer) => {
-      const text = data.toString();
-      console.log("[Terminal] stdout:", text.substring(0, 100) + (text.length > 100 ? "..." : ""));
-      this.emit("output", text);
-    });
+      this.ptyProcess = pty.spawn(shell, shellArgs, {
+        name: "xterm-256color",
+        cols: this.cols,
+        rows: this.rows,
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          TERM: "xterm-256color",
+          FORCE_COLOR: "1",
+          COLORTERM: "truecolor",
+        } as Record<string, string>,
+      });
 
-    // 监听 Claude Code 的错误输出（也发送到终端显示）
-    this.process.stderr?.on("data", (data: Buffer) => {
-      const text = data.toString();
-      console.log("[Terminal] stderr:", text.substring(0, 100) + (text.length > 100 ? "..." : ""));
-      this.emit("output", text);
-    });
+      // 监听 PTY 输出
+      this.ptyProcess.onData((data: string) => {
+        // PTY 输出已经包含回显，直接发送
+        this.emit("output", data);
+      });
 
-    // 监听进程退出
-    this.process.on("exit", (code) => {
-      console.log(`[Terminal] Claude Code 退出，退出码: ${code}`);
-      this.process = null;
-      this.emit("exit", code);
+      // 监听进程退出
+      this.ptyProcess.onExit(({ exitCode }) => {
+        console.log(`[Terminal] Claude Code 退出，退出码: ${exitCode}`);
+        this.ptyProcess = null;
+        this.emit("exit", exitCode);
 
-      // 自动重启
-      if (this.autoRestart && code !== 0) {
-        console.log("[Terminal] 3 秒后自动重启...");
-        setTimeout(() => this.start(), 3000);
-      }
-    });
+        // 自动重启
+        if (this.autoRestart && exitCode !== 0) {
+          console.log("[Terminal] 3 秒后自动重启...");
+          setTimeout(() => this.start(), 3000);
+        }
+      });
 
-    // 监听进程错误
-    this.process.on("error", (err) => {
-      console.error("[Terminal] 进程错误:", err);
-      this.emit("error", err);
-    });
-
-    console.log("[Terminal] Claude Code CLI 已启动");
+      console.log("[Terminal] Claude Code CLI 已启动 (PTY)");
+    } catch (err) {
+      console.error("[Terminal] 启动失败:", err);
+      this.emit("error", err instanceof Error ? err : new Error(String(err)));
+    }
   }
 
   /**
    * 发送用户输入到 Claude Code
-   * 相当于用户在 cmd 里打字
+   * PTY 会自动处理回显
    */
   write(data: string): void {
-    if (this.process?.stdin) {
-      console.log("[Terminal] 发送输入:", data.replace(/\n/g, "\\n").substring(0, 50));
-      this.process.stdin.write(data);
+    if (this.ptyProcess) {
+      this.ptyProcess.write(data);
     } else {
       console.warn("[Terminal] 无法发送输入：进程未启动");
     }
@@ -100,11 +99,34 @@ export class ClaudeCodeManager extends EventEmitter {
    * 停止 Claude Code 进程
    */
   stop(): void {
-    if (this.process) {
+    if (this.ptyProcess) {
       console.log("[Terminal] 停止 Claude Code...");
       this.autoRestart = false;
-      this.process.kill();
-      this.process = null;
+
+      const ptyToKill = this.ptyProcess;
+      this.ptyProcess = null;
+
+      try {
+        // 先尝试正常终止
+        ptyToKill.kill();
+
+        // Windows 上 node-pty 可能需要强制终止
+        if (process.platform === "win32") {
+          // 获取 PID 并强制终止进程树
+          const pid = ptyToKill.pid;
+          if (pid) {
+            try {
+              // 使用 taskkill 强制终止进程树
+              const { execSync } = require("child_process");
+              execSync(`taskkill /PID ${pid} /T /F`, { stdio: "ignore" });
+            } catch {
+              // 忽略错误（进程可能已经退出）
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[Terminal] 停止进程时出错:", err);
+      }
     }
   }
 
@@ -112,12 +134,11 @@ export class ClaudeCodeManager extends EventEmitter {
    * 检查进程是否在运行
    */
   isRunning(): boolean {
-    return this.process !== null && !this.process.killed;
+    return this.ptyProcess !== null;
   }
 
   /**
    * 启用自动重启机制
-   * 如果 Claude Code 意外退出，自动重启
    */
   enableAutoRestart(): void {
     this.autoRestart = true;
@@ -140,12 +161,14 @@ export class ClaudeCodeManager extends EventEmitter {
 
   /**
    * 调整终端尺寸
-   * 注意：使用 spawn 的标准 stdio 不支持 resize，
-   * 如果需要真正的 PTY 支持，需要使用 node-pty
+   * node-pty 支持真正的终端尺寸调整
    */
-  resize(_cols: number, _rows: number): void {
-    // spawn 的 stdio 不支持 resize
-    // 如果需要真正的终端尺寸调整，需要使用 node-pty
-    console.log(`[Terminal] resize 被调用 (cols=${_cols}, rows=${_rows})，但 spawn 不支持`);
+  resize(cols: number, rows: number): void {
+    this.cols = cols;
+    this.rows = rows;
+    if (this.ptyProcess) {
+      console.log(`[Terminal] 调整终端尺寸: ${cols}x${rows}`);
+      this.ptyProcess.resize(cols, rows);
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Terminal from "./components/Terminal";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { DEFAULT_WS_PORT } from "@lomo/browser-bridge";
@@ -6,13 +6,16 @@ import { DEFAULT_WS_PORT } from "@lomo/browser-bridge";
 function App() {
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected">("disconnected");
 
+  // 稳定的回调函数，避免 useWebSocket 重复连接
+  const wsOptions = useMemo(() => ({
+    onOpen: () => setStatus("connected"),
+    onClose: () => setStatus("disconnected"),
+    onError: () => setStatus("disconnected"),
+  }), []);
+
   const { sendMessage, lastMessage, connectionStatus } = useWebSocket(
     `ws://localhost:${DEFAULT_WS_PORT}`,
-    {
-      onOpen: () => setStatus("connected"),
-      onClose: () => setStatus("disconnected"),
-      onError: () => setStatus("disconnected"),
-    }
+    wsOptions
   );
 
   const handleTerminalInput = useCallback(
