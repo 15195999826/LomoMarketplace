@@ -30,9 +30,6 @@ apps/*/dist/
 lomo-mcp-servers/*/dist/
 .next/
 
-# Temporary conversation/note files (root level)
-/2025-*.txt
-
 # Lock files (optional, can be committed for reproducibility)
 # pnpm-lock.yaml
 backup_lomo_mcp

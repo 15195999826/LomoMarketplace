@@ -9,6 +9,7 @@ import sys
 import re
 import io
 from pathlib import Path
+from typing import List, Dict, Any, Optional
 
 # 修复 Windows 控制台编码问题
 if sys.platform == "win32":
@@ -20,6 +21,7 @@ class ValidationResult:
     def __init__(self):
         self.passed = 0
         self.failed = 0
+        self.warnings = 0
         self.errors = []
 
     def ok(self, msg: str):
@@ -33,8 +35,96 @@ class ValidationResult:
         if suggestion:
             print(f"     💡 {suggestion}")
 
+    def warn(self, msg: str, suggestion: str = ""):
+        self.warnings += 1
+        print(f"  ⚠️ {msg}")
+        if suggestion:
+            print(f"     💡 {suggestion}")
+
     def is_success(self) -> bool:
         return self.failed == 0
+
+
+def parse_yaml_frontmatter(content: str) -> Optional[Dict[str, Any]]:
+    """简单解析 YAML frontmatter（不依赖 pyyaml）"""
+    if not content.startswith("---"):
+        return None
+
+    try:
+        end_idx = content.index("---", 3)
+        frontmatter_text = content[3:end_idx].strip()
+    except ValueError:
+        return None
+
+    result = {}
+    current_key = None
+    current_list = None
+
+    for line in frontmatter_text.split("\n"):
+        # 跳过空行
+        if not line.strip():
+            continue
+
+        # 检查是否是列表项
+        list_match = re.match(r'^(\s+)-\s*(.*)$', line)
+        if list_match and current_list is not None:
+            indent, value = list_match.groups()
+            # 简单的列表项
+            if value.strip():
+                # 检查是否是对象形式的列表项
+                if value.strip().startswith("name:"):
+                    # 开始一个新的对象
+                    obj = {}
+                    obj_match = re.match(r'name:\s*(.+)', value.strip())
+                    if obj_match:
+                        obj['name'] = obj_match.group(1).strip()
+                    current_list.append(obj)
+                else:
+                    current_list.append(value.strip().strip('"\''))
+            continue
+
+        # 检查是否是对象列表项的后续属性
+        prop_match = re.match(r'^(\s+)(\w+):\s*(.*)$', line)
+        if prop_match and current_list and len(current_list) > 0 and isinstance(current_list[-1], dict):
+            indent, key, value = prop_match.groups()
+            # 处理数组值
+            if value.strip().startswith("[") and value.strip().endswith("]"):
+                # 简单数组解析
+                arr_content = value.strip()[1:-1]
+                arr_items = [s.strip().strip('"\'') for s in arr_content.split(",") if s.strip()]
+                current_list[-1][key] = arr_items
+            else:
+                current_list[-1][key] = value.strip().strip('"\'')
+            continue
+
+        # 普通键值对
+        kv_match = re.match(r'^(\w+):\s*(.*)$', line)
+        if kv_match:
+            key, value = kv_match.groups()
+            value = value.strip()
+
+            if value == "[]":
+                result[key] = []
+                current_list = result[key]
+                current_key = key
+            elif value == "":
+                # 可能是开始一个列表
+                result[key] = []
+                current_list = result[key]
+                current_key = key
+            elif value.startswith("[") and value.endswith("]"):
+                # 内联数组
+                arr_content = value[1:-1]
+                arr_items = [s.strip().strip('"\'') for s in arr_content.split(",") if s.strip()]
+                result[key] = arr_items
+                current_list = None
+                current_key = key
+            else:
+                result[key] = value.strip('"\'')
+                current_list = None
+                current_key = key
+
+    return result
 
 
 def validate_directory_structure(root: Path, result: ValidationResult):
@@ -67,34 +157,39 @@ def validate_directory_structure(root: Path, result: ValidationResult):
                 result.fail(f"{path}/ 目录不存在", f"运行 mkdir -p {path}")
 
 
-def validate_skill_md(root: Path, result: ValidationResult):
-    """校验 SKILL.md 规范"""
+def validate_skill_md(root: Path, result: ValidationResult) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """校验 SKILL.md 规范，返回 (frontmatter, content)"""
     print("\n📄 SKILL.md 规范校验")
 
     skill_path = root / ".claude/skills/exploring-project/SKILL.md"
     if not skill_path.is_file():
         result.fail("SKILL.md 不存在，跳过内容校验")
-        return
+        return None, None
 
     content = skill_path.read_text(encoding="utf-8")
 
     # 检查 frontmatter
     if not content.startswith("---"):
         result.fail("缺少 YAML frontmatter", "文件应以 --- 开头")
-        return
+        return None, content
 
     # 提取 frontmatter
     try:
         end_idx = content.index("---", 3)
-        frontmatter = content[3:end_idx].strip()
+        frontmatter_text = content[3:end_idx].strip()
     except ValueError:
         result.fail("frontmatter 格式错误", "需要用 --- 包裹")
-        return
+        return None, content
+
+    # 解析 frontmatter
+    frontmatter = parse_yaml_frontmatter(content)
+    if frontmatter is None:
+        result.fail("无法解析 frontmatter")
+        return None, content
 
     # 检查 name 字段
-    name_match = re.search(r'^name:\s*(.+)$', frontmatter, re.MULTILINE)
-    if name_match:
-        name = name_match.group(1).strip()
+    name = frontmatter.get("name", "")
+    if name:
         if name == "exploring-project":
             result.ok("name: exploring-project")
         else:
@@ -113,9 +208,8 @@ def validate_skill_md(root: Path, result: ValidationResult):
         result.fail("缺少 name 字段")
 
     # 检查 description 字段
-    desc_match = re.search(r'^description:\s*(.+)$', frontmatter, re.MULTILINE)
-    if desc_match:
-        desc = desc_match.group(1).strip()
+    desc = frontmatter.get("description", "")
+    if desc:
         if len(desc) <= 1024:
             result.ok(f"description 长度 ({len(desc)}/1024)")
         else:
@@ -142,6 +236,75 @@ def validate_skill_md(root: Path, result: ValidationResult):
         result.ok("包含 references 引用")
     else:
         result.fail("缺少 references 引用", "添加指向 references/ 目录的链接")
+
+    return frontmatter, content
+
+
+def parse_tracking_comment(content: str) -> Optional[Dict[str, str]]:
+    """解析 TRACKING 注释: <!-- TRACKING: last_commit="" | updated="" | modules=[] -->"""
+    match = re.search(r'<!--\s*TRACKING:\s*(.+?)\s*-->', content)
+    if not match:
+        return None
+
+    tracking_str = match.group(1)
+    result = {}
+
+    # 解析 key=value 或 key="value" 格式
+    for part in tracking_str.split('|'):
+        part = part.strip()
+        kv_match = re.match(r'(\w+)=(".*?"|\'.*?\'|\[.*?\]|[^\s|]+)', part)
+        if kv_match:
+            key, value = kv_match.groups()
+            # 去除引号
+            value = value.strip('"\'')
+            result[key] = value
+
+    return result
+
+
+def validate_tracking_metadata(root: Path, content: str, result: ValidationResult):
+    """校验追踪元数据 (从 TRACKING 注释中解析)"""
+    print("\n🔗 追踪元数据校验")
+
+    tracking = parse_tracking_comment(content)
+
+    if tracking is None:
+        result.fail("缺少 TRACKING 注释", "添加 <!-- TRACKING: last_commit=\"\" | updated=\"\" | modules=[] -->")
+        return
+
+    result.ok("TRACKING 注释存在")
+
+    # 检查 last_commit
+    last_commit = tracking.get("last_commit", None)
+    if last_commit is not None:
+        if last_commit == "":
+            result.warn("last_commit 为空", "运行 /update-arch 设置初始提交")
+        elif len(last_commit) >= 7:
+            result.ok(f"last_commit 存在 ({last_commit[:7]}...)")
+        else:
+            result.warn(f"last_commit 格式可能不正确: {last_commit}")
+    else:
+        result.warn("TRACKING 注释缺少 last_commit", "格式: last_commit=\"abc123\"")
+
+    # 检查 updated
+    updated = tracking.get("updated", None)
+    if updated is not None:
+        if updated == "":
+            result.warn("updated 为空", "运行 /update-arch 设置更新日期")
+        else:
+            result.ok(f"updated 存在 ({updated})")
+    else:
+        result.warn("TRACKING 注释缺少 updated", "格式: updated=\"2025-01-01\"")
+
+    # 检查 modules (简单检查格式)
+    modules = tracking.get("modules", None)
+    if modules is not None:
+        if modules == "[]" or modules == "":
+            result.warn("modules 为空", "运行 /track-module <name> 添加模块追踪")
+        else:
+            result.ok(f"modules 存在: {modules}")
+    else:
+        result.warn("TRACKING 注释缺少 modules", "格式: modules=[]")
 
 
 def validate_claude_md(root: Path, result: ValidationResult):
@@ -174,6 +337,12 @@ def validate_claude_md(root: Path, result: ValidationResult):
             result.ok(f"列出了 {cmd} 命令")
         else:
             result.fail(f"未列出 {cmd} 命令")
+
+    # 检查 /track-module 命令（新增）
+    if "/track-module" in content:
+        result.ok("列出了 /track-module 命令")
+    else:
+        result.warn("未列出 /track-module 命令", "建议添加到命令列表")
 
 
 def validate_command_md(root: Path, result: ValidationResult):
@@ -226,7 +395,12 @@ def main():
 
     # 执行各项校验
     validate_directory_structure(root, result)
-    validate_skill_md(root, result)
+    frontmatter, skill_content = validate_skill_md(root, result)
+    if skill_content:
+        validate_tracking_metadata(root, skill_content, result)
+    else:
+        print("\n🔗 追踪元数据校验")
+        result.fail("无法读取 SKILL.md 内容，跳过追踪元数据校验")
     validate_claude_md(root, result)
     validate_command_md(root, result)
 
@@ -234,6 +408,9 @@ def main():
     total = result.passed + result.failed
     print(f"\n{'='*50}")
     print(f"📊 校验结果: {result.passed}/{total} 项通过")
+
+    if result.warnings > 0:
+        print(f"⚠️ {result.warnings} 项警告")
 
     if result.is_success():
         print("✅ 所有校验通过！")
