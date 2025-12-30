@@ -8,7 +8,7 @@ import type { BattleEvent } from '../events/BattleEvent.js';
 /**
  * Action 执行结果
  */
-export interface ActionResult {
+export type ActionResult = {
   /** 是否执行成功 */
   readonly success: boolean;
 
@@ -26,7 +26,7 @@ export interface ActionResult {
 
   /** 额外数据（用于传递给后续处理） */
   readonly data?: Record<string, unknown>;
-}
+};
 
 /**
  * 回调触发器常量

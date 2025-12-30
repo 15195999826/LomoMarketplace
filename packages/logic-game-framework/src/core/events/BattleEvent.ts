@@ -8,10 +8,10 @@
 import type { ActorRef } from '../types/common.js';
 
 /**
- * 战斗事件基础接口
+ * 战斗事件基础类型
  * 使用泛型 T 定义 payload 类型，确保类型安全
  */
-export interface BattleEvent<T = unknown> {
+export type BattleEvent<T = unknown> = {
   /** 事件类型 */
   readonly type: string;
 
@@ -23,7 +23,7 @@ export interface BattleEvent<T = unknown> {
 
   /** 事件 ID（便于追踪） */
   readonly id?: string;
-}
+};
 
 /**
  * 创建战斗事件的辅助函数
@@ -42,29 +42,29 @@ export function createBattleEvent<T>(
 /**
  * 伤害事件 Payload
  */
-export interface DamageEventPayload {
+export type DamageEventPayload = {
   readonly source: ActorRef;
   readonly target: ActorRef;
   readonly damage: number;
   readonly damageType?: string;
   readonly isCritical: boolean;
   readonly isKill: boolean;
-}
+};
 
 /**
  * 治疗事件 Payload
  */
-export interface HealEventPayload {
+export type HealEventPayload = {
   readonly source: ActorRef;
   readonly target: ActorRef;
   readonly healAmount: number;
   readonly overheal?: number;
-}
+};
 
 /**
  * Buff 应用事件 Payload
  */
-export interface BuffAppliedEventPayload {
+export type BuffAppliedEventPayload = {
   readonly source: ActorRef;
   readonly target: ActorRef;
   readonly buffId: string;
@@ -72,88 +72,88 @@ export interface BuffAppliedEventPayload {
   readonly stacks: number;
   readonly duration?: number;
   readonly isRefresh: boolean;
-}
+};
 
 /**
  * Buff 移除事件 Payload
  */
-export interface BuffRemovedEventPayload {
+export type BuffRemovedEventPayload = {
   readonly target: ActorRef;
   readonly buffId: string;
   readonly reason: 'expired' | 'dispelled' | 'replaced' | 'manual';
-}
+};
 
 /**
  * 死亡事件 Payload
  */
-export interface DeathEventPayload {
+export type DeathEventPayload = {
   readonly target: ActorRef;
   readonly killer?: ActorRef;
   readonly damageSource?: string;
-}
+};
 
 /**
  * 移动事件 Payload
  */
-export interface MoveEventPayload {
+export type MoveEventPayload = {
   readonly unit: ActorRef;
   readonly fromX: number;
   readonly fromY: number;
   readonly toX: number;
   readonly toY: number;
-}
+};
 
 /**
  * 技能使用事件 Payload
  */
-export interface AbilityUsedEventPayload {
+export type AbilityUsedEventPayload = {
   readonly source: ActorRef;
   readonly abilityId: string;
   readonly abilityName?: string;
   readonly targets: ActorRef[];
-}
+};
 
 /**
  * 回合开始事件 Payload
  */
-export interface TurnStartEventPayload {
+export type TurnStartEventPayload = {
   readonly roundNumber: number;
   readonly activeUnit: ActorRef;
-}
+};
 
 /**
  * 回合结束事件 Payload
  */
-export interface TurnEndEventPayload {
+export type TurnEndEventPayload = {
   readonly roundNumber: number;
   readonly unit: ActorRef;
-}
+};
 
 /**
  * 战斗开始事件 Payload
  */
-export interface BattleStartEventPayload {
+export type BattleStartEventPayload = {
   readonly battleId: string;
   readonly participants: ActorRef[];
-}
+};
 
 /**
  * 战斗结束事件 Payload
  */
-export interface BattleEndEventPayload {
+export type BattleEndEventPayload = {
   readonly battleId: string;
   readonly winner?: 'teamA' | 'teamB' | 'draw';
   readonly survivors: ActorRef[];
-}
+};
 
 /**
  * 错误事件 Payload
  */
-export interface ErrorEventPayload {
+export type ErrorEventPayload = {
   readonly errorType: 'action_failed' | 'component_error' | 'config_invalid';
   readonly message: string;
   readonly context?: Record<string, unknown>;
-}
+};
 
 // ========== 事件类型常量 ==========
 

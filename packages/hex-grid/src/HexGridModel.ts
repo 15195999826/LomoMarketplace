@@ -53,7 +53,7 @@ export type TerrainType = 'normal' | 'blocked' | 'water' | 'forest' | 'mountain'
 /**
  * 格子数据
  */
-export interface TileData<T = unknown> {
+export type TileData<T = unknown> = {
   /** 坐标 */
   readonly coord: AxialCoord;
   /** 地形类型 */
@@ -64,53 +64,53 @@ export interface TileData<T = unknown> {
   height: number;
   /** 自定义数据 */
   customData?: T;
-}
+};
 
 /**
  * 占用者引用（泛型，由使用方定义）
  */
-export interface OccupantRef {
+export type OccupantRef = {
   readonly id: string;
-}
+};
 
 /**
  * 格子环境更新事件
  */
-export interface TileUpdateEvent {
+export type TileUpdateEvent = {
   coord: AxialCoord;
   oldTile: TileData;
   newTile: TileData;
-}
+};
 
 /**
  * 占用者更新事件
  */
-export interface OccupantUpdateEvent {
+export type OccupantUpdateEvent = {
   coord: AxialCoord;
   oldOccupant?: OccupantRef;
   newOccupant?: OccupantRef;
-}
+};
 
 /**
  * 占用者移动事件
  */
-export interface OccupantMoveEvent {
+export type OccupantMoveEvent = {
   occupant: OccupantRef;
   from: AxialCoord;
   to: AxialCoord;
-}
+};
 
 /**
  * 网格配置
  */
-export interface HexGridConfig {
+export type HexGridConfig = {
   /** 网格宽度（列数） */
   width: number;
   /** 网格高度（行数） */
   height: number;
   /** 默认地形 */
   defaultTerrain?: TerrainType;
-}
+};
 
 // ========== HexGridModel ==========
 

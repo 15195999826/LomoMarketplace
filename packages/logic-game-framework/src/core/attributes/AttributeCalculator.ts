@@ -7,7 +7,7 @@
  * 聚合规则：同类型求和（非求积）
  */
 
-import type { AttributeModifier, ModifierBreakdown } from './AttributeModifier.js';
+import { ModifierType, type AttributeModifier, type ModifierBreakdown } from './AttributeModifier.js';
 
 /**
  * 计算属性最终值
@@ -27,16 +27,16 @@ export function calculateAttribute(
 
   for (const mod of modifiers) {
     switch (mod.modifierType) {
-      case 'AddBase':
+      case ModifierType.AddBase:
         addBaseSum += mod.value;
         break;
-      case 'MulBase':
+      case ModifierType.MulBase:
         mulBaseSum += mod.value;
         break;
-      case 'AddFinal':
+      case ModifierType.AddFinal:
         addFinalSum += mod.value;
         break;
-      case 'MulFinal':
+      case ModifierType.MulFinal:
         mulFinalSum += mod.value;
         break;
     }
@@ -75,9 +75,9 @@ export function calculateBodyValue(
   let mulBaseSum = 0;
 
   for (const mod of modifiers) {
-    if (mod.modifierType === 'AddBase') {
+    if (mod.modifierType === ModifierType.AddBase) {
       addBaseSum += mod.value;
-    } else if (mod.modifierType === 'MulBase') {
+    } else if (mod.modifierType === ModifierType.MulBase) {
       mulBaseSum += mod.value;
     }
   }

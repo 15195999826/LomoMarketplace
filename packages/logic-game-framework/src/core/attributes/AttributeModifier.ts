@@ -6,14 +6,35 @@
  * 2. MulBase  - 肉体潜能（基础乘法）
  * 3. AddFinal - 外物附加（最终加法）
  * 4. MulFinal - 状态效率（最终乘法）
+ *
+ * @example
+ * ```typescript
+ * // 使用枚举值（推荐，IDE 自动补全）
+ * { modifierType: ModifierType.AddBase }
+ *
+ * // 也支持字符串（兼容旧代码）
+ * { modifierType: 'AddBase' }
+ * ```
  */
-export type ModifierType = 'AddBase' | 'MulBase' | 'AddFinal' | 'MulFinal';
+export const ModifierType = {
+  /** 肉体强化（基础加法） */
+  AddBase: 'AddBase',
+  /** 肉体潜能（基础乘法） */
+  MulBase: 'MulBase',
+  /** 外物附加（最终加法） */
+  AddFinal: 'AddFinal',
+  /** 状态效率（最终乘法） */
+  MulFinal: 'MulFinal',
+} as const;
+
+/** 修改器类型 */
+export type ModifierType = (typeof ModifierType)[keyof typeof ModifierType];
 
 /**
  * 属性修改器
  * 描述"如何修改某个属性"的数据结构
  */
-export interface AttributeModifier {
+export type AttributeModifier = {
   /** 修改器唯一标识 */
   readonly id: string;
 
@@ -35,7 +56,7 @@ export interface AttributeModifier {
 
   /** 优先级（同类型内的排序，数值越大越先应用） */
   readonly priority?: number;
-}
+};
 
 /**
  * 创建 AddBase 修改器
@@ -50,7 +71,7 @@ export function createAddBaseModifier(
   return {
     id,
     attributeName,
-    modifierType: 'AddBase',
+    modifierType: ModifierType.AddBase,
     value,
     source,
   };
@@ -69,7 +90,7 @@ export function createMulBaseModifier(
   return {
     id,
     attributeName,
-    modifierType: 'MulBase',
+    modifierType: ModifierType.MulBase,
     value,
     source,
   };
@@ -88,7 +109,7 @@ export function createAddFinalModifier(
   return {
     id,
     attributeName,
-    modifierType: 'AddFinal',
+    modifierType: ModifierType.AddFinal,
     value,
     source,
   };
@@ -107,7 +128,7 @@ export function createMulFinalModifier(
   return {
     id,
     attributeName,
-    modifierType: 'MulFinal',
+    modifierType: ModifierType.MulFinal,
     value,
     source,
   };
@@ -117,7 +138,7 @@ export function createMulFinalModifier(
  * Modifier 聚合结果
  * 用于 UI 显示属性分层
  */
-export interface ModifierBreakdown {
+export type ModifierBreakdown = {
   /** 基础值 */
   base: number;
   /** 肉体强化总和 */
@@ -132,4 +153,4 @@ export interface ModifierBreakdown {
   mulFinalProduct: number;
   /** 最终值 = (bodyValue + addFinalSum) * mulFinalProduct */
   currentValue: number;
-}
+};

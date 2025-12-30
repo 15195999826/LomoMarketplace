@@ -24,7 +24,7 @@ export function resetUnitIdCounter(): void {
 /**
  * InkMon 战斗单位配置
  */
-export interface InkMonUnitConfig {
+export type InkMonUnitConfig = {
   /** InkMon 数据 */
   inkmon: InkMon;
   /** 等级（默认 50） */
@@ -33,7 +33,7 @@ export interface InkMonUnitConfig {
   team: 'A' | 'B';
   /** 初始位置 */
   position?: AxialCoord;
-}
+};
 
 /**
  * InkMon 战斗单位
@@ -47,7 +47,6 @@ export interface InkMonUnitConfig {
  * - speed -> speed (ATB 速度)
  */
 export class InkMonUnit extends BattleUnit implements IATBUnit {
-  // @ts-expect-error - Override parent type
   readonly type = 'InkMonUnit';
 
   /** 原始 InkMon 数据 */

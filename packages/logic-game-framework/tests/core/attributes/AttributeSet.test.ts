@@ -1,3 +1,15 @@
+/**
+ * AttributeSet 底层 API 测试
+ *
+ * 本文件测试 AttributeSet 类的底层实现，包括：
+ * - 四层公式计算（AddBase, MulBase, AddFinal, MulFinal）
+ * - Modifier 管理（添加、移除、按来源移除）
+ * - 变化监听器
+ *
+ * 注意：这是框架内部使用的底层 API。
+ * 游戏开发者应使用 defineAttributes() 高层 API，
+ * 参见 defineAttributes.test.ts
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   AttributeSet,
@@ -7,7 +19,7 @@ import {
   createMulFinalModifier,
 } from '../../../src/core/attributes/index.js';
 
-describe('AttributeSet', () => {
+describe('AttributeSet（底层 API）', () => {
   let attributeSet: AttributeSet;
 
   beforeEach(() => {

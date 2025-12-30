@@ -1,8 +1,8 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.4 (框架化)
+> 文档版本：v0.7 (onXxxChanged 委托 & API 分层导出)
 > 创建日期：2025-12-27
-> 更新日期：2025-12-29
+> 更新日期：2025-12-30
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
 
 **相关文档**：
@@ -712,40 +712,232 @@ Buff2: DEF.AddBase = ATK肉体属性 × 10%
 读取ATK时：ATK=111, DEF=110（DEF计算时ATK还是缓存值100）
 ```
 
-### 5.9 属性值分层与接口设计
+### 5.9 属性系统对外 API
 
-**肉体属性定义**：`(Base + AddBase) × MulBase`
+#### 导出结构
+
+属性系统采用分层导出，区分对外 API 和内部 API：
+
+**对外 API（游戏开发者使用）**：
+```typescript
+import {
+  // 核心函数
+  defineAttributes,      // 创建属性集
+  restoreAttributes,     // 反序列化
+} from '@lomo/logic-game-framework';
+
+import type {
+  // 类型定义
+  TypedAttributeSet,     // 属性集类型
+  AttributesConfig,      // 配置类型
+  AttributeDefConfig,    // 单个属性配置
+  ModifierBreakdown,     // $xxx 返回类型
+  AttributeChangeEvent,  // 变化事件类型
+} from '@lomo/logic-game-framework';
+```
+
+**内部 API（标记为 `@internal`，框架内部使用）**：
+- `AttributeModifier`, `ModifierType` - Modifier 类型
+- `createAddBaseModifier` 等 - Modifier 创建函数
+- `AttributeSet` - 底层类
+- `IAttributeModifierTarget` - 内部接口
+
+#### 角色使用示例
+
+```typescript
+import { defineAttributes, TypedAttributeSet } from '@lomo/logic-game-framework';
+
+// 1. 定义属性配置
+const heroConfig = {
+  maxHp: { baseValue: 100, minValue: 0 },
+  currentHp: { baseValue: 100, minValue: 0 },
+  attack: { baseValue: 50 },
+  defense: { baseValue: 30 },
+  speed: { baseValue: 10 },
+} as const;
+
+// 2. 创建角色类
+class Character {
+  readonly name: string;
+  readonly attributes: TypedAttributeSet<typeof heroConfig>;
+
+  constructor(name: string) {
+    this.name = name;
+    this.attributes = defineAttributes(heroConfig);
+
+    // 3. 订阅属性变化
+    this.attributes.onCurrentHpChanged((event) => {
+      console.log(`${this.name} HP: ${event.oldValue} → ${event.newValue}`);
+      if (event.newValue <= 0) {
+        console.log(`${this.name} 已阵亡！`);
+      }
+    });
+  }
+
+  // 4. 获取属性值
+  get hp() { return this.attributes.currentHp; }
+  get maxHp() { return this.attributes.maxHp; }
+  get attack() { return this.attributes.attack; }
+
+  // 5. 直接修改基础值（少数情况）
+  takeDamage(damage: number) {
+    const newHp = Math.max(0, this.attributes.currentHp - damage);
+    this.attributes.setBase('currentHp', newHp);
+  }
+
+  // 6. 查看属性详情
+  showAttackBreakdown() {
+    const breakdown = this.attributes.$attack;
+    console.log(`攻击力分解：`);
+    console.log(`  基础值: ${breakdown.base}`);
+    console.log(`  肉体强化: +${breakdown.addBaseSum}`);
+    console.log(`  肉体潜能: ×${breakdown.mulBaseProduct}`);
+    console.log(`  外物附加: +${breakdown.addFinalSum}`);
+    console.log(`  最终值: ${breakdown.currentValue}`);
+  }
+}
+
+// 7. 使用 StatModifierComponent 修改属性（推荐方式）
+const hero = new Character('勇者');
+const buffAbility = new Ability('power-buff');
+buffAbility.addComponent(new StatModifierComponent([
+  { attributeName: hero.attributes.attackAttribute, modifierType: 'AddBase', value: 20 },
+]));
+```
+
+#### 肉体属性定义
+
+`(Base + AddBase) × MulBase`
 
 包含天生能力、肉体强化、潜能发挥，不包含装备和状态效率。
 
-**框架层提供的接口**：
+#### 推荐接口：`defineAttributes()` 工厂函数
 
-| 接口 | 返回值 | 说明 |
-|------|--------|------|
-| `getBase(attr)` | Base | 天生值 |
-| `getAddBaseSum(attr)` | ΣAddBase | 肉体强化总和 |
-| `getMulBaseProduct(attr)` | 1 + ΣMulBase | 肉体潜能乘数（如1.25表示+25%） |
-| `getBodyValue(attr)` | (Base + AddBase) × MulBase | 肉体属性 |
-| `getAddFinalSum(attr)` | ΣAddFinal | 装备加成总和 |
-| `getMulFinalProduct(attr)` | 1 + ΣMulFinal | 效率乘数（如0.7表示-30%） |
-| `getCurrentValue(attr)` | 最终值 | 实际生效值 |
+框架提供类型安全的工厂函数，支持 IDE 自动补全，类似 UE 的 `ATTRIBUTE_ACCESSORS` 宏：
+
+```typescript
+import { defineAttributes, createAddBaseModifier } from '@lomo/logic-game-framework';
+
+// 定义属性（IDE 自动补全属性名）
+const hero = defineAttributes({
+  maxHp: { baseValue: 100, minValue: 0 },
+  attack: { baseValue: 50 },
+  defense: { baseValue: 30 },
+});
+
+// 直接访问 currentValue（最常用）
+hero.maxHp          // → 100 ✅ IDE 提示
+hero.attack         // → 50  ✅ IDE 提示
+
+// $ 前缀访问 breakdown（需要详情时）
+hero.$attack.base       // → 50
+hero.$attack.bodyValue  // → 50
+hero.$attack.addBaseSum // → 0
+
+// Attribute 后缀获取属性名引用（用于 StatModifier）
+hero.attackAttribute    // → 'attack' ✅ 类型安全
+hero.defenseAttribute   // → 'defense' ✅ IDE 补全
+
+// 修改基础值
+hero.setBase('attack', 60);    // ✅ 类型安全
+hero.modifyBase('attack', 10);
+
+// 添加 Modifier（通过内部接口，外部使用 StatModifierComponent）
+hero._modifierTarget.addModifier(createAddBaseModifier('buff', 'attack', 20));
+hero.attack  // → 90
+
+// 序列化/反序列化
+const saved = hero.serialize();
+const restored = restoreAttributes(saved);
+```
+
+**对比 UE 方式**：
+
+| UE (C++ 宏) | TypeScript |
+|-------------|------------|
+| `ATTRIBUTE_ACCESSORS(Class, MaxHP)` | `defineAttributes({ maxHp: {...} })` |
+| `GetMaxHP()` | `hero.maxHp` |
+| `GetMaxHPAttribute()` | `hero.maxHpAttribute` |
+| `SetMaxHP(v)` | `hero.setBase('maxHp', v)` |
+
+#### Breakdown 结构
+
+通过 `$属性名` 访问完整的分层数据：
+
+| 字段 | 说明 |
+|------|------|
+| `base` | 天生值 |
+| `addBaseSum` | 肉体强化总和 |
+| `mulBaseProduct` | 肉体潜能乘数（1 + ΣMulBase） |
+| `bodyValue` | 肉体属性 = (Base + AddBase) × MulBase |
+| `addFinalSum` | 装备加成总和 |
+| `mulFinalProduct` | 效率乘数（1 + ΣMulFinal） |
+| `currentValue` | 最终值 |
 
 **UI显示示例**：
 
 ```
 攻击力: 105
-├─ 肉体: 100
-│   ├─ 天生: 80          ← getBase()
-│   ├─ 强化: +10         ← getAddBaseSum()
-│   └─ 潜能: ×1.25       ← getMulBaseProduct()
-├─ 装备: +50             ← getAddFinalSum()
-└─ 效率: ×0.7 (-30%)     ← getMulFinalProduct()
+├─ 肉体: 100              ← hero.$attack.bodyValue
+│   ├─ 天生: 80           ← hero.$attack.base
+│   ├─ 强化: +10          ← hero.$attack.addBaseSum
+│   └─ 潜能: ×1.25        ← hero.$attack.mulBaseProduct
+├─ 装备: +50              ← hero.$attack.addFinalSum
+└─ 效率: ×0.7 (-30%)      ← hero.$attack.mulFinalProduct
 ```
 
 **应用场景**：
-- **装备需求检测**：检查`getBodyValue()`，避免"穿装备才能穿装备"悖论
-- **Modifier依赖**："增加10%基础攻击力"依赖`getBodyValue()`
+- **装备需求检测**：检查 `hero.$strength.bodyValue`，避免"穿装备才能穿装备"悖论
+- **Modifier依赖**："增加10%基础攻击力"依赖 `bodyValue`
 - **UI分层显示**：根据需要选择显示粒度
+
+#### 属性引用（xxxAttribute）
+
+通过 `属性名Attribute` 后缀获取属性名的字符串字面量类型，类似 UE 的 `GetMaxHPAttribute()`：
+
+```typescript
+// 返回属性名字符串字面量（带 IDE 补全）
+hero.attackAttribute   // → 'attack'
+hero.defenseAttribute  // → 'defense'
+hero.maxHpAttribute    // → 'maxHp'
+
+// 用于 StatModifierComponent 的类型安全配置
+new StatModifierComponent([
+  { attributeName: hero.attackAttribute, modifierType: 'AddBase', value: 20 },
+  //              ^^^^^^^^^^^^^^^^^^^^^ IDE 自动补全，拼写错误会编译报错
+])
+```
+
+**四种访问模式汇总**：
+
+| 访问方式 | 返回类型 | 用途 |
+|---------|---------|------|
+| `hero.attack` | `number` | 获取 currentValue（最常用） |
+| `hero.$attack` | `ModifierBreakdown` | 获取详细分层数据 |
+| `hero.attackAttribute` | `'attack'` | 获取属性名引用（用于 StatModifier） |
+| `hero.onAttackChanged(cb)` | `() => void` | 订阅变化事件，返回 unsubscribe |
+
+#### 属性变化委托（onXxxChanged）
+
+通过 `on属性名Changed` 订阅特定属性的变化事件，类似 UE 的 `OnMaxHPChanged` 委托：
+
+```typescript
+// 订阅 HP 变化
+const unsubscribe = hero.onCurrentHpChanged((event) => {
+  console.log(`HP: ${event.oldValue} → ${event.newValue}`);
+  if (event.newValue <= 0) {
+    console.log('角色阵亡！');
+  }
+});
+
+// 取消订阅
+unsubscribe();
+```
+
+**特点**：
+- 返回取消订阅函数，无需保存 callback 引用
+- 只监听特定属性，不会收到其他属性的变化通知
+- 支持驼峰命名（`onMaxHpChanged`、`onCriticalRateChanged`）
 
 ### 5.10 变化钩子
 
@@ -1286,11 +1478,18 @@ interface BattleSaveData {
 3. **Ability架构设计**：EC模式、Component类型定义
 4. **事件策略确定**：避免事件订阅，使用主动分发钩子
 5. **Action系统设计**：工厂模式、链式调用、回调机制
+6. **属性系统实现**：
+   - `AttributeSet` 核心类（四层公式、缓存、脏标记、钩子）
+   - `defineAttributes()` 工厂函数（类型安全、IDE 自动补全）
+   - `xxxAttribute` 属性引用（类似 UE `GetXxxAttribute()`，用于 StatModifier）
+   - `onXxxChanged` 属性变化委托（类似 UE `OnXxxChanged`，返回 unsubscribe）
+   - API 分层导出（对外 API vs 内部 API）
+   - Modifier 创建辅助函数
 
 ### 待实现
 
 1. **原型验证**：用简化版实现验证核心流程
-   - 实现AttributeSet基础版
+   - ~~实现AttributeSet基础版~~ ✅
    - 实现Ability + Component基础版
    - 实现Action工厂基础版
    - 实现简单的BattleInstance流程

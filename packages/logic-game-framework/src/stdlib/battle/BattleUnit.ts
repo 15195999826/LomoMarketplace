@@ -9,12 +9,13 @@ import { Actor } from '../../core/entity/Actor.js';
 import { AttributeSet, type AttributeConfig } from '../../core/attributes/AttributeSet.js';
 import type { Ability } from '../../core/abilities/Ability.js';
 import type { IAbilityActor } from '../../core/abilities/AbilitySystem.js';
+import type { ComponentLifecycleContext } from '../../core/abilities/AbilityComponent.js';
 import { StandardAttributes, BasicUnitAttributeTemplates } from '../attributes/StandardAttributes.js';
 
 /**
  * 战斗单位配置
  */
-export interface BattleUnitConfig {
+export type BattleUnitConfig = {
   /** 单位 ID（可选） */
   id?: string;
   /** 显示名称 */
@@ -25,13 +26,13 @@ export interface BattleUnitConfig {
   stats?: Partial<Record<string, number>>;
   /** 自定义属性配置 */
   attributeConfigs?: AttributeConfig[];
-}
+};
 
 /**
  * BattleUnit
  */
 export class BattleUnit extends Actor implements IAbilityActor {
-  readonly type = 'BattleUnit';
+  readonly type: string = 'BattleUnit';
 
   /** 属性集合 */
   attributes: AttributeSet;
@@ -184,18 +185,37 @@ export class BattleUnit extends Actor implements IAbilityActor {
   // ========== 能力管理 ==========
 
   /**
+   * 创建 Component 生命周期上下文
+   */
+  private createLifecycleContext(ability: Ability): ComponentLifecycleContext {
+    return {
+      owner: { id: this.id },
+      attributes: {
+        addModifier: (mod) => this.attributes.addModifier(mod),
+        removeModifier: (id) => this.attributes.removeModifier(id),
+        removeModifiersBySource: (source) => this.attributes.removeModifiersBySource(source),
+        getModifiers: (name) => this.attributes.getModifiers(name),
+        hasModifier: (id) => this.attributes.hasModifier(id),
+      },
+      ability,
+    };
+  }
+
+  /**
    * 添加能力
+   * Ability 激活时会自动应用 Modifier
    */
   addAbility(ability: Ability): void {
     this.abilities.push(ability);
-    ability.activate();
 
-    // 应用属性修改器
-    this.applyAbilityModifiers(ability);
+    // 创建上下文并激活（Component 会自动应用 Modifier）
+    const context = this.createLifecycleContext(ability);
+    ability.activate(context);
   }
 
   /**
    * 移除能力
+   * Ability 过期时会自动移除 Modifier
    */
   removeAbility(abilityId: string): boolean {
     const index = this.abilities.findIndex((a) => a.id === abilityId);
@@ -204,8 +224,7 @@ export class BattleUnit extends Actor implements IAbilityActor {
     }
 
     const ability = this.abilities[index];
-    this.removeAbilityModifiers(ability);
-    ability.expire();
+    ability.expire(); // 内部会调用 deactivate，自动移除 Modifier
     this.abilities.splice(index, 1);
     return true;
   }
@@ -222,24 +241,6 @@ export class BattleUnit extends Actor implements IAbilityActor {
    */
   hasAbility(configId: string): boolean {
     return this.abilities.some((a) => a.configId === configId);
-  }
-
-  // ========== 私有方法 ==========
-
-  private applyAbilityModifiers(ability: Ability): void {
-    // 查找 StatModifierComponent 并应用
-    const statMod = ability.getComponent('statModifier');
-    if (statMod && 'getModifiers' in statMod) {
-      const modifiers = (statMod as { getModifiers(): readonly object[] }).getModifiers();
-      for (const mod of modifiers) {
-        this.attributes.addModifier(mod as any);
-      }
-    }
-  }
-
-  private removeAbilityModifiers(ability: Ability): void {
-    // 移除来自该 Ability 的所有 Modifier
-    this.attributes.removeModifiersBySource(ability.id);
   }
 
   // ========== 序列化 ==========

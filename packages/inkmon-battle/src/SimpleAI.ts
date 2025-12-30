@@ -11,7 +11,7 @@ import type { InkMonUnit } from './InkMonUnit.js';
 /**
  * AI 决策结果
  */
-export interface AIDecision {
+export type AIDecision = {
   /** 行动类型 */
   action: 'move' | 'attack' | 'skip';
   /** 攻击目标（action = 'attack' 时） */
@@ -20,7 +20,7 @@ export interface AIDecision {
   destination?: AxialCoord;
   /** 决策原因 */
   reason?: string;
-}
+};
 
 /**
  * 简单 AI

@@ -10,12 +10,12 @@
 /**
  * ATB 配置
  */
-export interface ATBConfig {
+export type ATBConfig = {
   /** 行动条满值（默认 1000） */
   maxGauge?: number;
   /** 全局速度倍率（默认 1） */
   speedMultiplier?: number;
-}
+};
 
 /**
  * ATB 单位接口
