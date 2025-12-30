@@ -1,0 +1,7 @@
+{
+  "name": "git-utils",
+  "description": "Git analysis tools for project change summaries and commit insights",
+  "author": {
+    "name": "Lomo"
+  }
+}

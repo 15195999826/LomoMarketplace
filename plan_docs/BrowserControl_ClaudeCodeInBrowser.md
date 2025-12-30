@@ -343,6 +343,166 @@ main [ref_4]
 
 AI 可以用 `ref_7` 来点击"Submit"按钮，而不需要知道具体坐标。
 
+### 2.6 Claude Code CLI 子进程管理
+
+**关键问题**：浏览器无法直接启动本地程序，需要通过 Bridge Server 来管理 Claude Code CLI。
+
+**好消息**：Claude Code CLI 可以作为**后台子进程**运行，**不需要弹出 cmd 窗口**！
+
+#### 原理说明
+
+```
+【用户现在的使用方式】
+1. 手动打开 cmd 窗口
+2. 输入 claude 命令
+3. 看到 Claude Code 界面
+4. 开始对话
+
+【Bridge Server 方式】
+1. Bridge Server 后台启动（无窗口）
+2. Bridge Server 自动启动 claude 子进程（无窗口）
+3. 用户打开浏览器 Extension
+4. 在 xterm.js 中看到 Claude Code 界面
+5. 开始对话
+
+用户看到的只有浏览器，没有任何 cmd 窗口！
+```
+
+#### 技术实现
+
+```typescript
+// lomo-mcp-servers/browser-control-server/src/bridge/terminal.ts
+import { spawn, ChildProcess } from 'child_process';
+import { EventEmitter } from 'events';
+
+export class ClaudeCodeManager extends EventEmitter {
+  private process: ChildProcess | null = null;
+
+  /**
+   * 启动 Claude Code CLI 作为后台子进程
+   * - 不显示 cmd 窗口
+   * - 通过 stdin/stdout 进行通信
+   */
+  async start(): Promise<void> {
+    this.process = spawn('claude', [], {
+      stdio: ['pipe', 'pipe', 'pipe'],  // 管道控制输入输出
+      shell: true,                       // 通过 shell 启动（Windows 需要）
+      windowsHide: true,                 // Windows 下隐藏窗口 ⭐关键配置
+      env: {
+        ...process.env,
+        // 可以传递环境变量，如 API Key 等
+      }
+    });
+
+    // 监听 Claude Code 的输出
+    this.process.stdout?.on('data', (data: Buffer) => {
+      this.emit('output', data.toString());
+    });
+
+    this.process.stderr?.on('data', (data: Buffer) => {
+      this.emit('output', data.toString());  // stderr 也发送到终端显示
+    });
+
+    // 监听进程退出
+    this.process.on('exit', (code) => {
+      this.emit('exit', code);
+      this.process = null;
+    });
+
+    // 监听进程错误
+    this.process.on('error', (err) => {
+      this.emit('error', err);
+    });
+  }
+
+  /**
+   * 发送用户输入到 Claude Code
+   * 相当于用户在 cmd 里打字
+   */
+  write(data: string): void {
+    if (this.process?.stdin) {
+      this.process.stdin.write(data);
+    }
+  }
+
+  /**
+   * 停止 Claude Code 进程
+   */
+  stop(): void {
+    if (this.process) {
+      this.process.kill();
+      this.process = null;
+    }
+  }
+
+  /**
+   * 检查进程是否在运行
+   */
+  isRunning(): boolean {
+    return this.process !== null && !this.process.killed;
+  }
+}
+```
+
+#### 关键配置说明
+
+| 配置项 | 值 | 说明 |
+|--------|-----|------|
+| `stdio` | `['pipe', 'pipe', 'pipe']` | 将 stdin/stdout/stderr 都通过管道控制 |
+| `shell` | `true` | Windows 下需要通过 shell 来执行 `claude` 命令 |
+| `windowsHide` | `true` | **Windows 专用**：隐藏 cmd 窗口 |
+
+#### 数据流
+
+```
+【用户在浏览器打字 "你好"】
+
+1. xterm.js 捕获按键
+2. WebSocket 发送: { type: "terminal_input", data: "你好\n" }
+3. Bridge Server 收到消息
+4. Bridge Server 写入 Claude Code 的 stdin: process.stdin.write("你好\n")
+5. Claude Code 处理并输出响应
+6. Bridge Server 读取 stdout
+7. WebSocket 发送: { type: "terminal_output", data: "Claude 的回复..." }
+8. xterm.js 显示输出
+```
+
+#### 进程生命周期管理
+
+```typescript
+// 完整的生命周期管理
+class ClaudeCodeManager {
+  // ... 上面的代码 ...
+
+  /**
+   * 自动重启机制
+   * 如果 Claude Code 意外退出，自动重启
+   */
+  enableAutoRestart(): void {
+    this.on('exit', (code) => {
+      console.log(`Claude Code 退出，退出码: ${code}`);
+      if (code !== 0) {
+        console.log('3 秒后自动重启...');
+        setTimeout(() => this.start(), 3000);
+      }
+    });
+  }
+
+  /**
+   * 健康检查
+   */
+  healthCheck(): boolean {
+    return this.isRunning() && !this.process?.killed;
+  }
+}
+```
+
+#### 前置条件
+
+- Claude Code CLI 需要**全局安装**：`npm install -g @anthropic-ai/claude-code`
+- 确保 `claude` 命令在系统 PATH 中可用
+- 已完成 Claude Code 的认证配置
+
 ---
 
 ## 3. 项目结构
@@ -1204,7 +1364,59 @@ export class CDPController {
 
 ---
 
-## 8. 参考资源
+## 8. 快速开始指南
+
+### 8.1 构建项目
+
+```bash
+# 1. 安装所有依赖
+pnpm install
+
+# 2. 构建共享包
+pnpm build:browser-bridge
+
+# 3. 构建 Bridge Server
+pnpm build:browser-control
+
+# 4. 构建 Chrome Extension
+pnpm build:browser-ext
+```
+
+### 8.2 加载 Chrome 扩展
+
+1. 打开 Chrome，访问 `chrome://extensions/`
+2. 开启右上角的"开发者模式"
+3. 点击"加载已解压的扩展程序"
+4. 选择 `apps/browser-ext/dist` 目录
+
+### 8.3 启动服务
+
+```bash
+# 启动 Bridge Server
+pnpm start:bridge
+
+# 或使用启动脚本
+scripts/start-browser-control.bat
+```
+
+### 8.4 使用
+
+1. 确保 Bridge Server 正在运行
+2. 在 Chrome 中点击扩展图标，打开 Side Panel
+3. 终端会自动连接到 Bridge Server
+4. 开始与 Claude Code 对话！
+
+### 8.5 使用浏览器控制功能
+
+1. 在 Claude Code 中使用 `/browse` 命令激活浏览器控制模式
+2. 或直接描述你想自动化的任务，例如：
+   - "帮我在京东搜索 iPhone"
+   - "填写这个登录表单"
+   - "点击提交按钮"
+
+---
+
+## 9. 参考资源
 
 - [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/)
 - [MCP SDK (TypeScript)](https://github.com/anthropics/mcp-typescript-sdk)

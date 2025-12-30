@@ -1,0 +1,5 @@
+{
+  "name": "browser-control",
+  "version": "0.1.0",
+  "description": "Browser automation and control for Claude Code - enables Claude to control the browser through MCP tools"
+}

@@ -7,6 +7,10 @@
     "chrome-devtools": {
       "command": "cmd",
       "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest"]
+    },
+    "browser-control": {
+      "command": "node",
+      "args": ["lomo-mcp-servers/browser-control-server/dist/index.js", "--mcp"]
     }
   }
 }

@@ -7,7 +7,12 @@
     "build:core": "pnpm --filter @inkmon/core build",
     "build:mcp": "pnpm --filter inkmon-mcp-server build",
     "build:web": "pnpm --filter inkmon-pokedex build",
-    "build:all": "pnpm -r build"
+    "build:all": "pnpm -r build",
+    "build:browser-bridge": "pnpm --filter @lomo/browser-bridge build",
+    "build:browser-control": "pnpm --filter @lomo/browser-control-server build",
+    "build:browser-ext": "pnpm --filter @lomo/browser-ext build",
+    "start:bridge": "pnpm --filter @lomo/browser-control-server start",
+    "dev:browser-ext": "pnpm --filter @lomo/browser-ext dev"
   },
   "engines": {
     "node": ">=20.0.0",
