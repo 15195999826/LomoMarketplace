@@ -20,7 +20,7 @@ python ${CLAUDE_PLUGIN_ROOT}/scripts/init_project.py .
 **If Git is not initialized** → Stop and inform user to run `git init` first.
 
 **If successful** → The script will copy templates to:
-- `.claude/commands/` (update-arch, session-summary, whats-next)
+- `.claude/commands/` (update-arch, session-summary, whats-next, track-module)
 - `.claude/skills/exploring-project/` (SKILL.md, references/)
 - `project-notes/`
 
@@ -49,10 +49,12 @@ Check if `CLAUDE.md` exists using Glob.
 
 ### 可用命令
 
-- `/update-arch` - 更新项目架构文档
-- `/session-summary [主题]` - 总结当前对话
-- `/whats-next` - 查看待办事项和工作建议
-- `/track-module <模块名>` - 追踪复杂模块
+| 命令 | 说明 |
+|------|------|
+| `/update-arch` | 更新项目架构文档 |
+| `/session-summary [主题]` | 总结当前对话 |
+| `/whats-next` | 查看待办事项和工作建议 |
+| `/track-module <模块名>` | 追踪复杂模块 |
 ```
 
 ### Step 3: Run validation script
@@ -69,10 +71,9 @@ Perform a comprehensive project exploration:
 
 1. **Get directory structure**
    ```bash
-   tree -L 3
-   # or on Windows
-   dir /s /b
+   tree /F /A
    ```
+   Note: Limit to first 3 levels for readability in documentation.
 
 2. **Identify tech stack**
    - Read `package.json`, `Cargo.toml`, `pyproject.toml`, etc.
@@ -150,70 +151,45 @@ Options:
 
 ### Step 6: Create module documentation (if any selected)
 
-For each selected module:
+For each selected module, use the create_module.py script:
 
-1. Explore the module code
-2. Generate `references/[module-name].md` following this template:
-
-```markdown
-# [Module Name] Details
-
-> Last updated: YYYY-MM-DD
-> Tracked paths: `path/to/module/`
-
-<!-- SECTION: core-concepts -->
-<!-- TRACKED_FILES: types.ts, interfaces.ts -->
-## 1. Core Concepts
-
-| Concept | Responsibility |
-|---------|----------------|
-<!-- END_SECTION -->
-
-<!-- SECTION: design-decisions -->
-<!-- TRACKED_FILES: -->
-## 2. Design Decisions
-
-### 2.1 [Decision Point]
-**Decision**: ...
-**Rationale**: ...
-<!-- END_SECTION -->
-
-<!-- SECTION: api-interfaces -->
-<!-- TRACKED_FILES: index.ts, *.ts -->
-## 3. Core Interfaces
-
-\`\`\`typescript
-interface IExample {
-  // ...
-}
-\`\`\`
-<!-- END_SECTION -->
-
-## 4. Usage Examples
-
-\`\`\`typescript
-// Example code
-\`\`\`
-
-## 5. Extension Guide
-
-How to extend this module...
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py . {module-name} \
+  --description "{description}" \
+  --paths "{path1}" --paths "{path2}"
 ```
 
-3. Update SKILL.md frontmatter:
-   - Add to `tracked_modules` array
-   - Add to Core Modules table
-   - Add to References list
+Example:
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/scripts/create_module.py . auth-system \
+  --description "用户认证模块" \
+  --paths "src/auth/" --paths "src/middleware/auth.ts"
+```
 
-### Step 7: Set last_tracked_commit
+This creates `references/module_{module-name}.md` with standardized template.
+
+Then explore the module code and fill each SECTION:
+1. **core-concepts**: Key classes, interfaces, patterns
+2. **design-decisions**: Architectural choices and rationale
+3. **api-interfaces**: Public APIs and type definitions
+4. **Usage Examples**: Common usage patterns
+5. **Extension Guide**: How to extend/customize
+
+Use Edit tool to update each section in the module file.
+
+### Step 7: Run sync_skill.py
+
+After generating all documents, run the sync script to update SKILL.md:
 
 ```bash
 git rev-parse HEAD
+python ${CLAUDE_PLUGIN_ROOT}/scripts/sync_skill.py . --commit {HEAD_COMMIT}
 ```
 
-Update SKILL.md frontmatter:
-- `last_tracked_commit`: [HEAD commit hash]
-- `last_updated`: [today's date YYYY-MM-DD]
+This will automatically:
+- Update SKILL.md's Generated Config (last_tracked_commit, last_updated)
+- Update SKILL.md's Generated References section (scan references/ directory)
+- Update Core Modules table (from module_*.md files)
 
 ### Step 8: Output completion report
 
@@ -227,11 +203,12 @@ Update SKILL.md frontmatter:
 - .claude/commands/update-arch.md
 - .claude/commands/session-summary.md
 - .claude/commands/whats-next.md
+- .claude/commands/track-module.md
 - project-notes/
 - CLAUDE.md [created/updated]
 
 📊 Tracked modules: [N modules]
-- [module-name] → references/[module-name].md
+- [module-name] → references/module_{module-name}.md
 
 🔗 Last tracked commit: [commit hash]
 
@@ -246,4 +223,5 @@ Update SKILL.md frontmatter:
 - Git must be initialized before running this command
 - This is a one-time setup, subsequent updates use `/update-arch`
 - Module tracking is optional but recommended for complex projects
+- Use `create_module.py` script to ensure consistent module file format
 - Use Chinese for documentation content, English for code/technical terms

@@ -139,6 +139,7 @@ def validate_directory_structure(root: Path, result: ValidationResult):
         (".claude/commands/update-arch.md", "文件"),
         (".claude/commands/session-summary.md", "文件"),
         (".claude/commands/whats-next.md", "文件"),
+        (".claude/commands/track-module.md", "文件"),
         ("project-notes", "目录"),
         ("CLAUDE.md", "文件"),
     ]
@@ -240,71 +241,75 @@ def validate_skill_md(root: Path, result: ValidationResult) -> tuple[Optional[Di
     return frontmatter, content
 
 
-def parse_tracking_comment(content: str) -> Optional[Dict[str, str]]:
-    """解析 TRACKING 注释: <!-- TRACKING: last_commit="" | updated="" | modules=[] -->"""
-    match = re.search(r'<!--\s*TRACKING:\s*(.+?)\s*-->', content)
-    if not match:
-        return None
+def validate_region_markers(root: Path, content: str, result: ValidationResult):
+    """校验 region 标记格式"""
+    print("\n🔗 Region 标记校验")
 
-    tracking_str = match.group(1)
-    result = {}
-
-    # 解析 key=value 或 key="value" 格式
-    for part in tracking_str.split('|'):
-        part = part.strip()
-        kv_match = re.match(r'(\w+)=(".*?"|\'.*?\'|\[.*?\]|[^\s|]+)', part)
-        if kv_match:
-            key, value = kv_match.groups()
-            # 去除引号
-            value = value.strip('"\'')
-            result[key] = value
-
-    return result
-
-
-def validate_tracking_metadata(root: Path, content: str, result: ValidationResult):
-    """校验追踪元数据 (从 TRACKING 注释中解析)"""
-    print("\n🔗 追踪元数据校验")
-
-    tracking = parse_tracking_comment(content)
-
-    if tracking is None:
-        result.fail("缺少 TRACKING 注释", "添加 <!-- TRACKING: last_commit=\"\" | updated=\"\" | modules=[] -->")
+    if content is None:
+        result.fail("无法读取 SKILL.md 内容，跳过 region 校验")
         return
 
-    result.ok("TRACKING 注释存在")
+    # 检查 Generated Config region
+    config_start = "<!-- region Generated Config Start -->"
+    config_end = "<!-- region Generated Config End -->"
 
-    # 检查 last_commit
-    last_commit = tracking.get("last_commit", None)
-    if last_commit is not None:
-        if last_commit == "":
-            result.warn("last_commit 为空", "运行 /update-arch 设置初始提交")
-        elif len(last_commit) >= 7:
-            result.ok(f"last_commit 存在 ({last_commit[:7]}...)")
-        else:
-            result.warn(f"last_commit 格式可能不正确: {last_commit}")
-    else:
-        result.warn("TRACKING 注释缺少 last_commit", "格式: last_commit=\"abc123\"")
+    if config_start in content and config_end in content:
+        result.ok("Generated Config region 存在")
 
-    # 检查 updated
-    updated = tracking.get("updated", None)
-    if updated is not None:
-        if updated == "":
-            result.warn("updated 为空", "运行 /update-arch 设置更新日期")
-        else:
-            result.ok(f"updated 存在 ({updated})")
-    else:
-        result.warn("TRACKING 注释缺少 updated", "格式: updated=\"2025-01-01\"")
+        # 提取并检查内容
+        start_idx = content.index(config_start) + len(config_start)
+        end_idx = content.index(config_end)
+        config_content = content[start_idx:end_idx].strip()
 
-    # 检查 modules (简单检查格式)
-    modules = tracking.get("modules", None)
-    if modules is not None:
-        if modules == "[]" or modules == "":
-            result.warn("modules 为空", "运行 /track-module <name> 添加模块追踪")
+        if "```yaml" in config_content:
+            result.ok("Config region 包含 YAML 代码块")
+
+            # 检查必要字段
+            if "last_tracked_commit" in config_content:
+                result.ok("包含 last_tracked_commit 字段")
+            else:
+                result.warn("缺少 last_tracked_commit 字段", "运行 sync_skill.py 生成")
+
+            if "last_updated" in config_content:
+                result.ok("包含 last_updated 字段")
+            else:
+                result.warn("缺少 last_updated 字段", "运行 sync_skill.py 生成")
         else:
-            result.ok(f"modules 存在: {modules}")
+            result.fail("Config region 缺少 YAML 代码块")
     else:
-        result.warn("TRACKING 注释缺少 modules", "格式: modules=[]")
+        result.fail("缺少 Generated Config region",
+                   "添加 <!-- region Generated Config Start --> ... <!-- region Generated Config End -->")
+
+    # 检查 Generated References region
+    refs_start = "<!-- region Generated References Start -->"
+    refs_end = "<!-- region Generated References End -->"
+
+    if refs_start in content and refs_end in content:
+        result.ok("Generated References region 存在")
+
+        # 检查是否包含 references 链接
+        start_idx = content.index(refs_start) + len(refs_start)
+        end_idx = content.index(refs_end)
+        refs_content = content[start_idx:end_idx].strip()
+
+        if "references/" in refs_content:
+            result.ok("References region 包含文件链接")
+        else:
+            result.warn("References region 为空", "运行 sync_skill.py 生成")
+    else:
+        result.fail("缺少 Generated References region",
+                   "添加 <!-- region Generated References Start --> ... <!-- region Generated References End -->")
+
+    # 检查 module_*.md 文件
+    references_dir = root / ".claude/skills/exploring-project/references"
+    if references_dir.exists():
+        module_files = list(references_dir.glob("module_*.md"))
+        if module_files:
+            result.ok(f"发现 {len(module_files)} 个模块文件")
+            for mf in module_files:
+                result.ok(f"  - {mf.name}")
+        else:
+            result.warn("尚未追踪任何模块", "运行 /track-module <name> 添加模块")
 
 
 def validate_claude_md(root: Path, result: ValidationResult):
@@ -353,6 +358,7 @@ def validate_command_md(root: Path, result: ValidationResult):
         "update-arch.md",
         "session-summary.md",
         "whats-next.md",
+        "track-module.md",
     ]
 
     for cmd in commands:
@@ -396,11 +402,7 @@ def main():
     # 执行各项校验
     validate_directory_structure(root, result)
     frontmatter, skill_content = validate_skill_md(root, result)
-    if skill_content:
-        validate_tracking_metadata(root, skill_content, result)
-    else:
-        print("\n🔗 追踪元数据校验")
-        result.fail("无法读取 SKILL.md 内容，跳过追踪元数据校验")
+    validate_region_markers(root, skill_content, result)
     validate_claude_md(root, result)
     validate_command_md(root, result)
 
