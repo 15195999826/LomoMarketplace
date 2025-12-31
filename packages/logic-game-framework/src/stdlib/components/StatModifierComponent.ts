@@ -10,7 +10,6 @@
 import {
   BaseAbilityComponent,
   ComponentTypes,
-  type IAbilityForComponent,
   type ComponentLifecycleContext,
 } from '../../core/abilities/AbilityComponent.js';
 import { ModifierType, type AttributeModifier } from '../../core/attributes/AttributeModifier.js';
@@ -33,21 +32,22 @@ export type StatModifierConfig = {
  *
  * @example
  * ```typescript
- * const ability = new Ability({ configId: 'buff_strength' }, ownerRef);
+ * // Component 在 Ability 构造时注入
+ * const ability = new Ability({
+ *   configId: 'buff_strength',
+ *   components: [
+ *     new StatModifierComponent([
+ *       { attributeName: 'attack', modifierType: ModifierType.AddBase, value: 30 },
+ *       { attributeName: 'defense', modifierType: ModifierType.MulBase, value: 0.2 },
+ *     ]),
+ *   ],
+ * }, ownerRef);
  *
- * // 添加属性修改组件
- * ability.addComponent(
- *   new StatModifierComponent([
- *     { attributeName: 'attack', modifierType: ModifierType.AddBase, value: 30 },
- *     { attributeName: 'defense', modifierType: ModifierType.MulBase, value: 0.2 },
- *   ])
- * );
+ * // 通过 AbilitySet 授予（自动激活）
+ * abilitySet.grantAbility(ability);
  *
- * // 激活时自动应用 Modifier
- * ability.activate(context);
- *
- * // 失效时自动移除 Modifier
- * ability.expire();
+ * // 移除时自动移除 Modifier
+ * abilitySet.revokeAbility(ability.id);
  * ```
  */
 export class StatModifierComponent extends BaseAbilityComponent {
@@ -69,16 +69,6 @@ export class StatModifierComponent extends BaseAbilityComponent {
     super();
     this.configs = configs;
     this.modifierPrefix = generateId('statmod');
-  }
-
-  onAttach(ability: IAbilityForComponent): void {
-    super.onAttach(ability);
-    // 不在 onAttach 时创建 Modifier，只保存引用
-  }
-
-  onDetach(): void {
-    this.appliedModifiers = [];
-    super.onDetach();
   }
 
   /**

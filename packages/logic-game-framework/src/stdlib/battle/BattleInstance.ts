@@ -9,10 +9,15 @@ import { GameplayInstance } from '../../core/world/GameplayInstance.js';
 import type { Actor } from '../../core/entity/Actor.js';
 import type { BattleEvent } from '../../core/events/BattleEvent.js';
 import { EventTypes } from '../../core/events/BattleEvent.js';
-import { AbilitySystem, createHookContext, HookNames } from '../../core/abilities/AbilitySystem.js';
+import { AbilitySystem } from '../../core/abilities/AbilitySystem.js';
 import type { IAction } from '../../core/actions/Action.js';
 import { createExecutionContext, type ExecutionContext } from '../../core/actions/ExecutionContext.js';
-import type { ActorRef, HookContext } from '../../core/types/common.js';
+import type { ActorRef } from '../../core/types/common.js';
+import {
+  createTurnStartEvent,
+  createTurnEndEvent,
+  type GameEvent,
+} from '../../core/events/GameEvent.js';
 import { getLogger } from '../../core/utils/Logger.js';
 
 /**
@@ -153,16 +158,8 @@ export class BattleInstance extends GameplayInstance {
     try {
       const result = action.execute(ctx);
 
-      // 分发钩子
-      if (result.success && result.affectedTargets.length > 0) {
-        for (const trigger of result.callbackTriggers) {
-          this.dispatchHook(trigger, {
-            hookName: trigger,
-            relatedActors: [source, ...result.affectedTargets],
-            data: result.data ?? {},
-          });
-        }
-      }
+      // Action 执行结果的事件由 Action 内部通过 eventCollector 处理
+      // 这里不再需要分发 hook
     } catch (error) {
       getLogger().error('Action execution failed', { error });
       this.eventCollector.emitError('action_failed', 'Action execution failed');
@@ -182,17 +179,14 @@ export class BattleInstance extends GameplayInstance {
   startRound(): BattleEvent[] {
     this.currentRound++;
 
-    // 分发回合开始钩子
+    // 广播回合开始事件到所有 AbilitySet
     const allUnits = [...this.getAliveTeamA(), ...this.getAliveTeamB()];
     for (const unit of allUnits) {
-      this.dispatchHook(HookNames.ON_TURN_START, {
-        hookName: HookNames.ON_TURN_START,
-        relatedActors: [unit.toRef()],
-        data: { roundNumber: this.currentRound },
-      });
+      const event = createTurnStartEvent(this._logicTime, this.currentRound, unit.toRef());
+      this.broadcastEvent(event);
     }
 
-    // 发出回合开始事件
+    // 发出回合开始事件（给表演层）
     this.eventCollector.emit(EventTypes.TURN_START, {
       roundNumber: this.currentRound,
     });
@@ -204,14 +198,11 @@ export class BattleInstance extends GameplayInstance {
    * 结束当前回合
    */
   endRound(): BattleEvent[] {
-    // 分发回合结束钩子
+    // 广播回合结束事件到所有 AbilitySet
     const allUnits = [...this.getAliveTeamA(), ...this.getAliveTeamB()];
     for (const unit of allUnits) {
-      this.dispatchHook(HookNames.ON_TURN_END, {
-        hookName: HookNames.ON_TURN_END,
-        relatedActors: [unit.toRef()],
-        data: { roundNumber: this.currentRound },
-      });
+      const event = createTurnEndEvent(this._logicTime, this.currentRound, unit.toRef());
+      this.broadcastEvent(event);
     }
 
     // 检查最大回合数
@@ -222,13 +213,13 @@ export class BattleInstance extends GameplayInstance {
     return this.eventCollector.flush();
   }
 
-  // ========== 钩子分发 ==========
+  // ========== 事件广播 ==========
 
   /**
-   * 分发钩子到所有相关 Actor
+   * 广播事件到所有 Actor 的 AbilitySet
    */
-  dispatchHook(hookName: string, context: HookContext): void {
-    this.abilitySystem.dispatchHook(hookName, context, this.actors);
+  broadcastEvent(event: GameEvent): void {
+    this.abilitySystem.broadcastEvent(event, this.actors);
   }
 
   // ========== 战斗结束 ==========
@@ -259,14 +250,17 @@ export class BattleInstance extends GameplayInstance {
   endBattle(result: BattleResult): void {
     this._result = result;
 
-    // 分发战斗结束钩子
-    this.dispatchHook(HookNames.ON_BATTLE_END, {
-      hookName: HookNames.ON_BATTLE_END,
-      relatedActors: this.actors.map((a) => a.toRef()),
-      data: { result },
+    // 广播战斗结束事件到所有 AbilitySet
+    const participants = this.actors.map((a) => a.toRef());
+    this.broadcastEvent({
+      kind: 'battleEnd',
+      logicTime: this._logicTime,
+      battleId: this.id,
+      winner: result === 'ongoing' ? undefined : result === 'draw' ? 'draw' : result === 'teamA_win' ? 'teamA' : 'teamB',
+      participants,
     });
 
-    // 发出战斗结束事件
+    // 发出战斗结束事件（给表演层）
     const survivors = [
       ...this.getAliveTeamA().map((u) => u.toRef()),
       ...this.getAliveTeamB().map((u) => u.toRef()),
@@ -284,17 +278,19 @@ export class BattleInstance extends GameplayInstance {
   // ========== 生命周期 ==========
 
   protected onStart(): void {
-    // 分发战斗开始钩子
-    this.dispatchHook(HookNames.ON_BATTLE_START, {
-      hookName: HookNames.ON_BATTLE_START,
-      relatedActors: this.actors.map((a) => a.toRef()),
-      data: { battleId: this.id },
+    // 广播战斗开始事件到所有 AbilitySet
+    const participants = this.actors.map((a) => a.toRef());
+    this.broadcastEvent({
+      kind: 'battleStart',
+      logicTime: this._logicTime,
+      battleId: this.id,
+      participants,
     });
 
-    // 发出战斗开始事件
+    // 发出战斗开始事件（给表演层）
     this.eventCollector.emit(EventTypes.BATTLE_START, {
       battleId: this.id,
-      participants: this.actors.map((a) => a.toRef()),
+      participants,
     });
   }
 

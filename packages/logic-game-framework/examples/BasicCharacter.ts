@@ -6,7 +6,8 @@
  * 核心概念：
  * 1. 使用 defineAttributes() 创建类型安全的属性集
  * 2. 继承 Actor 创建游戏实体
- * 3. 使用 Ability + Component 管理技能和 Buff
+ * 3. 使用 AbilitySet 管理技能和 Buff
+ * 4. Ability + Component 组合实现不同类型的能力
  *
  * @example
  * ```typescript
@@ -23,9 +24,10 @@
 
 import { Actor } from '../src/core/entity/Actor.js';
 import { defineAttributes, type AttributeSet } from '../src/core/attributes/index.js';
-import { Ability, type AbilityConfig } from '../src/core/abilities/Ability.js';
-import type { ComponentLifecycleContext } from '../src/core/abilities/AbilityComponent.js';
-import { StatModifierComponent, type StatModifierConfig } from '../src/stdlib/components/StatModifierComponent.js';
+import { Ability } from '../src/core/abilities/Ability.js';
+import { createAbilitySet, type AbilitySet } from '../src/core/abilities/AbilitySet.js';
+import { StatModifierComponent } from '../src/stdlib/components/StatModifierComponent.js';
+import { DurationComponent } from '../src/stdlib/components/DurationComponent.js';
 import { ModifierType } from '../src/core/attributes/AttributeModifier.js';
 
 // ============================================================
@@ -65,6 +67,7 @@ type CharacterAttributesConfig = typeof CharacterAttributes;
  * 游戏角色
  *
  * 继承 Actor，使用 defineAttributes() 创建属性系统
+ * 使用 AbilitySet 管理技能和 Buff
  */
 export class Character extends Actor {
   readonly type = 'Character';
@@ -72,8 +75,8 @@ export class Character extends Actor {
   /** 类型安全的属性集 */
   readonly attributes: AttributeSet<CharacterAttributesConfig>;
 
-  /** 技能/Buff 列表 */
-  readonly abilities: Ability[] = [];
+  /** 能力集合（取代 abilities: Ability[]） */
+  readonly abilitySet: AbilitySet<CharacterAttributesConfig>;
 
   constructor(name: string, team?: string) {
     super();
@@ -82,6 +85,18 @@ export class Character extends Actor {
 
     // 创建属性集
     this.attributes = defineAttributes(CharacterAttributes);
+
+    // 创建能力集合
+    this.abilitySet = createAbilitySet(this.toRef(), this.attributes);
+
+    // 注册 Ability 回调
+    this.abilitySet.onAbilityGranted((ability) => {
+      console.log(`${this.displayName} 获得能力: ${ability.displayName ?? ability.configId}`);
+    });
+
+    this.abilitySet.onAbilityRevoked((ability, reason) => {
+      console.log(`${this.displayName} 失去能力: ${ability.displayName ?? ability.configId} (${reason})`);
+    });
 
     // 订阅 HP 变化
     this.attributes.onHpChanged((event) => {
@@ -155,56 +170,13 @@ export class Character extends Actor {
     super.onDeath();
     console.log(`${this.displayName} 已阵亡！`);
     // 清理非永久 Ability
-    for (const ability of this.abilities) {
-      if (!ability.hasTag('permanent')) {
-        ability.expire();
-      }
-    }
+    this.abilitySet.revokeAbilitiesByTag('buff', 'manual');
   }
 
   tick(dt: number): void {
     super.tick(dt);
-    // Tick 所有 Ability
-    for (const ability of this.abilities) {
-      ability.tick(dt);
-    }
-    // 移除过期的 Ability
-    this.abilities.filter((a) => !a.isExpired);
-  }
-
-  // ========== 技能/Buff 管理 ==========
-
-  /**
-   * 创建 Component 生命周期上下文
-   */
-  private createLifecycleContext(ability: Ability): ComponentLifecycleContext {
-    return {
-      owner: this.toRef(),
-      attributes: this.attributes._modifierTarget,
-      ability,
-    };
-  }
-
-  /**
-   * 添加 Ability（技能/Buff）
-   */
-  addAbility(ability: Ability): void {
-    this.abilities.push(ability);
-    const context = this.createLifecycleContext(ability);
-    ability.activate(context);
-  }
-
-  /**
-   * 移除 Ability
-   */
-  removeAbility(abilityId: string): boolean {
-    const index = this.abilities.findIndex((a) => a.id === abilityId);
-    if (index === -1) return false;
-
-    const ability = this.abilities[index];
-    ability.expire();
-    this.abilities.splice(index, 1);
-    return true;
+    // 驱动 AbilitySet 的内部 Hook（如 DurationComponent 计时）
+    this.abilitySet.tick(dt);
   }
 }
 
@@ -216,32 +188,63 @@ export class Character extends Actor {
  * 创建攻击力 Buff
  *
  * 展示如何使用 Ability + StatModifierComponent 创建属性修改效果
+ * Component 在 Ability 构造时注入，运行时不可修改
  */
 export function createAtkBuff(
   owner: Character,
   source: Character,
   value: number
 ): Ability {
-  const config: AbilityConfig = {
-    configId: 'buff_atk',
-    displayName: '力量增强',
-    tags: ['buff'],
-  };
-
-  const ability = new Ability(config, owner.toRef(), source.toRef());
-
-  // 使用 xxxAttribute 获取类型安全的属性名引用
-  ability.addComponent(
-    new StatModifierComponent([
-      {
-        attributeName: owner.attributes.atkAttribute, // → 'atk'
-        modifierType: ModifierType.AddBase,
-        value,
-      },
-    ])
+  // Component 在构造时注入
+  return new Ability(
+    {
+      configId: 'buff_atk',
+      displayName: '力量增强',
+      tags: ['buff'],
+      components: [
+        new StatModifierComponent([
+          {
+            attributeName: owner.attributes.atkAttribute, // → 'atk'
+            modifierType: ModifierType.AddBase,
+            value,
+          },
+        ]),
+      ],
+    },
+    owner.toRef(),
+    source.toRef()
   );
+}
 
-  return ability;
+/**
+ * 创建带持续时间的 Buff
+ */
+export function createTimedBuff(
+  owner: Character,
+  source: Character,
+  attrName: string,
+  value: number,
+  durationMs: number
+): Ability {
+  return new Ability(
+    {
+      configId: 'buff_timed',
+      displayName: '临时强化',
+      tags: ['buff'],
+      components: [
+        new DurationComponent(durationMs, 'time'),
+        new StatModifierComponent([
+          {
+            attributeName: attrName,
+            modifierType: ModifierType.AddBase,
+            value,
+          },
+        ]),
+      ],
+    },
+    owner.toRef(),
+    source.toRef()
+  );
 }
 
 // ============================================================
@@ -263,10 +266,10 @@ export function runExample(): void {
   console.log(`ATK: ${hero.atk}`);
   console.log(`DEF: ${hero.def}`);
 
-  // 添加攻击力 Buff
+  // 添加攻击力 Buff（通过 AbilitySet）
   console.log('\n--- 添加 +20 攻击力 Buff ---');
   const buff = createAtkBuff(hero, hero, 20);
-  hero.addAbility(buff);
+  hero.abilitySet.grantAbility(buff);
   console.log(`ATK: ${hero.atk}`); // 70
 
   // 查看属性分解
@@ -278,10 +281,21 @@ export function runExample(): void {
   hero.takeDamage(30);
   console.log(`HP: ${hero.hp}/${hero.maxHp}`);
 
-  // 移除 Buff
+  // 移除 Buff（通过 AbilitySet）
   console.log('\n--- 移除 Buff ---');
-  hero.removeAbility(buff.id);
+  hero.abilitySet.revokeAbility(buff.id);
   console.log(`ATK: ${hero.atk}`); // 50
+
+  // 添加带持续时间的 Buff
+  console.log('\n--- 添加 3000ms 持续的防御 Buff ---');
+  const timedBuff = createTimedBuff(hero, hero, 'def', 10, 3000);
+  hero.abilitySet.grantAbility(timedBuff);
+  console.log(`DEF: ${hero.def}`); // 40
+
+  // 模拟时间流逝
+  console.log('\n--- 模拟 3500ms 后 ---');
+  hero.tick(3500);
+  console.log(`DEF: ${hero.def}`); // 30（Buff 已过期）
 }
 
 // 如果直接运行此文件

@@ -19,3 +19,15 @@ export {
   addFinalStat,
   mulFinalStat,
 } from './StatModifierComponent.js';
+
+export {
+  ActionComponent,
+  ActionTrigger,
+  onDamaged,
+  onDealDamage,
+  onKill,
+  onTurnStart,
+  onTurnEnd,
+  onDeath,
+  onEvent,
+} from './ActionComponent.js';

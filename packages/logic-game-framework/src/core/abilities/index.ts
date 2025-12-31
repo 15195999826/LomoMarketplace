@@ -17,10 +17,13 @@ export {
 } from './Ability.js';
 
 export {
-  AbilitySystem,
-  IAbilityActor,
-  hasAbilities,
-  HookNames,
-  HookName,
-  createHookContext,
-} from './AbilitySystem.js';
+  AbilitySet,
+  AbilitySetConfig,
+  AbilityRevokeReason,
+  AbilityGrantedCallback,
+  AbilityRevokedCallback,
+  createAbilitySet,
+  hasAbilitySet,
+} from './AbilitySet.js';
+
+export { AbilitySystem } from './AbilitySystem.js';

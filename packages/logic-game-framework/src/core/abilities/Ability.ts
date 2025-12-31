@@ -1,19 +1,23 @@
 /**
  * Ability 能力实例
  *
- * 技能/Buff 的容器
- * 采用 EC 模式，通过 Component 组合实现不同类型的能力
+ * 技能/Buff 的容器，采用 EC 模式，通过 Component 组合实现不同类型的能力。
+ *
+ * ## 关键设计
+ * - Component 在构造时注入，运行时不可修改
+ * - 双层触发机制：内部 Hook (tick/activate/deactivate) + 事件响应 (receiveEvent)
  */
 
 import { generateId } from '../utils/IdGenerator.js';
 import { getLogger } from '../utils/Logger.js';
-import type { ActorRef, HookContext, ActivationContext, ActivationError } from '../types/common.js';
+import type { ActorRef } from '../types/common.js';
+import type { GameEvent } from '../events/GameEvent.js';
 import type { IAbilityComponent, IAbilityForComponent, ComponentLifecycleContext } from './AbilityComponent.js';
 
 /**
  * Ability 状态
  */
-export type AbilityState = 'idle' | 'active' | 'channeling' | 'executing' | 'cooldown' | 'expired';
+export type AbilityState = 'idle' | 'active' | 'expired';
 
 /**
  * Ability 配置
@@ -21,6 +25,8 @@ export type AbilityState = 'idle' | 'active' | 'channeling' | 'executing' | 'coo
 export type AbilityConfig = {
   /** 配置表 ID */
   configId: string;
+  /** Component 列表 - 在构造时注入，不可运行时修改 */
+  components: IAbilityComponent[];
   /** 显示名称 */
   displayName?: string;
   /** 描述 */
@@ -42,29 +48,39 @@ export class Ability implements IAbilityForComponent {
   readonly configId: string;
 
   /** 施加者（谁给的这个能力） */
-  source: ActorRef;
+  readonly source: ActorRef;
 
   /** 持有者（谁拥有这个能力） */
-  owner: ActorRef;
+  readonly owner: ActorRef;
 
   /** 显示名称 */
-  displayName?: string;
+  readonly displayName?: string;
 
   /** 描述 */
-  description?: string;
+  readonly description?: string;
 
   /** 图标 */
-  icon?: string;
+  readonly icon?: string;
 
-  /** 标签 */
-  tags: string[] = [];
+  /** 标签（只读） */
+  readonly tags: readonly string[];
 
   /** 当前状态 */
   private _state: AbilityState = 'idle';
 
-  /** Component 列表 */
-  private components: IAbilityComponent[] = [];
+  /** Component 列表（只读，构造时确定） */
+  private readonly components: readonly IAbilityComponent[];
 
+  /** 保存激活时的上下文 */
+  private lifecycleContext?: ComponentLifecycleContext;
+
+  /**
+   * 构造函数
+   *
+   * @param config Ability 配置，包含 Component 列表
+   * @param owner 持有者引用
+   * @param source 施加者引用（可选，默认为 owner）
+   */
   constructor(config: AbilityConfig, owner: ActorRef, source?: ActorRef) {
     this.id = generateId('ability');
     this.configId = config.configId;
@@ -73,7 +89,15 @@ export class Ability implements IAbilityForComponent {
     this.displayName = config.displayName;
     this.description = config.description;
     this.icon = config.icon;
-    this.tags = config.tags ?? [];
+    this.tags = Object.freeze(config.tags ?? []);
+
+    // Component 在构造时注入，之后不可修改
+    this.components = Object.freeze([...config.components]);
+
+    // 初始化所有 Component（仅设置引用，不应用效果）
+    for (const component of this.components) {
+      component.initialize(this);
+    }
   }
 
   // ========== 状态访问器 ==========
@@ -82,49 +106,15 @@ export class Ability implements IAbilityForComponent {
     return this._state;
   }
 
-  set state(value: AbilityState) {
-    this._state = value;
-  }
-
   get isActive(): boolean {
-    return this._state !== 'expired';
+    return this._state === 'active';
   }
 
   get isExpired(): boolean {
     return this._state === 'expired';
   }
 
-  // ========== Component 管理 ==========
-
-  /**
-   * 添加 Component
-   */
-  addComponent(component: IAbilityComponent): void {
-    // 检查是否已存在同类型
-    const existing = this.components.find((c) => c.type === component.type);
-    if (existing) {
-      getLogger().warn(`Component type already exists: ${component.type}`);
-      return;
-    }
-
-    this.components.push(component);
-    component.onAttach(this);
-  }
-
-  /**
-   * 移除 Component
-   */
-  removeComponent(type: string): boolean {
-    const index = this.components.findIndex((c) => c.type === type);
-    if (index === -1) {
-      return false;
-    }
-
-    const component = this.components[index];
-    component.onDetach();
-    this.components.splice(index, 1);
-    return true;
-  }
+  // ========== Component 查询（只读）==========
 
   /**
    * 获取指定类型的 Component
@@ -141,18 +131,20 @@ export class Ability implements IAbilityForComponent {
   }
 
   /**
-   * 获取所有 Component
+   * 获取所有 Component（只读）
    */
   getComponents(): readonly IAbilityComponent[] {
     return this.components;
   }
 
-  // ========== 分发方法 ==========
+  // ========== 内部 Hook ==========
 
   /**
    * 分发 Tick 到所有 Component
    */
   tick(dt: number): void {
+    if (this._state === 'expired') return;
+
     for (const component of this.components) {
       if (component.state === 'active' && component.onTick) {
         try {
@@ -167,43 +159,29 @@ export class Ability implements IAbilityForComponent {
     this.checkExpiration();
   }
 
-  /**
-   * 分发钩子到所有 Component
-   */
-  dispatchHook(hookName: string, context: HookContext): void {
-    for (const component of this.components) {
-      if (component.state === 'active' && component.onHook) {
-        try {
-          component.onHook(hookName, context);
-        } catch (error) {
-          getLogger().error(`Component hook error: ${component.type}`, { error, hookName });
-        }
-      }
-    }
-  }
+  // ========== 事件响应 ==========
 
   /**
-   * 检查是否可以激活
+   * 接收游戏事件，分发到所有 Component
    */
-  canActivate(ctx: ActivationContext): true | ActivationError {
+  receiveEvent(event: GameEvent, context: ComponentLifecycleContext): void {
+    if (this._state === 'expired') return;
+
     for (const component of this.components) {
-      if (component.canActivate) {
-        const result = component.canActivate(ctx);
-        if (result !== true && typeof result === 'object') {
-          return result;
-        }
-        if (result === false) {
-          return { code: 'CANNOT_ACTIVATE', message: `Component ${component.type} blocked activation` };
+      if (component.state === 'active' && component.onEvent) {
+        try {
+          component.onEvent(event, context);
+        } catch (error) {
+          getLogger().error(`Component event error: ${component.type}`, { error, event: event.kind });
         }
       }
     }
-    return true;
+
+    // 检查是否因事件处理而过期
+    this.checkExpiration();
   }
 
   // ========== 生命周期 ==========
-
-  /** 保存激活时的上下文，用于 deactivate */
-  private lifecycleContext?: ComponentLifecycleContext;
 
   /**
    * 激活能力
@@ -232,12 +210,10 @@ export class Ability implements IAbilityForComponent {
 
   /**
    * 失效能力（移除 Modifier）
-   * @param context 可选，如果没有提供则使用激活时保存的上下文
    */
-  deactivate(context?: ComponentLifecycleContext): void {
-    const ctx = context ?? this.lifecycleContext;
+  deactivate(): void {
+    const ctx = this.lifecycleContext;
     if (!ctx) {
-      getLogger().warn(`No lifecycle context available for deactivate: ${this.id}`);
       return;
     }
 
@@ -267,11 +243,6 @@ export class Ability implements IAbilityForComponent {
     this.deactivate();
 
     this._state = 'expired';
-
-    // 通知所有 Component detach
-    for (const component of this.components) {
-      component.onDetach();
-    }
   }
 
   /**
@@ -279,7 +250,6 @@ export class Ability implements IAbilityForComponent {
    */
   private checkExpiration(): void {
     // 如果有任何关键 Component 过期，整个 Ability 过期
-    // 这里假设 Duration Component 是关键的
     const durationComponent = this.getComponent('duration');
     if (durationComponent && durationComponent.state === 'expired') {
       this.expire();
@@ -293,25 +263,6 @@ export class Ability implements IAbilityForComponent {
    */
   hasTag(tag: string): boolean {
     return this.tags.includes(tag);
-  }
-
-  /**
-   * 添加标签
-   */
-  addTag(tag: string): void {
-    if (!this.tags.includes(tag)) {
-      this.tags.push(tag);
-    }
-  }
-
-  /**
-   * 移除标签
-   */
-  removeTag(tag: string): void {
-    const index = this.tags.indexOf(tag);
-    if (index !== -1) {
-      this.tags.splice(index, 1);
-    }
   }
 
   // ========== 序列化 ==========

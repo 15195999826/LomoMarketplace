@@ -1,12 +1,21 @@
 /**
  * AbilityComponent 接口
  *
- * 能力的功能模块
- * 采用 EC 模式，不同 Component 组合实现不同类型的能力
+ * 能力的功能模块，采用 EC 模式，不同 Component 组合实现不同类型的能力。
+ *
+ * ## 双层触发机制
+ *
+ * ### 内部 Hook（框架级，标准组件使用）
+ * - `onTick(dt)` - 时间驱动，用于 DurationComponent 计时
+ * - `onActivate(ctx)` / `onDeactivate(ctx)` - 生命周期，用于 StatModifierComponent 管理 Modifier
+ *
+ * ### 事件响应（业务级，ActionComponent 使用）
+ * - `onEvent(event, ctx)` - 响应 GameEvent，执行链式 Action
  */
 
-import type { HookContext, ActivationContext, ActivationError, ActorRef } from '../types/common.js';
+import type { ActorRef } from '../types/common.js';
 import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js';
+import type { GameEvent } from '../events/GameEvent.js';
 
 // 前向声明
 export interface IAbilityForComponent {
@@ -15,8 +24,8 @@ export interface IAbilityForComponent {
 }
 
 /**
- * Component 激活/失效上下文
- * 在 onActivate/onDeactivate 时传递，包含 Modifier 写入接口
+ * Component 生命周期上下文
+ * 在 onActivate/onDeactivate/onEvent 时传递
  */
 export type ComponentLifecycleContext = {
   /** Ability 所有者的引用 */
@@ -30,7 +39,7 @@ export type ComponentLifecycleContext = {
 /**
  * Component 状态
  */
-export type ComponentState = 'active' | 'inactive' | 'expired';
+export type ComponentState = 'active' | 'expired';
 
 /**
  * AbilityComponent 接口
@@ -43,53 +52,48 @@ export interface IAbilityComponent {
   readonly state: ComponentState;
 
   /**
-   * 当 Component 被添加到 Ability 时调用
-   * 用于初始化配置，不应在此处应用 Modifier
+   * 初始化 Component
+   * 在 Ability 构造时调用，仅设置引用，不应用效果
    */
-  onAttach(ability: IAbilityForComponent): void;
+  initialize(ability: IAbilityForComponent): void;
+
+  // ═══════ 内部 Hook（框架级，标准组件使用）═══════
 
   /**
-   * 当 Component 从 Ability 移除时调用
-   */
-  onDetach(): void;
-
-  /**
-   * Ability 激活时调用（可选）
+   * Ability 激活时调用
    * 这是应用 Modifier 的正确时机
    */
   onActivate?(context: ComponentLifecycleContext): void;
 
   /**
-   * Ability 失效时调用（可选）
+   * Ability 失效时调用
    * 这是移除 Modifier 的正确时机
    */
   onDeactivate?(context: ComponentLifecycleContext): void;
 
   /**
-   * 每帧/每回合更新（可选）
-   * @param dt 时间增量
+   * 每帧/每回合更新
+   * @param dt 时间增量（毫秒）
    */
   onTick?(dt: number): void;
 
-  /**
-   * 钩子处理（可选）
-   * 用于响应游戏事件（如 onDamaged, onKill 等）
-   */
-  onHook?(hookName: string, context: Readonly<HookContext>): void;
+  // ═══════ 事件响应（业务级，ActionComponent 使用）═══════
 
   /**
-   * 激活检查（可选）
-   * 用于检查是否满足激活条件（如冷却、消耗等）
+   * 接收游戏事件
+   * 根据事件类型决定如何响应，执行链式 Action
    */
-  canActivate?(ctx: Readonly<ActivationContext>): boolean | ActivationError;
+  onEvent?(event: GameEvent, context: ComponentLifecycleContext): void;
+
+  // ═══════ 序列化 ═══════
 
   /**
-   * 序列化（可选）
+   * 序列化
    */
   serialize?(): object;
 
   /**
-   * 反序列化（可选）
+   * 反序列化
    */
   deserialize?(data: object): void;
 }
@@ -108,14 +112,13 @@ export abstract class BaseAbilityComponent implements IAbilityComponent {
     return this._state;
   }
 
-  onAttach(ability: IAbilityForComponent): void {
+  /**
+   * 初始化 Component
+   * 在 Ability 构造时调用，仅设置引用
+   */
+  initialize(ability: IAbilityForComponent): void {
     this.ability = ability;
     this._state = 'active';
-  }
-
-  onDetach(): void {
-    this.ability = undefined;
-    this._state = 'inactive';
   }
 
   /**
