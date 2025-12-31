@@ -20,8 +20,9 @@ export {
   mulFinalStat,
 } from './StatModifierComponent.js';
 
+// GameEventComponent - 事件驱动的 Action 执行组件
 export {
-  ActionComponent,
-  ActionTrigger,
-  createTrigger,
-} from './ActionComponent.js';
+  GameEventComponent,
+  EventTrigger,
+  createEventTrigger,
+} from './GameEventComponent.js';

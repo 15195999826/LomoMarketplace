@@ -1,5 +1,5 @@
 /**
- * ActionTriggerFactories - 事件触发器工厂示例
+ * EventTriggerFactories - 事件触发器工厂示例
  *
  * 展示如何为游戏创建便捷的触发器工厂函数。
  * 这些函数依赖于游戏自定义的事件类型，因此属于游戏层而非框架层。
@@ -7,12 +7,12 @@
  * @example
  * ```typescript
  * // 在你的游戏中
- * import { ActionComponent } from '@lomo/logic-game-framework/stdlib';
+ * import { GameEventComponent } from '@lomo/logic-game-framework/stdlib';
  * import type { DamageGameEvent } from './MyGameEvents';
  *
  * // 创建游戏特定的工厂
  * function onDamaged(actions: IAction[]) {
- *   return new ActionComponent([{
+ *   return new GameEventComponent([{
  *     eventKind: 'damage',
  *     filter: (event, ctx) => (event as DamageGameEvent).target.id === ctx.owner.id,
  *     actions,
@@ -21,7 +21,7 @@
  * ```
  */
 
-import { ActionComponent, createTrigger } from '../../src/stdlib/components/ActionComponent.js';
+import { GameEventComponent, createEventTrigger } from '../../src/stdlib/components/GameEventComponent.js';
 import type { ComponentLifecycleContext } from '../../src/core/abilities/AbilityComponent.js';
 import type { IAction } from '../../src/core/actions/Action.js';
 import type {
@@ -37,9 +37,9 @@ import type {
 /**
  * 受到伤害时触发（示例）
  */
-export function onDamaged(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    createTrigger<DamageGameEvent>('damage', {
+export function onDamaged(actions: IAction[]): GameEventComponent {
+  return new GameEventComponent([
+    createEventTrigger<DamageGameEvent>('damage', {
       filter: (event, ctx) => event.target.id === ctx.owner.id,
       actions,
     }),
@@ -49,9 +49,9 @@ export function onDamaged(actions: IAction[]): ActionComponent {
 /**
  * 造成伤害时触发（示例）
  */
-export function onDealDamage(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    createTrigger<DamageGameEvent>('damage', {
+export function onDealDamage(actions: IAction[]): GameEventComponent {
+  return new GameEventComponent([
+    createEventTrigger<DamageGameEvent>('damage', {
       filter: (event, ctx) => event.source.id === ctx.owner.id,
       actions,
     }),
@@ -61,9 +61,9 @@ export function onDealDamage(actions: IAction[]): ActionComponent {
 /**
  * 击杀敌人时触发（示例）
  */
-export function onKill(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    createTrigger<DamageGameEvent>('damage', {
+export function onKill(actions: IAction[]): GameEventComponent {
+  return new GameEventComponent([
+    createEventTrigger<DamageGameEvent>('damage', {
       filter: (event, ctx) => event.source.id === ctx.owner.id && event.isKill,
       actions,
     }),
@@ -73,9 +73,9 @@ export function onKill(actions: IAction[]): ActionComponent {
 /**
  * 回合开始时触发（示例）
  */
-export function onTurnStart(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    createTrigger<TurnStartGameEvent>('turnStart', {
+export function onTurnStart(actions: IAction[]): GameEventComponent {
+  return new GameEventComponent([
+    createEventTrigger<TurnStartGameEvent>('turnStart', {
       filter: (event, ctx) => event.activeUnit.id === ctx.owner.id,
       actions,
     }),
@@ -85,9 +85,9 @@ export function onTurnStart(actions: IAction[]): ActionComponent {
 /**
  * 回合结束时触发（示例）
  */
-export function onTurnEnd(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    createTrigger<TurnEndGameEvent>('turnEnd', {
+export function onTurnEnd(actions: IAction[]): GameEventComponent {
+  return new GameEventComponent([
+    createEventTrigger<TurnEndGameEvent>('turnEnd', {
       filter: (event, ctx) => event.unit.id === ctx.owner.id,
       actions,
     }),
@@ -97,9 +97,9 @@ export function onTurnEnd(actions: IAction[]): ActionComponent {
 /**
  * 死亡时触发（示例）
  */
-export function onDeath(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    createTrigger<DeathGameEvent>('death', {
+export function onDeath(actions: IAction[]): GameEventComponent {
+  return new GameEventComponent([
+    createEventTrigger<DeathGameEvent>('death', {
       filter: (event, ctx) => event.target.id === ctx.owner.id,
       actions,
     }),
@@ -115,6 +115,6 @@ export function onEvent<TEvent extends BattleGameEvent>(
   eventKind: TEvent['kind'],
   filter: (event: TEvent, ctx: ComponentLifecycleContext) => boolean,
   actions: IAction[]
-): ActionComponent {
-  return new ActionComponent([createTrigger<TEvent>(eventKind, { filter, actions })]);
+): GameEventComponent {
+  return new GameEventComponent([createEventTrigger<TEvent>(eventKind, { filter, actions })]);
 }
