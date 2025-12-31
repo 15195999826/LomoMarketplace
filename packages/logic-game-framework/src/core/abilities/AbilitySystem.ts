@@ -10,7 +10,7 @@
 
 import { System, SystemPriority } from '../entity/System.js';
 import type { Actor } from '../entity/Actor.js';
-import type { GameEvent } from '../events/GameEvent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
 import { hasAbilitySet } from './AbilitySet.js';
 import { getLogger } from '../utils/Logger.js';
 
@@ -49,7 +49,7 @@ export class AbilitySystem extends System {
    *
    * 用于触发被动技能等事件响应
    */
-  broadcastEvent(event: GameEvent, actors: Actor[]): void {
+  broadcastEvent(event: GameEventBase, actors: Actor[]): void {
     for (const actor of actors) {
       if (!actor.isActive) {
         continue;
@@ -69,7 +69,7 @@ export class AbilitySystem extends System {
    * 广播事件到指定 Actor 列表
    * 仅分发到与事件相关的 Actor
    */
-  broadcastEventToRelated(event: GameEvent, actors: Actor[], relatedActorIds: Set<string>): void {
+  broadcastEventToRelated(event: GameEventBase, actors: Actor[], relatedActorIds: Set<string>): void {
     for (const actor of actors) {
       if (!actor.isActive || !relatedActorIds.has(actor.id)) {
         continue;

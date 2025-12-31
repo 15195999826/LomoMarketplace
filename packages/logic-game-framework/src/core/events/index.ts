@@ -33,28 +33,11 @@ export {
 
 export { EventCollector } from './EventCollector.js';
 
-// GameEvent - Ability 系统内部事件
+// GameEvent - Ability 系统内部事件基础类型
+// 具体事件类型由游戏自定义，参考 examples/events/BattleGameEvents.ts
 export {
-  GameEvent,
-  GameEventKind,
-  DamageGameEvent,
-  HealGameEvent,
-  TurnStartGameEvent,
-  TurnEndGameEvent,
-  InputActionGameEvent,
-  DeathGameEvent,
-  MoveGameEvent,
-  BattleStartGameEvent,
-  BattleEndGameEvent,
-  BuffAppliedGameEvent,
-  BuffRemovedGameEvent,
-  // Helpers
-  isEventRelatedToActor,
-  getEventRelatedActors,
-  // Factories
-  createDamageEvent,
-  createHealEvent,
-  createTurnStartEvent,
-  createTurnEndEvent,
-  createDeathEvent,
+  type GameEventBase,
+  type GameEvent,
+  type EventKindOf,
+  type ExtractEvent,
 } from './GameEvent.js';

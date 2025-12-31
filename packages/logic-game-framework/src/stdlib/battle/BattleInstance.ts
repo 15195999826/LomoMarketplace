@@ -13,11 +13,7 @@ import { AbilitySystem } from '../../core/abilities/AbilitySystem.js';
 import type { IAction } from '../../core/actions/Action.js';
 import { createExecutionContext, type ExecutionContext } from '../../core/actions/ExecutionContext.js';
 import type { ActorRef } from '../../core/types/common.js';
-import {
-  createTurnStartEvent,
-  createTurnEndEvent,
-  type GameEvent,
-} from '../../core/events/GameEvent.js';
+import type { GameEventBase } from '../../core/events/GameEvent.js';
 import { getLogger } from '../../core/utils/Logger.js';
 
 /**
@@ -182,8 +178,12 @@ export class BattleInstance extends GameplayInstance {
     // 广播回合开始事件到所有 AbilitySet
     const allUnits = [...this.getAliveTeamA(), ...this.getAliveTeamB()];
     for (const unit of allUnits) {
-      const event = createTurnStartEvent(this._logicTime, this.currentRound, unit.toRef());
-      this.broadcastEvent(event);
+      this.broadcastEvent({
+        kind: 'turnStart',
+        logicTime: this._logicTime,
+        roundNumber: this.currentRound,
+        activeUnit: unit.toRef(),
+      });
     }
 
     // 发出回合开始事件（给表演层）
@@ -201,8 +201,12 @@ export class BattleInstance extends GameplayInstance {
     // 广播回合结束事件到所有 AbilitySet
     const allUnits = [...this.getAliveTeamA(), ...this.getAliveTeamB()];
     for (const unit of allUnits) {
-      const event = createTurnEndEvent(this._logicTime, this.currentRound, unit.toRef());
-      this.broadcastEvent(event);
+      this.broadcastEvent({
+        kind: 'turnEnd',
+        logicTime: this._logicTime,
+        roundNumber: this.currentRound,
+        unit: unit.toRef(),
+      });
     }
 
     // 检查最大回合数
@@ -218,7 +222,7 @@ export class BattleInstance extends GameplayInstance {
   /**
    * 广播事件到所有 Actor 的 AbilitySet
    */
-  broadcastEvent(event: GameEvent): void {
+  broadcastEvent(event: GameEventBase): void {
     this.abilitySystem.broadcastEvent(event, this.actors);
   }
 

@@ -23,11 +23,5 @@ export {
 export {
   ActionComponent,
   ActionTrigger,
-  onDamaged,
-  onDealDamage,
-  onKill,
-  onTurnStart,
-  onTurnEnd,
-  onDeath,
-  onEvent,
+  createTrigger,
 } from './ActionComponent.js';

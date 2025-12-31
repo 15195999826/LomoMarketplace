@@ -15,7 +15,7 @@
 
 import type { ActorRef } from '../types/common.js';
 import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js';
-import type { GameEvent } from '../events/GameEvent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
 
 // 前向声明
 export interface IAbilityForComponent {
@@ -83,7 +83,7 @@ export interface IAbilityComponent {
    * 接收游戏事件
    * 根据事件类型决定如何响应，执行链式 Action
    */
-  onEvent?(event: GameEvent, context: ComponentLifecycleContext): void;
+  onEvent?(event: GameEventBase, context: ComponentLifecycleContext): void;
 
   // ═══════ 序列化 ═══════
 

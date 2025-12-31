@@ -11,7 +11,7 @@
 import { generateId } from '../utils/IdGenerator.js';
 import { getLogger } from '../utils/Logger.js';
 import type { ActorRef } from '../types/common.js';
-import type { GameEvent } from '../events/GameEvent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAbilityComponent, IAbilityForComponent, ComponentLifecycleContext } from './AbilityComponent.js';
 
 /**
@@ -164,7 +164,7 @@ export class Ability implements IAbilityForComponent {
   /**
    * 接收游戏事件，分发到所有 Component
    */
-  receiveEvent(event: GameEvent, context: ComponentLifecycleContext): void {
+  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext): void {
     if (this._state === 'expired') return;
 
     for (const component of this.components) {

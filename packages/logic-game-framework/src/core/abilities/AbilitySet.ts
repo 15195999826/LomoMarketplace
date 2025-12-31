@@ -13,7 +13,7 @@
 
 import type { ActorRef } from '../types/common.js';
 import type { AttributeSet, AttributesConfig, IAttributeModifierTarget } from '../attributes/defineAttributes.js';
-import type { GameEvent } from '../events/GameEvent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
 import type { Ability } from './Ability.js';
 import type { ComponentLifecycleContext } from './AbilityComponent.js';
 import { getLogger } from '../utils/Logger.js';
@@ -193,7 +193,7 @@ export class AbilitySet<T extends AttributesConfig> {
    *
    * 将事件分发到所有 Ability 的 Component（ActionComponent 响应）
    */
-  receiveEvent(event: GameEvent): void {
+  receiveEvent(event: GameEventBase): void {
     // 收集过期的 Ability
     const expiredAbilities: Ability[] = [];
 

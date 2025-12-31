@@ -4,6 +4,11 @@
  * 响应 GameEvent 执行链式 Action。
  * 用于实现被动技能、触发效果等业务逻辑。
  *
+ * ## 设计原则
+ * - ActionComponent 只负责：事件匹配 + 过滤 + 执行 Action
+ * - 不对事件结构做任何假设（不知道 source/target）
+ * - Action 自己从 `context.customData.gameEvent` 获取需要的数据
+ *
  * ## 使用场景
  * - 荆棘护甲：受到伤害时反弹伤害
  * - 击杀回复：击杀敌人时恢复生命
@@ -11,17 +16,21 @@
  *
  * @example
  * ```typescript
- * const thornArmor = new Ability({
- *   configId: 'passive_thorn',
- *   components: [
- *     onDamaged([
- *       new DamageAction({
- *         target: { ref: 'trigger' },
- *         damage: { type: 'flat', value: 10 },
- *       }),
- *     ]),
- *   ],
- * }, heroRef);
+ * // 监听 damage 事件
+ * const thornArmor = new ActionComponent([{
+ *   eventKind: 'damage',
+ *   filter: (event, ctx) => event.target.id === ctx.owner.id,
+ *   actions: [myReflectDamageAction],
+ * }]);
+ *
+ * // Action 内部获取事件数据
+ * class ReflectDamageAction implements IAction {
+ *   execute(ctx: ExecutionContext) {
+ *     const event = ctx.customData.gameEvent as DamageEvent;
+ *     const attacker = event.source;
+ *     // ... 反弹伤害逻辑
+ *   }
+ * }
  * ```
  */
 
@@ -30,35 +39,29 @@ import {
   ComponentTypes,
   type ComponentLifecycleContext,
 } from '../../core/abilities/AbilityComponent.js';
-import type {
-  GameEvent,
-  GameEventKind,
-  DamageGameEvent,
-  HealGameEvent,
-  TurnStartGameEvent,
-  TurnEndGameEvent,
-  DeathGameEvent,
-} from '../../core/events/GameEvent.js';
+import type { GameEventBase } from '../../core/events/GameEvent.js';
 import type { IAction } from '../../core/actions/Action.js';
 import type { ExecutionContext } from '../../core/actions/ExecutionContext.js';
-import type { ActorRef } from '../../core/types/common.js';
 import { EventCollector } from '../../core/events/EventCollector.js';
 import { getLogger } from '../../core/utils/Logger.js';
 
 /**
  * 触发条件配置
  */
-export type ActionTrigger = {
-  /** 监听的事件类型 */
-  readonly eventKind: GameEventKind;
+export type ActionTrigger<TEvent extends GameEventBase = GameEventBase> = {
+  /** 监听的事件类型（kind 字符串） */
+  readonly eventKind: string;
   /** 条件过滤器（可选） */
-  readonly filter?: (event: GameEvent, context: ComponentLifecycleContext) => boolean;
+  readonly filter?: (event: TEvent, context: ComponentLifecycleContext) => boolean;
   /** 要执行的 Action 链 */
   readonly actions: IAction[];
 };
 
 /**
- * ActionComponent
+ * ActionComponent - 事件驱动的 Action 执行器
+ *
+ * 框架级组件，不对事件结构做假设。
+ * Action 通过 `context.customData.gameEvent` 获取原始事件。
  */
 export class ActionComponent extends BaseAbilityComponent {
   readonly type = ComponentTypes.TRIGGER;
@@ -73,7 +76,7 @@ export class ActionComponent extends BaseAbilityComponent {
   /**
    * 响应游戏事件
    */
-  onEvent(event: GameEvent, context: ComponentLifecycleContext): void {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext): void {
     for (const trigger of this.triggers) {
       // 检查事件类型
       if (event.kind !== trigger.eventKind) {
@@ -95,7 +98,7 @@ export class ActionComponent extends BaseAbilityComponent {
    */
   private executeActions(
     actions: IAction[],
-    event: GameEvent,
+    event: GameEventBase,
     context: ComponentLifecycleContext
   ): void {
     const execContext = this.buildExecutionContext(event, context);
@@ -114,98 +117,32 @@ export class ActionComponent extends BaseAbilityComponent {
 
   /**
    * 构建 Action 执行上下文
+   *
+   * 只提供基础信息，Action 自己从 gameEvent 获取需要的数据
    */
   private buildExecutionContext(
-    event: GameEvent,
+    event: GameEventBase,
     context: ComponentLifecycleContext
   ): ExecutionContext {
-    // 从事件中提取相关 Actor
-    const { source, primaryTarget, triggerSource } = this.extractActorsFromEvent(event, context);
-
     return {
-      // 注意：battle 为 null，ActionComponent 的 Action 应避免依赖 battle
+      // battle 为 null，ActionComponent 的 Action 应避免依赖 battle
       battle: null as unknown as ExecutionContext['battle'],
-      source,
-      primaryTarget,
+      // source 和 primaryTarget 都是 owner，Action 自己从 event 取真正的目标
+      source: context.owner,
+      primaryTarget: context.owner,
       ability: {
         id: context.ability.id,
         configId: context.ability.configId,
         owner: context.owner,
-        source: context.owner, // 默认使用 owner
+        source: context.owner,
       },
       logicTime: event.logicTime,
-      eventCollector: new EventCollector(), // 临时收集器
+      eventCollector: new EventCollector(),
       affectedTargets: [],
-      triggerSource,
+      // 事件原样传递，Action 自己解析
       customData: { gameEvent: event },
       callbackDepth: 0,
     };
-  }
-
-  /**
-   * 从事件中提取相关 Actor
-   */
-  private extractActorsFromEvent(
-    event: GameEvent,
-    context: ComponentLifecycleContext
-  ): {
-    source: ActorRef;
-    primaryTarget: ActorRef;
-    triggerSource?: ActorRef;
-  } {
-    switch (event.kind) {
-      case 'damage': {
-        const dmgEvent = event as DamageGameEvent;
-        // 如果我是被攻击者，source 是我，trigger 是攻击者
-        if (dmgEvent.target.id === context.owner.id) {
-          return {
-            source: context.owner,
-            primaryTarget: dmgEvent.source, // 攻击者作为主目标（用于反击）
-            triggerSource: dmgEvent.source,
-          };
-        }
-        // 如果我是攻击者
-        return {
-          source: context.owner,
-          primaryTarget: dmgEvent.target,
-          triggerSource: dmgEvent.target,
-        };
-      }
-      case 'heal': {
-        const healEvent = event as HealGameEvent;
-        return {
-          source: context.owner,
-          primaryTarget: healEvent.target,
-        };
-      }
-      case 'turnStart': {
-        const turnStartEvent = event as TurnStartGameEvent;
-        return {
-          source: context.owner,
-          primaryTarget: turnStartEvent.activeUnit,
-        };
-      }
-      case 'turnEnd': {
-        const turnEndEvent = event as TurnEndGameEvent;
-        return {
-          source: context.owner,
-          primaryTarget: turnEndEvent.unit,
-        };
-      }
-      case 'death': {
-        const deathEvent = event as DeathGameEvent;
-        return {
-          source: context.owner,
-          primaryTarget: deathEvent.target,
-          triggerSource: deathEvent.killer,
-        };
-      }
-      default:
-        return {
-          source: context.owner,
-          primaryTarget: context.owner,
-        };
-    }
   }
 
   serialize(): object {
@@ -215,111 +152,32 @@ export class ActionComponent extends BaseAbilityComponent {
   }
 }
 
-// ========== 便捷工厂函数 ==========
+// ========== 泛型辅助函数 ==========
 
 /**
- * 受到伤害时触发
+ * 创建事件触发器（类型安全）
+ *
+ * @example
+ * ```typescript
+ * // 游戏定义自己的事件类型
+ * type MyDamageEvent = GameEventBase & { kind: 'damage'; target: ActorRef; };
+ *
+ * const trigger = createTrigger<MyDamageEvent>('damage', {
+ *   filter: (event, ctx) => event.target.id === ctx.owner.id,
+ *   actions: [myAction],
+ * });
+ * ```
  */
-export function onDamaged(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    {
-      eventKind: 'damage',
-      filter: (event, ctx) => {
-        const dmgEvent = event as DamageGameEvent;
-        return dmgEvent.target.id === ctx.owner.id;
-      },
-      actions,
-    },
-  ]);
-}
-
-/**
- * 造成伤害时触发
- */
-export function onDealDamage(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    {
-      eventKind: 'damage',
-      filter: (event, ctx) => {
-        const dmgEvent = event as DamageGameEvent;
-        return dmgEvent.source.id === ctx.owner.id;
-      },
-      actions,
-    },
-  ]);
-}
-
-/**
- * 击杀敌人时触发
- */
-export function onKill(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    {
-      eventKind: 'damage',
-      filter: (event, ctx) => {
-        const dmgEvent = event as DamageGameEvent;
-        return dmgEvent.source.id === ctx.owner.id && dmgEvent.isKill;
-      },
-      actions,
-    },
-  ]);
-}
-
-/**
- * 回合开始时触发
- */
-export function onTurnStart(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    {
-      eventKind: 'turnStart',
-      filter: (event, ctx) => {
-        const turnEvent = event as TurnStartGameEvent;
-        return turnEvent.activeUnit.id === ctx.owner.id;
-      },
-      actions,
-    },
-  ]);
-}
-
-/**
- * 回合结束时触发
- */
-export function onTurnEnd(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    {
-      eventKind: 'turnEnd',
-      filter: (event, ctx) => {
-        const turnEvent = event as TurnEndGameEvent;
-        return turnEvent.unit.id === ctx.owner.id;
-      },
-      actions,
-    },
-  ]);
-}
-
-/**
- * 死亡时触发
- */
-export function onDeath(actions: IAction[]): ActionComponent {
-  return new ActionComponent([
-    {
-      eventKind: 'death',
-      filter: (event, ctx) => {
-        const deathEvent = event as DeathGameEvent;
-        return deathEvent.target.id === ctx.owner.id;
-      },
-      actions,
-    },
-  ]);
-}
-
-/**
- * 自定义触发器
- */
-export function onEvent(
-  eventKind: GameEventKind,
-  filter: (event: GameEvent, ctx: ComponentLifecycleContext) => boolean,
-  actions: IAction[]
-): ActionComponent {
-  return new ActionComponent([{ eventKind, filter, actions }]);
+export function createTrigger<TEvent extends GameEventBase>(
+  eventKind: TEvent['kind'],
+  config: {
+    filter?: (event: TEvent, context: ComponentLifecycleContext) => boolean;
+    actions: IAction[];
+  }
+): ActionTrigger<TEvent> {
+  return {
+    eventKind,
+    filter: config.filter,
+    actions: config.actions,
+  };
 }
