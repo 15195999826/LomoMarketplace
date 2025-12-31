@@ -39,7 +39,9 @@
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\lomo-mcp-servers\\\\inkmon-server''; npx tsc --noEmit\")",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\inkmon-pokedex''; npx tsc --noEmit\")",
       "Bash(git show:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pnpm --filter @lomo/logic-game-framework build:*)",
+      "Bash(rm:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
