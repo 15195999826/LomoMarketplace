@@ -1,7 +1,7 @@
 /**
- * AttributeSet 底层 API 测试
+ * RawAttributeSet 底层 API 测试
  *
- * 本文件测试 AttributeSet 类的底层实现，包括：
+ * 本文件测试 RawAttributeSet 类的底层实现，包括：
  * - 四层公式计算（AddBase, MulBase, AddFinal, MulFinal）
  * - Modifier 管理（添加、移除、按来源移除）
  * - 变化监听器
@@ -12,18 +12,18 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  AttributeSet,
+  RawAttributeSet,
   createAddBaseModifier,
   createMulBaseModifier,
   createAddFinalModifier,
   createMulFinalModifier,
 } from '../../../src/core/attributes/index.js';
 
-describe('AttributeSet（底层 API）', () => {
-  let attributeSet: AttributeSet;
+describe('RawAttributeSet（底层 API）', () => {
+  let attributeSet: RawAttributeSet;
 
   beforeEach(() => {
-    attributeSet = new AttributeSet([
+    attributeSet = new RawAttributeSet([
       { name: 'hp', baseValue: 100 },
       { name: 'atk', baseValue: 50 },
       { name: 'def', baseValue: 30 },

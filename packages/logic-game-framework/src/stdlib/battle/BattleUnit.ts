@@ -6,7 +6,7 @@
  */
 
 import { Actor } from '../../core/entity/Actor.js';
-import { AttributeSet, type AttributeConfig } from '../../core/attributes/AttributeSet.js';
+import { RawAttributeSet, type AttributeConfig } from '../../core/attributes/AttributeSet.js';
 import type { Ability } from '../../core/abilities/Ability.js';
 import type { IAbilityActor } from '../../core/abilities/AbilitySystem.js';
 import type { ComponentLifecycleContext } from '../../core/abilities/AbilityComponent.js';
@@ -35,7 +35,7 @@ export class BattleUnit extends Actor implements IAbilityActor {
   readonly type: string = 'BattleUnit';
 
   /** 属性集合 */
-  attributes: AttributeSet;
+  attributes: RawAttributeSet;
 
   /** 能力列表 */
   abilities: Ability[] = [];
@@ -52,10 +52,10 @@ export class BattleUnit extends Actor implements IAbilityActor {
 
     // 初始化属性
     if (config.attributeConfigs) {
-      this.attributes = new AttributeSet(config.attributeConfigs);
+      this.attributes = new RawAttributeSet(config.attributeConfigs);
     } else {
       // 使用默认属性模板
-      this.attributes = new AttributeSet(
+      this.attributes = new RawAttributeSet(
         BasicUnitAttributeTemplates.map((t) => ({
           name: t.name,
           baseValue: t.defaultBase,

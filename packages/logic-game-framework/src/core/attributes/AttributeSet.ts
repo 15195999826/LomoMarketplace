@@ -65,9 +65,13 @@ export type AttributeConfig = {
 };
 
 /**
- * 属性集合
+ * 属性集合（底层实现）
+ *
+ * 这是框架内部使用的底层类，游戏开发者应使用 defineAttributes() 创建的 AttributeSet<T>。
+ *
+ * @internal
  */
-export class AttributeSet {
+export class RawAttributeSet {
   /** 基础值存储 */
   private baseValues: Map<string, number> = new Map();
 
@@ -530,8 +534,8 @@ export class AttributeSet {
   /**
    * 反序列化
    */
-  static deserialize(data: object): AttributeSet {
-    const set = new AttributeSet();
+  static deserialize(data: object): RawAttributeSet {
+    const set = new RawAttributeSet();
     const parsed = data as Record<string, { base: number; modifiers: AttributeModifier[] }>;
 
     for (const [name, attrData] of Object.entries(parsed)) {

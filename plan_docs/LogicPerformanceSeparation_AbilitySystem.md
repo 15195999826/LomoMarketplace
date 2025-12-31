@@ -1,8 +1,8 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.7 (onXxxChanged 委托 & API 分层导出)
+> 文档版本：v0.8 (AttributeSet 命名重构)
 > 创建日期：2025-12-27
-> 更新日期：2025-12-30
+> 更新日期：2025-12-31
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
 
 **相关文档**：
@@ -54,7 +54,7 @@
 | GameplayInstance | 玩法流程控制 | 必须继承实现 |
 | Actor | 游戏实体基类 | 必须继承实现 |
 | System | 全局逻辑处理器 | 可继承扩展 |
-| AttributeSet | 四层计算公式、Modifier聚合、依赖追踪 | 属性名可定义，公式固定 |
+| AttributeSet | 类型安全的属性集（对外）、RawAttributeSet（底层） | 属性名可定义，公式固定 |
 | Ability | 能力实例容器 | 可继承扩展 |
 | AbilityComponent | 能力功能模块接口 | 必须实现接口 |
 | Action | 效果执行单元接口 | 必须实现接口 |
@@ -616,7 +616,8 @@ type ErrorEvent = BattleEvent<{
 
 | 概念 | 职责 |
 |------|------|
-| **AttributeSet** | 持有一组属性，管理BaseValue/CurrentValue，提供变化钩子 |
+| **AttributeSet\<T\>** | 类型安全的属性集（对外接口），持有一组属性，管理BaseValue/CurrentValue，提供变化钩子 |
+| **RawAttributeSet** | 底层实现类（@internal），框架内部使用 |
 | **AttributeModifier** | 描述"如何修改某个属性"的数据结构 |
 
 上层概念（武器、Buff、被动技能等）都是**创建和管理Modifier的来源**，不是属性系统本身需要关心的。
@@ -728,7 +729,7 @@ import {
 
 import type {
   // 类型定义
-  TypedAttributeSet,     // 属性集类型
+  AttributeSet,          // 属性集类型（类型安全的代理）
   AttributesConfig,      // 配置类型
   AttributeDefConfig,    // 单个属性配置
   ModifierBreakdown,     // $xxx 返回类型
@@ -739,13 +740,13 @@ import type {
 **内部 API（标记为 `@internal`，框架内部使用）**：
 - `AttributeModifier`, `ModifierType` - Modifier 类型
 - `createAddBaseModifier` 等 - Modifier 创建函数
-- `AttributeSet` - 底层类
+- `RawAttributeSet` - 底层实现类
 - `IAttributeModifierTarget` - 内部接口
 
 #### 角色使用示例
 
 ```typescript
-import { defineAttributes, TypedAttributeSet } from '@lomo/logic-game-framework';
+import { defineAttributes, AttributeSet } from '@lomo/logic-game-framework';
 
 // 1. 定义属性配置
 const heroConfig = {
@@ -759,7 +760,7 @@ const heroConfig = {
 // 2. 创建角色类
 class Character {
   readonly name: string;
-  readonly attributes: TypedAttributeSet<typeof heroConfig>;
+  readonly attributes: AttributeSet<typeof heroConfig>;
 
   constructor(name: string) {
     this.name = name;
@@ -1479,12 +1480,14 @@ interface BattleSaveData {
 4. **事件策略确定**：避免事件订阅，使用主动分发钩子
 5. **Action系统设计**：工厂模式、链式调用、回调机制
 6. **属性系统实现**：
-   - `AttributeSet` 核心类（四层公式、缓存、脏标记、钩子）
+   - `RawAttributeSet` 底层实现类（四层公式、缓存、脏标记、钩子）
+   - `AttributeSet<T>` 类型安全的对外接口（Proxy 包装）
    - `defineAttributes()` 工厂函数（类型安全、IDE 自动补全）
    - `xxxAttribute` 属性引用（类似 UE `GetXxxAttribute()`，用于 StatModifier）
    - `onXxxChanged` 属性变化委托（类似 UE `OnXxxChanged`，返回 unsubscribe）
    - API 分层导出（对外 API vs 内部 API）
    - Modifier 创建辅助函数
+7. **命名重构**：`TypedAttributeSet` → `AttributeSet`，`AttributeSet` → `RawAttributeSet`
 
 ### 待实现
 
@@ -1524,6 +1527,8 @@ interface BattleSaveData {
 | Actor | AbilitySystemComponent拥有者 | 游戏实体（OOP设计） |
 | Ability | GameplayAbility + GameplayEffect | 技能/Buff（EC设计） |
 | AbilityComponent | - | Ability的功能模块 |
+| AttributeSet\<T\> | AttributeSet | 类型安全的属性集（对外接口） |
+| RawAttributeSet | AttributeSet | 底层实现类（@internal） |
 | Attribute | GameplayAttribute | 属性（如HP、ATK） |
 | Modifier | GameplayModifier | 属性修改器 |
 | Action | GameplayAbility中的逻辑单元 | 最小执行单元 |

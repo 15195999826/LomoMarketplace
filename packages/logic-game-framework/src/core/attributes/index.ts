@@ -10,7 +10,7 @@
  * - `restoreAttributes(data)` - 从序列化数据恢复属性集
  *
  * ### 类型定义
- * - `TypedAttributeSet<T>` - 属性集类型
+ * - `AttributeSet<T>` - 属性集类型
  * - `AttributesConfig` - 属性配置类型
  * - `AttributeDefConfig` - 单个属性配置
  * - `ModifierBreakdown` - 属性详情（$xxx 返回类型）
@@ -19,7 +19,7 @@
  * ### 使用示例
  *
  * ```typescript
- * import { defineAttributes, TypedAttributeSet, AttributesConfig } from '@lomo/logic-game-framework';
+ * import { defineAttributes, AttributeSet, AttributesConfig } from '@lomo/logic-game-framework';
  *
  * // 1. 定义角色属性配置
  * const heroConfig = {
@@ -33,7 +33,7 @@
  * // 2. 创建角色类
  * class Character {
  *   readonly name: string;
- *   readonly attributes: TypedAttributeSet<typeof heroConfig>;
+ *   readonly attributes: AttributeSet<typeof heroConfig>;
  *
  *   constructor(name: string) {
  *     this.name = name;
@@ -96,8 +96,8 @@ export { defineAttributes, restoreAttributes } from './defineAttributes.js';
  * 类型定义
  */
 export type {
-  /** 类型安全的属性集代理 */
-  TypedAttributeSet,
+  /** 类型安全的属性集 */
+  AttributeSet,
   /** 属性集合配置 */
   AttributesConfig,
   /** 单个属性配置 */
@@ -145,10 +145,10 @@ export {
 } from './AttributeCalculator.js';
 
 /**
- * @internal 底层 AttributeSet 类
+ * @internal 底层 RawAttributeSet 类
  */
 export {
-  AttributeSet,
+  RawAttributeSet,
 } from './AttributeSet.js';
 
 /**

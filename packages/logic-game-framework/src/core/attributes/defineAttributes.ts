@@ -32,7 +32,7 @@
 
 import type { AttributeModifier, ModifierBreakdown } from './AttributeModifier.js';
 import type { AttributeChangeEvent, AttributeChangeListener, AttributeHooks } from './AttributeSet.js';
-import { AttributeSet } from './AttributeSet.js';
+import { RawAttributeSet } from './AttributeSet.js';
 
 /**
  * 单个属性配置
@@ -55,7 +55,7 @@ export type AttributesConfig = Record<string, AttributeDefConfig>;
  * Modifier 写入接口（内部使用）
  *
  * 此接口仅提供给 AbilityComponent 使用，外部代码不应直接使用。
- * 通过 TypedAttributeSet._modifierTarget 获取。
+ * 通过 AttributeSet._modifierTarget 获取。
  */
 export type IAttributeModifierTarget = {
   /**
@@ -85,7 +85,7 @@ export type IAttributeModifierTarget = {
 };
 
 /**
- * 类型安全的属性集合代理
+ * 类型安全的属性集合
  *
  * - `attrs.xxx` → 返回 currentValue (number)
  * - `attrs.$xxx` → 返回 ModifierBreakdown
@@ -94,7 +94,7 @@ export type IAttributeModifierTarget = {
  *
  * 注意：Modifier 管理方法已移至内部接口，外部无法直接调用
  */
-export type TypedAttributeSet<T extends AttributesConfig> = {
+export type AttributeSet<T extends AttributesConfig> = {
   /** 直接访问属性名返回 currentValue */
   readonly [K in keyof T]: number;
 } & {
@@ -213,9 +213,9 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
   // ========== 内部访问 ==========
 
   /**
-   * 获取底层 AttributeSet 实例（高级用法）
+   * 获取底层 RawAttributeSet 实例（高级用法）
    */
-  readonly _raw: AttributeSet;
+  readonly _raw: RawAttributeSet;
 
   /**
    * 获取 Modifier 写入接口（仅供 AbilityComponent 内部使用）
@@ -230,7 +230,7 @@ export type TypedAttributeSet<T extends AttributesConfig> = {
 /**
  * 创建 Modifier 写入接口
  */
-function createModifierTarget(set: AttributeSet): IAttributeModifierTarget {
+function createModifierTarget(set: RawAttributeSet): IAttributeModifierTarget {
   return {
     addModifier: (modifier: AttributeModifier) => set.addModifier(modifier),
     removeModifier: (modifierId: string) => set.removeModifier(modifierId),
@@ -241,15 +241,15 @@ function createModifierTarget(set: AttributeSet): IAttributeModifierTarget {
 }
 
 /**
- * 创建 TypedAttributeSet 的 Proxy handler
+ * 创建 AttributeSet 的 Proxy handler
  *
  * 此函数提取了 defineAttributes 和 restoreAttributes 共用的 Proxy 逻辑
  */
 function createAttributeProxyHandler<T extends AttributesConfig>(
-  set: AttributeSet,
+  set: RawAttributeSet,
   attrNames: Set<string>,
   modifierTarget: IAttributeModifierTarget
-): ProxyHandler<TypedAttributeSet<T>> {
+): ProxyHandler<AttributeSet<T>> {
   return {
     get(_target, prop: string | symbol) {
       // symbol 属性直接透传
@@ -388,9 +388,9 @@ function createAttributeProxyHandler<T extends AttributesConfig>(
  */
 export function defineAttributes<T extends AttributesConfig>(
   config: T
-): TypedAttributeSet<T> {
-  // 创建底层 AttributeSet
-  const set = new AttributeSet(
+): AttributeSet<T> {
+  // 创建底层 RawAttributeSet
+  const set = new RawAttributeSet(
     Object.entries(config).map(([name, cfg]) => ({
       name,
       baseValue: cfg.baseValue,
@@ -407,7 +407,7 @@ export function defineAttributes<T extends AttributesConfig>(
 
   // 创建 Proxy
   return new Proxy(
-    set as unknown as TypedAttributeSet<T>,
+    set as unknown as AttributeSet<T>,
     createAttributeProxyHandler(set, attrNames, modifierTarget)
   );
 }
@@ -429,8 +429,8 @@ export function defineAttributes<T extends AttributesConfig>(
  */
 export function restoreAttributes<T extends AttributesConfig>(
   data: object
-): TypedAttributeSet<T> {
-  const set = AttributeSet.deserialize(data);
+): AttributeSet<T> {
+  const set = RawAttributeSet.deserialize(data);
   const attrNames = new Set(Object.keys(data));
 
   // 创建 Modifier 写入接口（内部使用）
@@ -438,7 +438,7 @@ export function restoreAttributes<T extends AttributesConfig>(
 
   // 创建 Proxy（复用公共 handler）
   return new Proxy(
-    set as unknown as TypedAttributeSet<T>,
+    set as unknown as AttributeSet<T>,
     createAttributeProxyHandler(set, attrNames, modifierTarget)
   );
 }
