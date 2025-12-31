@@ -12,8 +12,6 @@ export {
   Ability,
   AbilityConfig,
   AbilityState,
-  AbilityTags,
-  AbilityTag,
 } from './Ability.js';
 
 export {

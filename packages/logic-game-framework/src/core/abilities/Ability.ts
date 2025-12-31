@@ -289,24 +289,3 @@ export class Ability implements IAbilityForComponent {
   }
 }
 
-/**
- * Ability 标签常量
- */
-export const AbilityTags = {
-  /** Buff（增益效果） */
-  BUFF: 'buff',
-  /** Debuff（减益效果） */
-  DEBUFF: 'debuff',
-  /** 主动技能 */
-  ACTIVE: 'active',
-  /** 被动技能 */
-  PASSIVE: 'passive',
-  /** 可叠加 */
-  STACKABLE: 'stackable',
-  /** 可驱散 */
-  DISPELLABLE: 'dispellable',
-  /** 隐藏（不显示在 UI 中） */
-  HIDDEN: 'hidden',
-} as const;
-
-export type AbilityTag = (typeof AbilityTags)[keyof typeof AbilityTags];
