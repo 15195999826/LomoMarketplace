@@ -13,7 +13,6 @@ import { AbilitySystem, createHookContext, HookNames } from '../../core/abilitie
 import type { IAction } from '../../core/actions/Action.js';
 import { createExecutionContext, type ExecutionContext } from '../../core/actions/ExecutionContext.js';
 import type { ActorRef, HookContext } from '../../core/types/common.js';
-import type { BattleUnit } from './BattleUnit.js';
 import { getLogger } from '../../core/utils/Logger.js';
 
 /**
@@ -89,28 +88,28 @@ export class BattleInstance extends GameplayInstance {
   /**
    * 获取队伍 A 的单位
    */
-  getTeamA(): BattleUnit[] {
-    return this.actors.filter((a) => a.team === 'A') as BattleUnit[];
+  getTeamA(): Actor[] {
+    return this.actors.filter((a) => a.team === 'A');
   }
 
   /**
    * 获取队伍 B 的单位
    */
-  getTeamB(): BattleUnit[] {
-    return this.actors.filter((a) => a.team === 'B') as BattleUnit[];
+  getTeamB(): Actor[] {
+    return this.actors.filter((a) => a.team === 'B');
   }
 
   /**
    * 获取存活的队伍 A 单位
    */
-  getAliveTeamA(): BattleUnit[] {
+  getAliveTeamA(): Actor[] {
     return this.getTeamA().filter((u) => u.isActive && !u.isDead);
   }
 
   /**
    * 获取存活的队伍 B 单位
    */
-  getAliveTeamB(): BattleUnit[] {
+  getAliveTeamB(): Actor[] {
     return this.getTeamB().filter((u) => u.isActive && !u.isDead);
   }
 

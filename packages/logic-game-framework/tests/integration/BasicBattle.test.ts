@@ -1,7 +1,92 @@
+/**
+ * 基础战斗集成测试
+ *
+ * 本测试展示如何使用框架的核心功能：
+ * - 使用 defineAttributes() 创建类型安全的属性系统
+ * - 创建自定义战斗单位
+ * - 使用 BattleInstance 管理战斗流程
+ */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameWorld } from '../../src/core/world/GameWorld.js';
-import { BattleInstance, BattleUnit } from '../../src/stdlib/battle/index.js';
+import { Actor } from '../../src/core/entity/Actor.js';
+import { BattleInstance } from '../../src/stdlib/battle/index.js';
+import { defineAttributes, type AttributeSet } from '../../src/core/attributes/index.js';
 import { SilentLogger, setLogger } from '../../src/core/utils/Logger.js';
+
+// ========== 定义测试用的战斗单位 ==========
+
+/**
+ * 战斗单位属性配置
+ */
+const UnitAttributes = {
+  hp: { baseValue: 100, minValue: 0 },
+  maxHp: { baseValue: 100, minValue: 1 },
+  atk: { baseValue: 50 },
+  def: { baseValue: 30 },
+  speed: { baseValue: 100 },
+} as const;
+
+/**
+ * 测试用战斗单位
+ *
+ * 展示如何正确使用 defineAttributes() 创建带属性系统的 Actor
+ */
+class TestUnit extends Actor {
+  readonly type = 'TestUnit';
+  readonly attributes: AttributeSet<typeof UnitAttributes>;
+
+  constructor(name: string, team?: string) {
+    super();
+    this.displayName = name;
+    this.team = team;
+    this.attributes = defineAttributes(UnitAttributes);
+
+    // 订阅 HP 变化，处理死亡
+    this.attributes.onHpChanged((event) => {
+      if (event.newValue <= 0) {
+        this.onDeath();
+      }
+    });
+  }
+
+  // 类型安全的属性访问
+  get hp() { return this.attributes.hp; }
+  get maxHp() { return this.attributes.maxHp; }
+  get atk() { return this.attributes.atk; }
+  get def() { return this.attributes.def; }
+  get speed() { return this.attributes.speed; }
+
+  /**
+   * 造成伤害
+   */
+  takeDamage(damage: number): number {
+    const currentHp = this.attributes.getBase('hp');
+    const actualDamage = Math.min(damage, currentHp);
+    this.attributes.modifyBase('hp', -actualDamage);
+    return actualDamage;
+  }
+
+  /**
+   * 治疗
+   */
+  heal(amount: number): number {
+    const currentHp = this.attributes.getBase('hp');
+    const maxHp = this.maxHp;
+    const actualHeal = Math.min(amount, maxHp - currentHp);
+    if (actualHeal > 0) {
+      this.attributes.modifyBase('hp', actualHeal);
+    }
+    return actualHeal;
+  }
+
+  onSpawn(): void {
+    super.onSpawn();
+    // 初始化 HP 为 MaxHP
+    this.attributes.setBase('hp', this.maxHp);
+  }
+}
+
+// ========== 测试 ==========
 
 describe('Basic Battle Integration', () => {
   beforeEach(() => {
@@ -10,38 +95,34 @@ describe('Basic Battle Integration', () => {
     GameWorld.destroy();
   });
 
-  describe('BattleUnit', () => {
-    it('should create unit with default attributes', () => {
-      const unit = new BattleUnit({ name: 'Warrior' });
+  describe('TestUnit（使用 defineAttributes）', () => {
+    it('should create unit with type-safe attributes', () => {
+      const unit = new TestUnit('Warrior');
 
       expect(unit.displayName).toBe('Warrior');
-      expect(unit.hp).toBeGreaterThan(0);
-      expect(unit.atk).toBeGreaterThan(0);
-      expect(unit.def).toBeGreaterThan(0);
+      expect(unit.hp).toBe(100);
+      expect(unit.atk).toBe(50);
+      expect(unit.def).toBe(30);
     });
 
-    it('should create unit with custom stats', () => {
-      const unit = new BattleUnit({
-        name: 'Tank',
-        stats: {
-          hp: 200,
-          maxHp: 200,
-          atk: 15,
-          def: 50,
-        },
-      });
+    it('should access attribute breakdown via $ prefix', () => {
+      const unit = new TestUnit('Test');
 
-      expect(unit.hp).toBe(200);
-      expect(unit.maxHp).toBe(200);
-      expect(unit.atk).toBe(15);
-      expect(unit.def).toBe(50);
+      const breakdown = unit.attributes.$atk;
+      expect(breakdown.base).toBe(50);
+      expect(breakdown.currentValue).toBe(50);
+      expect(breakdown.addBaseSum).toBe(0);
     });
 
-    it('should take damage and check death', () => {
-      const unit = new BattleUnit({
-        name: 'Test',
-        stats: { hp: 100, maxHp: 100 },
-      });
+    it('should get attribute name reference via Attribute suffix', () => {
+      const unit = new TestUnit('Test');
+
+      expect(unit.attributes.atkAttribute).toBe('atk');
+      expect(unit.attributes.hpAttribute).toBe('hp');
+    });
+
+    it('should take damage and trigger death', () => {
+      const unit = new TestUnit('Test');
       unit.onSpawn();
 
       expect(unit.isActive).toBe(true);
@@ -56,10 +137,7 @@ describe('Basic Battle Integration', () => {
     });
 
     it('should heal and not exceed maxHp', () => {
-      const unit = new BattleUnit({
-        name: 'Test',
-        stats: { hp: 100, maxHp: 100 },
-      });
+      const unit = new TestUnit('Test');
       unit.onSpawn();
       unit.takeDamage(30);
 
@@ -82,8 +160,8 @@ describe('Basic Battle Integration', () => {
     it('should add units to teams', () => {
       const battle = new BattleInstance();
 
-      const unitA = new BattleUnit({ name: 'Unit A', team: 'A' });
-      const unitB = new BattleUnit({ name: 'Unit B', team: 'B' });
+      const unitA = new TestUnit('Unit A', 'A');
+      const unitB = new TestUnit('Unit B', 'B');
 
       battle.addActor(unitA);
       battle.addActor(unitB);
@@ -95,8 +173,8 @@ describe('Basic Battle Integration', () => {
     it('should start and end battle', () => {
       const battle = new BattleInstance();
 
-      const unitA = new BattleUnit({ name: 'Unit A', team: 'A' });
-      const unitB = new BattleUnit({ name: 'Unit B', team: 'B' });
+      const unitA = new TestUnit('Unit A', 'A');
+      const unitB = new TestUnit('Unit B', 'B');
 
       battle.addActor(unitA);
       battle.addActor(unitB);
@@ -112,16 +190,8 @@ describe('Basic Battle Integration', () => {
     it('should detect team A win when team B is eliminated', () => {
       const battle = new BattleInstance();
 
-      const unitA = new BattleUnit({
-        name: 'Unit A',
-        team: 'A',
-        stats: { hp: 100, maxHp: 100 },
-      });
-      const unitB = new BattleUnit({
-        name: 'Unit B',
-        team: 'B',
-        stats: { hp: 50, maxHp: 50 },
-      });
+      const unitA = new TestUnit('Unit A', 'A');
+      const unitB = new TestUnit('Unit B', 'B');
 
       battle.addActor(unitA);
       battle.addActor(unitB);
