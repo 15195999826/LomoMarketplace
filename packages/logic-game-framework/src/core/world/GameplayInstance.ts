@@ -214,6 +214,30 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   }
 
   /**
+   * 创建并添加 Actor（工厂方法）
+   *
+   * 便捷方法，将创建和注册合为一步。
+   * factory 会立即同步执行，捕获的变量值就是调用时的值。
+   *
+   * @example
+   * ```typescript
+   * const hero = battle.createActor(() => new BattleUnit('勇者', 10));
+   *
+   * // 支持在 factory 中配置
+   * const enemy = battle.createActor(() => {
+   *   const unit = new BattleUnit('史莱姆');
+   *   unit.team = 'enemy';
+   *   return unit;
+   * });
+   * ```
+   */
+  createActor<T extends Actor>(factory: () => T): T {
+    const actor = factory();
+    this.addActor(actor);
+    return actor;
+  }
+
+  /**
    * 移除 Actor
    */
   removeActor(id: string): boolean {
