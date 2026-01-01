@@ -3,7 +3,7 @@
  *
  * 给持有者添加属性修改器
  *
- * Modifier 的应用/移除在 onActivate/onDeactivate 时自动处理，
+ * Modifier 的应用/移除在 onApply/onRemove 时自动处理，
  * 外部无需手动调用 addModifier。
  */
 
@@ -43,7 +43,7 @@ export type StatModifierConfig = {
  *   ],
  * }, ownerRef);
  *
- * // 通过 AbilitySet 授予（自动激活）
+ * // 通过 AbilitySet 授予（自动应用效果）
  * abilitySet.grantAbility(ability);
  *
  * // 移除时自动移除 Modifier
@@ -72,10 +72,10 @@ export class StatModifierComponent extends BaseAbilityComponent {
   }
 
   /**
-   * Ability 激活时调用
+   * Ability grant 时调用
    * 创建并应用 Modifier 到 owner 的 AttributeSet
    */
-  onActivate(context: ComponentLifecycleContext): void {
+  onApply(context: ComponentLifecycleContext): void {
     // 创建 Modifier
     this.appliedModifiers = this.configs.map((config, index) => ({
       id: `${this.modifierPrefix}_${index}`,
@@ -92,10 +92,10 @@ export class StatModifierComponent extends BaseAbilityComponent {
   }
 
   /**
-   * Ability 失效时调用
+   * Ability revoke/expire 时调用
    * 从 owner 的 AttributeSet 移除 Modifier
    */
-  onDeactivate(context: ComponentLifecycleContext): void {
+  onRemove(context: ComponentLifecycleContext): void {
     // 按来源移除所有 Modifier
     context.attributes.removeModifiersBySource(context.ability.id);
     this.appliedModifiers = [];
@@ -117,7 +117,7 @@ export class StatModifierComponent extends BaseAbilityComponent {
 
   /**
    * 设置缩放倍数（用于层数）
-   * 如果 Ability 已激活，需要重新应用 Modifier
+   * 如果 Ability 已 grant，需要重新应用 Modifier
    */
   setScale(scale: number): void {
     this.currentScale = scale;
@@ -125,7 +125,7 @@ export class StatModifierComponent extends BaseAbilityComponent {
 
   /**
    * 按层数缩放 Modifier 值
-   * 注意：如果 Ability 已激活，需要手动重新激活以应用新值
+   * 注意：如果 Ability 已 grant，需要手动重新应用以更新值
    */
   scaleByStacks(stacks: number): void {
     this.setScale(stacks);

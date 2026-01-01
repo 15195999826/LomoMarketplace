@@ -102,9 +102,9 @@ export class AbilitySet<T extends AttributesConfig> {
     // 添加到列表
     this.abilities.push(ability);
 
-    // 激活 Ability（传入 lifecycle context）
+    // 应用效果（传入 lifecycle context）
     const lifecycleContext = this.createLifecycleContext(ability);
-    ability.activate(lifecycleContext);
+    ability.applyEffects(lifecycleContext);
 
     // 触发回调
     this.notifyGranted(ability);
@@ -179,6 +179,27 @@ export class AbilitySet<T extends AttributesConfig> {
         getLogger().error(`Ability tick error: ${ability.id}`, { error });
       }
     });
+  }
+
+  /**
+   * 驱动所有 Ability 的执行实例
+   *
+   * @param dt 时间增量（毫秒）
+   * @returns 本次 tick 中触发的所有 Tag 列表
+   */
+  tickExecutions(dt: number): string[] {
+    const allTriggeredTags: string[] = [];
+
+    this.processAbilities((ability) => {
+      try {
+        const triggeredTags = ability.tickExecutions(dt);
+        allTriggeredTags.push(...triggeredTags);
+      } catch (error) {
+        getLogger().error(`Ability tickExecutions error: ${ability.id}`, { error });
+      }
+    });
+
+    return allTriggeredTags;
   }
 
   // ========== 事件接收 ==========

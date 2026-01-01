@@ -1,5 +1,6 @@
 export {
   ExecutionContext,
+  ExecutionInstanceInfo,
   IAbility,
   createExecutionContext,
   createCallbackContext,

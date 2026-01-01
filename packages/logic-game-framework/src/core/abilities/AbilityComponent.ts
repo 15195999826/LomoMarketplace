@@ -7,7 +7,7 @@
  *
  * ### 内部 Hook（框架级，标准组件使用）
  * - `onTick(dt)` - 时间驱动，用于 DurationComponent 计时
- * - `onActivate(ctx)` / `onDeactivate(ctx)` - 生命周期，用于 StatModifierComponent 管理 Modifier
+ * - `onApply(ctx)` / `onRemove(ctx)` - grant/revoke 时调用，用于 StatModifierComponent 管理 Modifier
  *
  * ### 事件响应（业务级，ActionComponent 使用）
  * - `onEvent(event, ctx)` - 响应 GameEvent，执行链式 Action
@@ -16,22 +16,72 @@
 import type { ActorRef } from '../types/common.js';
 import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js';
 import type { GameEventBase } from '../events/GameEvent.js';
+import type { IAction } from '../actions/Action.js';
 
-// 前向声明
+// ========== 执行实例相关类型（前向声明）==========
+
+/**
+ * 执行实例配置（简化版，用于 Component 调用）
+ */
+export type ActivateExecutionConfig = {
+  /** Timeline ID */
+  readonly timelineId: string;
+  /** Tag -> Actions 映射 */
+  readonly tagActions: Record<string, IAction[]>;
+  /** 触发事件链 */
+  readonly eventChain: GameEventBase[];
+  /** 游戏状态引用 */
+  readonly gameplayState: unknown;
+};
+
+/**
+ * 执行实例引用（只读接口）
+ */
+export interface IAbilityExecutionInstance {
+  readonly id: string;
+  readonly timelineId: string;
+  readonly elapsed: number;
+  readonly state: 'executing' | 'completed' | 'cancelled';
+  readonly isExecuting: boolean;
+  cancel(): void;
+}
+
+// ========== IAbilityForComponent ==========
+
+/**
+ * Ability 对 Component 暴露的接口
+ */
 export interface IAbilityForComponent {
   readonly id: string;
   readonly configId: string;
+
   /**
    * 标记 Ability 过期 - Component 可调用此方法主动触发过期
    *
    * @param reason 过期原因，只有第一次调用的 reason 会被记录
    */
   expire(reason: string): void;
+
+  /**
+   * 激活新的执行实例
+   *
+   * 用于 ActivateInstanceComponent 创建 Timeline 执行实例。
+   * 一个 Ability 可以同时拥有多个执行实例（如脱手技能）。
+   *
+   * @param config 执行实例配置
+   * @returns 执行实例引用
+   */
+  activateNewExecutionInstance(config: ActivateExecutionConfig): IAbilityExecutionInstance;
+
+  /**
+   * 获取所有正在执行的实例
+   */
+  getExecutingInstances(): readonly IAbilityExecutionInstance[];
 }
 
 /**
  * Component 生命周期上下文
- * 在 onActivate/onDeactivate/onEvent 时传递
+ * 在 onApply/onRemove/onEvent 时传递
  */
 export type ComponentLifecycleContext = {
   /** Ability 所有者的引用 */
@@ -66,16 +116,16 @@ export interface IAbilityComponent {
   // ═══════ 内部 Hook（框架级，标准组件使用）═══════
 
   /**
-   * Ability 激活时调用
+   * Ability grant 时调用
    * 这是应用 Modifier 的正确时机
    */
-  onActivate?(context: ComponentLifecycleContext): void;
+  onApply?(context: ComponentLifecycleContext): void;
 
   /**
-   * Ability 失效时调用
+   * Ability revoke/expire 时调用
    * 这是移除 Modifier 的正确时机
    */
-  onDeactivate?(context: ComponentLifecycleContext): void;
+  onRemove?(context: ComponentLifecycleContext): void;
 
   /**
    * 每帧/每回合更新
@@ -173,6 +223,8 @@ export const ComponentTypes = {
   STAT_MODIFIER: 'statModifier',
   /** 执行效果（调用 Action） */
   EFFECT: 'effect',
+  /** Timeline 执行实例激活器 */
+  TIMELINE_EXECUTION: 'timelineExecution',
 } as const;
 
 export type ComponentType = (typeof ComponentTypes)[keyof typeof ComponentTypes];

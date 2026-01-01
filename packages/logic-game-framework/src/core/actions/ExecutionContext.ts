@@ -35,6 +35,22 @@ export interface IAbility {
 }
 
 /**
+ * 执行实例信息（可选）
+ *
+ * 当 Action 由 AbilityExecutionInstance 触发时存在。
+ */
+export type ExecutionInstanceInfo = {
+  /** 执行实例 ID */
+  readonly id: string;
+  /** Timeline ID */
+  readonly timelineId: string;
+  /** 已执行时间（毫秒） */
+  readonly elapsed: number;
+  /** 当前触发的 Tag 名称 */
+  readonly currentTag: string;
+};
+
+/**
  * 执行上下文
  *
  * Action 执行时可访问的所有信息：
@@ -42,6 +58,7 @@ export interface IAbility {
  * 2. 能力信息 - 哪个能力触发的
  * 3. 游戏状态 - 当前游戏数据
  * 4. 输出通道 - 事件收集器
+ * 5. 执行实例信息（可选）- Timeline 执行相关
  */
 export type ExecutionContext = {
   // ========== 事件链 ==========
@@ -103,6 +120,23 @@ export type ExecutionContext = {
    * 整个技能执行（包括回调）共享同一个 eventCollector。
    */
   readonly eventCollector: EventCollector;
+
+  // ========== 执行实例信息（可选）==========
+
+  /**
+   * 执行实例信息
+   *
+   * 当 Action 由 AbilityExecutionInstance 触发时存在。
+   * 可用于获取 Timeline 执行进度等信息。
+   *
+   * @example
+   * ```typescript
+   * if (ctx.execution) {
+   *   console.log(`Tag ${ctx.execution.currentTag} at ${ctx.execution.elapsed}ms`);
+   * }
+   * ```
+   */
+  readonly execution?: ExecutionInstanceInfo;
 };
 
 // ========== 辅助函数 ==========
@@ -133,12 +167,14 @@ export function createExecutionContext(params: {
   gameplayState: unknown;
   eventCollector: EventCollector;
   ability?: IAbility;
+  execution?: ExecutionInstanceInfo;
 }): ExecutionContext {
   return {
     eventChain: params.eventChain,
     gameplayState: params.gameplayState,
     ability: params.ability,
     eventCollector: params.eventCollector,
+    execution: params.execution,
   };
 }
 

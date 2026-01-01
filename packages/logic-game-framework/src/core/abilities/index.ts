@@ -2,6 +2,8 @@ export {
   IAbilityComponent,
   BaseAbilityComponent,
   IAbilityForComponent,
+  IAbilityExecutionInstance,
+  ActivateExecutionConfig,
   ComponentState,
   ComponentTypes,
   ComponentType,
@@ -32,3 +34,19 @@ export {
   TriggerMode,
   createEventTrigger,
 } from './GameEventComponent.js';
+
+export {
+  AbilityExecutionInstance,
+  ExecutionState,
+  TagActionsMap,
+  ExecutionInstanceConfig,
+} from './AbilityExecutionInstance.js';
+
+export {
+  ActivateInstanceComponent,
+  ActivateInstanceComponentConfig,
+  TagActionsConfig,
+  EventTrigger as ActivateEventTrigger,
+  TriggerMode as ActivateTriggerMode,
+  createEventTrigger as createActivateEventTrigger,
+} from './ActivateInstanceComponent.js';
