@@ -12,6 +12,7 @@ export {
   Ability,
   AbilityConfig,
   AbilityState,
+  ComponentConstructor,
 } from './Ability.js';
 
 export {

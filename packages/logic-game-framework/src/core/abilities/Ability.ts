@@ -15,6 +15,12 @@ import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAbilityComponent, IAbilityForComponent, ComponentLifecycleContext } from './AbilityComponent.js';
 
 /**
+ * Component 构造函数类型
+ * 用于 Unity 风格的 getComponent<T>(ctor) 调用
+ */
+export type ComponentConstructor<T extends IAbilityComponent> = new (...args: any[]) => T;
+
+/**
  * Ability 状态
  */
 export type AbilityState = 'idle' | 'active' | 'expired';
@@ -68,6 +74,9 @@ export class Ability implements IAbilityForComponent {
   /** 当前状态 */
   private _state: AbilityState = 'idle';
 
+  /** 过期原因（只记录第一个触发过期的原因） */
+  private _expireReason?: string;
+
   /** Component 列表（只读，构造时确定） */
   private readonly components: readonly IAbilityComponent[];
 
@@ -114,26 +123,58 @@ export class Ability implements IAbilityForComponent {
     return this._state === 'expired';
   }
 
+  /**
+   * 过期原因（只有过期后才有值）
+   */
+  get expireReason(): string | undefined {
+    return this._expireReason;
+  }
+
   // ========== Component 查询（只读）==========
 
   /**
-   * 获取指定类型的 Component
+   * 获取指定类型的 Component（Unity 风格）
+   *
+   * @example
+   * ```typescript
+   * const duration = ability.getComponent(DurationComponent);
+   * //    ^? DurationComponent | undefined  ← 自动推断类型
+   * ```
    */
-  getComponent<T extends IAbilityComponent>(type: string): T | undefined {
-    return this.components.find((c) => c.type === type) as T | undefined;
+  getComponent<T extends IAbilityComponent>(
+    ctor: ComponentConstructor<T>
+  ): T | undefined {
+    return this.components.find((c) => c instanceof ctor) as T | undefined;
   }
 
   /**
-   * 检查是否有指定类型的 Component
+   * 获取所有指定类型的 Component（Unity 风格）
+   *
+   * @example
+   * ```typescript
+   * const modifiers = ability.getComponents(StatModifierComponent);
+   * //    ^? StatModifierComponent[]
+   * ```
    */
-  hasComponent(type: string): boolean {
-    return this.components.some((c) => c.type === type);
+  getComponents<T extends IAbilityComponent>(
+    ctor: ComponentConstructor<T>
+  ): T[] {
+    return this.components.filter((c) => c instanceof ctor) as T[];
+  }
+
+  /**
+   * 检查是否有指定类型的 Component（Unity 风格）
+   */
+  hasComponent<T extends IAbilityComponent>(
+    ctor: ComponentConstructor<T>
+  ): boolean {
+    return this.components.some((c) => c instanceof ctor);
   }
 
   /**
    * 获取所有 Component（只读）
    */
-  getComponents(): readonly IAbilityComponent[] {
+  getAllComponents(): readonly IAbilityComponent[] {
     return this.components;
   }
 
@@ -141,6 +182,9 @@ export class Ability implements IAbilityForComponent {
 
   /**
    * 分发 Tick 到所有 Component
+   *
+   * Component 在过期时应主动调用 ability.expire()，
+   * 而不是由 Ability 轮询检查。
    */
   tick(dt: number): void {
     if (this._state === 'expired') return;
@@ -154,9 +198,6 @@ export class Ability implements IAbilityForComponent {
         }
       }
     }
-
-    // 检查是否有过期的 Component
-    this.checkExpiration();
   }
 
   // ========== 事件响应 ==========
@@ -180,9 +221,6 @@ export class Ability implements IAbilityForComponent {
         }
       }
     }
-
-    // 检查是否因事件处理而过期
-    this.checkExpiration();
   }
 
   // ========== 生命周期 ==========
@@ -237,27 +275,22 @@ export class Ability implements IAbilityForComponent {
 
   /**
    * 标记为过期（会先调用 deactivate）
+   *
+   * @param reason 过期原因，只有第一次调用会被记录
    */
-  expire(): void {
+  expire(reason: string): void {
     if (this._state === 'expired') {
+      // 已过期，忽略后续调用（多个 Component 可能同时触发过期）
       return;
     }
+
+    // 记录第一个过期原因
+    this._expireReason = reason;
 
     // 先 deactivate（移除 Modifier）
     this.deactivate();
 
     this._state = 'expired';
-  }
-
-  /**
-   * 检查 Component 过期状态
-   */
-  private checkExpiration(): void {
-    // 如果有任何关键 Component 过期，整个 Ability 过期
-    const durationComponent = this.getComponent('duration');
-    if (durationComponent && durationComponent.state === 'expired') {
-      this.expire();
-    }
   }
 
   // ========== 标签操作 ==========

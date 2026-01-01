@@ -20,8 +20,8 @@ Date: 2026-01-01
 
 ## Todo Items
 
-- [ ] 为 stdlib 提供类型安全的事件工厂，避免事件 kind 拼写错误
-- [ ] 提取 `AbilitySet.tick()` 和 `receiveEvent()` 中重复的过期清理逻辑
+- [x] 为 stdlib 提供类型安全的事件工厂 → 已在 examples/events/BattleGameEvents.ts 实现
+- [x] 提取 `AbilitySet.tick()` 和 `receiveEvent()` 中重复的过期清理逻辑 → 已提取为 `processAbilities()`
 - [ ] 为 examples 目录添加 index.ts 导出
 
 ## Key Decisions

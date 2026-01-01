@@ -1,6 +1,6 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.10 (gameplayState + 标准实现重命名)
+> 文档版本：v0.11 (Unity 风格 getComponent + 过期机制重构)
 > 创建日期：2025-12-27
 > 更新日期：2026-01-01
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
@@ -69,7 +69,7 @@
 | **StandardAbilitySystem** | 标准能力系统 ✅ v0.10 | System 的标准实现，项目可自行实现 |
 | **StandardBattleInstance** | 标准战斗实例 ✅ v0.10 | GameplayInstance 的标准实现 |
 | 标准Action | Damage, Heal, AddBuff, Move, Knockback... | 覆盖常见战斗效果 |
-| 标准Component | Duration, Stack, StatModifier... | 覆盖常见能力行为 |
+| 标准Component | TimeDuration, Stack, StatModifier... | 覆盖常见能力行为 |
 | GameEventComponent | 事件驱动的 Action 执行器 | 唯一触发 Action 的组件 |
 | 标准Attribute | HP, MaxHP, ATK, DEF, Speed... | 作为示例，游戏可自定义 |
 | BattleUnit | 战斗单位 | Actor的标准实现 |
@@ -322,9 +322,9 @@ class AbilitySet<T extends AttributesConfig> {
 │  onActivate(ctx)     │                                      │
 │  onDeactivate(ctx)   │  → GameEventComponent 响应            │
 ├──────────────────────┼──────────────────────────────────────┤
-│  用于标准组件：        │  用于被动技能：                        │
-│  - DurationComponent │  - 受伤时反击                         │
-│  - StatModifier      │  - 击杀时回血                         │
+│  用于标准组件：            │  用于被动技能：                        │
+│  - TimeDurationComponent │  - 受伤时反击                         │
+│  - StatModifier          │  - 击杀时回血                         │
 │                      │  - 回合开始时触发                      │
 └──────────────────────┴──────────────────────────────────────┘
 ```
@@ -358,7 +358,7 @@ interface IAbilityComponent {
 
 | Component | 职责 | 使用的钩子 |
 |-----------|------|-----------|
-| DurationComponent | 持续时间/回合 | onTick |
+| TimeDurationComponent | 基于时间的持续时间 | onTick |
 | StatModifierComponent | 属性修改 | onActivate, onDeactivate |
 | GameEventComponent | 事件驱动执行 Action | onEvent |
 | StackComponent | 层数管理 | onActivate |
@@ -370,8 +370,98 @@ interface IAbilityComponent {
 |------|------|
 | 主动技能 | Ability + [GameEventComponent(监听 inputAction)] |
 | 被动技能 | Ability + [GameEventComponent(监听 damage/death)] |
-| 持续Buff | Ability + [Duration, StatModifier] |
-| 可叠加Buff | Ability + [Duration, Stack, StatModifier] |
+| 持续Buff | Ability + [TimeDuration, StatModifier] |
+| 可叠加Buff | Ability + [TimeDuration, Stack, StatModifier] |
+
+### 4.5.4 Unity 风格 Component 查询 ✅ v0.11
+
+Ability 提供 Unity 风格的 Component 查询 API，使用类构造函数作为参数：
+
+```typescript
+// 类型定义
+type ComponentConstructor<T extends IAbilityComponent> = new (...args: any[]) => T;
+
+// Ability API
+class Ability {
+    getComponent<T>(ctor: ComponentConstructor<T>): T | undefined;
+    getComponents<T>(ctor: ComponentConstructor<T>): T[];
+    hasComponent<T>(ctor: ComponentConstructor<T>): boolean;
+    getAllComponents(): readonly IAbilityComponent[];
+}
+
+// 使用示例
+const duration = ability.getComponent(TimeDurationComponent);
+//    ^? TimeDurationComponent | undefined  ← 自动推断类型
+
+const modifiers = ability.getComponents(StatModifierComponent);
+//    ^? StatModifierComponent[]
+```
+
+**设计优势**：
+- 类型安全：泛型自动从构造函数推断
+- IDE 友好：自动补全、跳转定义
+- 与 Unity `GetComponent<T>()` 一致的使用体验
+
+### 4.5.5 过期机制 ✅ v0.11
+
+**Component 主动触发过期**：
+
+```typescript
+// IAbilityForComponent 接口
+interface IAbilityForComponent {
+    readonly id: string;
+    readonly configId: string;
+    expire(reason: string): void;  // Component 可调用
+}
+
+// TimeDurationComponent 示例
+class TimeDurationComponent extends BaseAbilityComponent {
+    onTick(dt: number): void {
+        this.remaining -= dt;
+        if (this.remaining <= 0) {
+            this.markExpired();
+            this.ability?.expire('time_duration');  // 主动通知
+        }
+    }
+}
+```
+
+**过期原因追踪**：
+
+```typescript
+// Ability 只记录第一个过期原因
+class Ability {
+    private _expireReason?: string;
+
+    expire(reason: string): void {
+        if (this._state === 'expired') return;  // 忽略后续调用
+        this._expireReason = reason;
+        this.deactivate();
+        this._state = 'expired';
+    }
+
+    get expireReason(): string | undefined {
+        return this._expireReason;
+    }
+}
+```
+
+**AbilitySet 回调增强**：
+
+```typescript
+// 回调现在包含具体的过期原因
+type AbilityRevokedCallback = (
+    ability: Ability,
+    reason: AbilityRevokeReason,
+    abilitySet: AbilitySet,
+    expireReason?: string  // 'time_duration' | 'round_duration' | ...
+) => void;
+```
+
+**设计原则**：
+- **谁持有状态谁负责**：Component 主动触发，而非 Ability 轮询检查
+- **只记录首个原因**：多个 Component 可能同时触发过期
+- **reason 类型为 string**：允许项目自定义过期原因
 
 ### 4.6 StandardAbilitySystem（标准能力系统）✅ v0.10
 
@@ -1729,6 +1819,14 @@ interface BattleSaveData {
     - `AbilitySystem` → `StandardAbilitySystem`（移至 stdlib/systems/）
     - `BattleInstance` → `StandardBattleInstance`（重命名文件）
     - Core 只保留接口和基类，具体实现在 stdlib
+11. **Unity 风格 getComponent + 过期机制重构**（v0.11）：
+    - `getComponent(type: string)` → `getComponent(ctor: ComponentConstructor<T>)`
+    - 新增 `getComponents(ctor)` 获取所有同类型组件
+    - 移除 `Ability.checkExpiration()`，Component 主动调用 `ability.expire(reason)`
+    - 过期原因追踪：`Ability.expireReason`，只记录第一个
+    - `DurationComponent` → `TimeDurationComponent`（基于时间）
+    - `AbilitySet` 提取 `processAbilities()` 统一过期清理逻辑
+    - `AbilityRevokedCallback` 新增 `expireReason` 参数
 
 ### 待实现
 
@@ -1789,7 +1887,7 @@ interface BattleSaveData {
 | Actor | 游戏实体，OOP设计 |
 | AbilitySet | 能力容器，持有 Ability 列表 ✅ NEW |
 | Ability | 能力实例，EC设计 |
-| AbilityComponent | 能力组件（Duration、StatModifier、GameEventComponent等） |
+| AbilityComponent | 能力组件（TimeDuration、StatModifier、GameEventComponent等） |
 
 ### C. 属性系统术语
 

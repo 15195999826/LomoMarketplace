@@ -1,8 +1,8 @@
 export {
-  DurationComponent,
-  DurationType,
-  duration,
-} from './DurationComponent.js';
+  TimeDurationComponent,
+  timeDuration,
+  EXPIRE_REASON_TIME_DURATION,
+} from './TimeDurationComponent.js';
 
 export {
   StackComponent,

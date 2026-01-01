@@ -21,6 +21,12 @@ import type { GameEventBase } from '../events/GameEvent.js';
 export interface IAbilityForComponent {
   readonly id: string;
   readonly configId: string;
+  /**
+   * 标记 Ability 过期 - Component 可调用此方法主动触发过期
+   *
+   * @param reason 过期原因，只有第一次调用的 reason 会被记录
+   */
+  expire(reason: string): void;
 }
 
 /**
@@ -155,8 +161,8 @@ export const ComponentTypes = {
   INPUT: 'input',
   /** 被动触发器，事件监听 */
   TRIGGER: 'trigger',
-  /** 持续时间/回合 */
-  DURATION: 'duration',
+  /** 基于时间的持续时间（stdlib 提供） */
+  TIME_DURATION: 'time_duration',
   /** 层数管理 */
   STACK: 'stack',
   /** 冷却时间 */

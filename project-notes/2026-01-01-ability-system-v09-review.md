@@ -27,8 +27,8 @@ Date: 2026-01-01
 
 ## Todo Items
 
-- [ ] `Ability.checkExpiration()` 硬编码了 'duration'，应改为检查任意标记为 critical 的 Component
-- [ ] `ExecutionContext.battle` 改为可选类型，避免 `null as unknown as T` 类型欺骗
+- [x] `Ability.checkExpiration()` 硬编码了 'duration' → 已移除，改为 Component 主动调用 `ability.expire(reason)`
+- [x] `ExecutionContext.battle` 改为可选类型 → 已改为 `gameplayState: unknown`
 - [ ] 为 BattleGameEvents 添加类型守卫函数（如 `isDamageEvent()`）
 - [ ] AbilitySystem 考虑自己持有 actors 引用，简化 `broadcastEvent` 调用
 

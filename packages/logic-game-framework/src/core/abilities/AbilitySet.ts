@@ -32,11 +32,17 @@ export type AbilityGrantedCallback = (ability: Ability, abilitySet: AbilitySet<A
 
 /**
  * Ability 移除回调
+ *
+ * @param ability 被移除的 Ability
+ * @param reason 移除原因（expired/dispelled/replaced/manual）
+ * @param abilitySet AbilitySet 引用
+ * @param expireReason 具体的过期原因（如 'time_duration'），仅当 reason='expired' 时有值
  */
 export type AbilityRevokedCallback = (
   ability: Ability,
   reason: AbilityRevokeReason,
-  abilitySet: AbilitySet<AttributesConfig>
+  abilitySet: AbilitySet<AttributesConfig>,
+  expireReason?: string
 ) => void;
 
 /**
@@ -109,8 +115,13 @@ export class AbilitySet<T extends AttributesConfig> {
    *
    * @param abilityId 要移除的 Ability ID
    * @param reason 移除原因
+   * @param expireReason 具体的过期原因（如 'time_duration'），仅当 reason='expired' 时使用
    */
-  revokeAbility(abilityId: string, reason: AbilityRevokeReason = 'manual'): boolean {
+  revokeAbility(
+    abilityId: string,
+    reason: AbilityRevokeReason = 'manual',
+    expireReason?: string
+  ): boolean {
     const index = this.abilities.findIndex((a) => a.id === abilityId);
     if (index === -1) {
       return false;
@@ -118,14 +129,16 @@ export class AbilitySet<T extends AttributesConfig> {
 
     const ability = this.abilities[index];
 
-    // 失效 Ability（移除 Modifier）
-    ability.expire();
+    // 如果 Ability 尚未过期，先触发过期（移除 Modifier）
+    if (!ability.isExpired) {
+      ability.expire(expireReason ?? reason);
+    }
 
     // 从列表移除
     this.abilities.splice(index, 1);
 
-    // 触发回调
-    this.notifyRevoked(ability, reason);
+    // 触发回调（传入具体的过期原因）
+    this.notifyRevoked(ability, reason, expireReason ?? ability.expireReason);
 
     return true;
   }
@@ -156,34 +169,16 @@ export class AbilitySet<T extends AttributesConfig> {
 
   /**
    * Tick 更新
-   * 分发到所有 Ability，驱动 DurationComponent 等
+   * 分发到所有 Ability，驱动 TimeDurationComponent 等
    */
   tick(dt: number): void {
-    // 收集过期的 Ability
-    const expiredAbilities: Ability[] = [];
-
-    for (const ability of this.abilities) {
-      if (ability.isExpired) {
-        expiredAbilities.push(ability);
-        continue;
-      }
-
+    this.processAbilities((ability) => {
       try {
         ability.tick(dt);
       } catch (error) {
         getLogger().error(`Ability tick error: ${ability.id}`, { error });
       }
-
-      // 检查是否因 tick 而过期
-      if (ability.isExpired) {
-        expiredAbilities.push(ability);
-      }
-    }
-
-    // 清理过期的 Ability
-    for (const expired of expiredAbilities) {
-      this.revokeAbility(expired.id, 'expired');
-    }
+    });
   }
 
   // ========== 事件接收 ==========
@@ -191,13 +186,28 @@ export class AbilitySet<T extends AttributesConfig> {
   /**
    * 接收游戏事件
    *
-   * 将事件分发到所有 Ability 的 Component（ActionComponent 响应）
+   * 将事件分发到所有 Ability 的 Component（GameEventComponent 响应）
    *
    * @param event 游戏事件
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    */
   receiveEvent(event: GameEventBase, gameplayState: unknown): void {
-    // 收集过期的 Ability
+    this.processAbilities((ability) => {
+      try {
+        const context = this.createLifecycleContext(ability);
+        ability.receiveEvent(event, context, gameplayState);
+      } catch (error) {
+        getLogger().error(`Ability event handling error: ${ability.id}`, { error, event: event.kind });
+      }
+    });
+  }
+
+  /**
+   * 处理所有 Ability 并清理过期的
+   *
+   * @param processor 对每个活跃 Ability 执行的操作
+   */
+  private processAbilities(processor: (ability: Ability) => void): void {
     const expiredAbilities: Ability[] = [];
 
     for (const ability of this.abilities) {
@@ -206,22 +216,17 @@ export class AbilitySet<T extends AttributesConfig> {
         continue;
       }
 
-      try {
-        const context = this.createLifecycleContext(ability);
-        ability.receiveEvent(event, context, gameplayState);
-      } catch (error) {
-        getLogger().error(`Ability event handling error: ${ability.id}`, { error, event: event.kind });
-      }
+      processor(ability);
 
-      // 检查是否因事件处理而过期
+      // 检查处理后是否过期
       if (ability.isExpired) {
         expiredAbilities.push(ability);
       }
     }
 
-    // 清理过期的 Ability
+    // 清理过期的 Ability（使用 Ability 自身记录的过期原因）
     for (const expired of expiredAbilities) {
-      this.revokeAbility(expired.id, 'expired');
+      this.revokeAbility(expired.id, 'expired', expired.expireReason);
     }
   }
 
@@ -335,10 +340,10 @@ export class AbilitySet<T extends AttributesConfig> {
   /**
    * 通知 Ability 移除
    */
-  private notifyRevoked(ability: Ability, reason: AbilityRevokeReason): void {
+  private notifyRevoked(ability: Ability, reason: AbilityRevokeReason, expireReason?: string): void {
     for (const callback of this.onRevokedCallbacks) {
       try {
-        callback(ability, reason, this);
+        callback(ability, reason, this, expireReason);
       } catch (error) {
         getLogger().error('Error in ability revoked callback', { error });
       }
