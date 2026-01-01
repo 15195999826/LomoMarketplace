@@ -45,7 +45,8 @@
       "Skill(exploring-project)",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm test\")",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build && pnpm test:run\")",
-      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; pnpm test:run\")"
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; pnpm test:run\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm test:run\")"
     ]
   },
   "enableAllProjectMcpServers": true,

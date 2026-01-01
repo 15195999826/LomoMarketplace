@@ -1,8 +1,8 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.14 (时间轴系统)
+> 文档版本：v0.15 (AbilityExecutionInstance)
 > 创建日期：2025-12-27
-> 更新日期：2026-01-01
+> 更新日期：2026-01-02
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
 
 **相关文档**：
@@ -319,8 +319,8 @@ class AbilitySet<T extends AttributesConfig> {
 │  内部 Hook（框架级）   │  事件系统（业务级）                    │
 ├──────────────────────┼──────────────────────────────────────┤
 │  onTick(dt)          │  receiveEvent(event)                 │
-│  onActivate(ctx)     │                                      │
-│  onDeactivate(ctx)   │  → GameEventComponent 响应            │
+│  onApply(ctx)        │                                      │
+│  onRemove(ctx)       │  → GameEventComponent 响应            │
 ├──────────────────────┼──────────────────────────────────────┤
 │  用于标准组件：            │  用于被动技能：                        │
 │  - TimeDurationComponent │  - 受伤时反击                         │
@@ -345,8 +345,8 @@ interface IAbilityComponent {
     initialize(ability: IAbilityForComponent): void;
 
     // ═══ 内部 Hook（框架级）═══
-    onActivate?(context: ComponentLifecycleContext): void;
-    onDeactivate?(context: ComponentLifecycleContext): void;
+    onApply?(context: ComponentLifecycleContext): void;   // grant 时调用
+    onRemove?(context: ComponentLifecycleContext): void;  // revoke/expire 时调用
     onTick?(dt: number): void;
 
     // ═══ 事件响应（业务级）═══
@@ -359,16 +359,18 @@ interface IAbilityComponent {
 | Component | 职责 | 使用的钩子 |
 |-----------|------|-----------|
 | TimeDurationComponent | 基于时间的持续时间 | onTick |
-| StatModifierComponent | 属性修改 | onActivate, onDeactivate |
+| StatModifierComponent | 属性修改 | onApply, onRemove |
 | GameEventComponent | 事件驱动执行 Action | onEvent |
-| StackComponent | 层数管理 | onActivate |
+| ActivateInstanceComponent | 创建 Timeline 执行实例 | onEvent ✅ v0.15 |
+| StackComponent | 层数管理 | onApply |
 | CooldownComponent | 冷却时间 | onTick |
 
 **组合示例**：
 
 | 类型 | 组成 |
 |------|------|
-| 主动技能 | Ability + [GameEventComponent(监听 inputAction)] |
+| 瞬发主动技能 | Ability + [GameEventComponent(监听 inputAction)] |
+| Timeline主动技能 | Ability + [ActivateInstanceComponent(监听 inputAction, 配置 tagActions)] ✅ v0.15 |
 | 被动技能 | Ability + [GameEventComponent(监听 damage/death)] |
 | 持续Buff | Ability + [TimeDuration, StatModifier] |
 | 可叠加Buff | Ability + [TimeDuration, Stack, StatModifier] |
@@ -701,7 +703,7 @@ class BattleInstance {
 └─────────────────┘
 ```
 
-### 4.10 时间轴系统 ✅ v0.14
+### 4.10 时间轴系统 ✅ v0.14 → v0.15
 
 时间轴描述 Ability 执行过程中的时间节点（Tag），数据来源于渲染端资产。
 
@@ -725,14 +727,6 @@ const fireballTimeline: TimelineAsset = {
 };
 ```
 
-**Action 绑定到 Tag**
-```typescript
-new DamageAction({ damage: 100 })
-    .setTargetSelector(TargetSelectors.currentTarget)
-    .bindToTag("ActionPoint0")  // ⭐ 绑定到时间轴 Tag
-    .onCritical(new AddBuffAction({ buffId: 'burning' }));
-```
-
 **时间轴注册表**
 ```typescript
 const registry = getTimelineRegistry();
@@ -740,11 +734,83 @@ registry.register(fireballTimeline);
 const timeline = registry.get('anim_fireball');
 ```
 
+### 4.10.1 AbilityExecutionInstance ✅ v0.15
+
+**AbilityExecutionInstance** 管理单次技能执行的状态和 Timeline 推进。
+一个 Ability 可以同时拥有多个 ExecutionInstance（如脱手技能）。
+
+**架构图**：
+```
+┌─────────────────────────────────────────────────────────┐
+│                       Ability                           │
+│  state: pending → granted → expired                     │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  Components                                      │   │
+│  │  ┌─────────────────────────────────────────┐   │   │
+│  │  │ ActivateInstanceComponent               │   │   │
+│  │  │   onEvent() → activateNewExecutionInst()│   │   │
+│  │  └─────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  ExecutionInstances[]                            │   │
+│  │  ┌────────────────┐  ┌────────────────┐        │   │
+│  │  │  Instance #1   │  │  Instance #2   │  ...   │   │
+│  │  │  elapsed: 100  │  │  elapsed: 50   │        │   │
+│  │  │  state: exec   │  │  state: exec   │        │   │
+│  │  └────────────────┘  └────────────────┘        │   │
+│  └─────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+                         │
+                         ▼ tick(dt)
+┌─────────────────────────────────────────────────────────┐
+│  Timeline: [cast:0ms] [hit:300ms] [end:500ms]          │
+│  tagActions: { cast: [...], hit: [...] }                │
+└─────────────────────────────────────────────────────────┘
+```
+
+**核心职责**：
+- 持有 Timeline 执行进度（elapsed）
+- 在 `tick(dt)` 中推进时间，检测 Tag 到达
+- Tag 到达时执行对应的 Action 列表
+- 管理执行状态（executing / completed / cancelled）
+
+**使用 tagActions 配置（替代 bindToTag）** ✅ v0.15：
+```typescript
+// v0.14: Action.bindToTag() - 已移除
+// v0.15: 使用 tagActions 配置
+new ActivateInstanceComponent({
+    triggers: [{ eventKind: 'inputAction' }],
+    timelineId: 'anim_fireball',
+    tagActions: {
+        'cast': [new PlayAnimationAction()],
+        'hit': [new DamageAction({ damage: 100 })],
+        'hit*': [/* 支持通配符匹配 */],
+    },
+});
+```
+
+**ExecutionContext 扩展** ✅ v0.15：
+```typescript
+type ExecutionContext = {
+    eventChain: readonly GameEventBase[];
+    gameplayState: unknown;
+    ability?: IAbility;
+    eventCollector: EventCollector;
+    // ⭐ 新增：执行实例信息（Timeline 执行时存在）
+    execution?: {
+        id: string;           // 执行实例 ID
+        timelineId: string;   // Timeline ID
+        elapsed: number;      // 已执行时间（毫秒）
+        currentTag: string;   // 当前触发的 Tag 名称
+    };
+};
+```
+
 **设计原则**：
-- 框架只定义数据结构和 `bindToTag()` 机制
+- 框架只定义数据结构和执行实例机制
 - 调度策略（串行/并行、等待动画等）由项目层实现
-- 无时间轴的 Ability = 瞬时触发，所有 Action 立即执行
-- 有时间轴的 Ability = Action 在绑定的 Tag 时间点执行
+- 无时间轴的 Ability = 瞬时触发（使用 GameEventComponent）
+- 有时间轴的 Ability = 使用 ActivateInstanceComponent 创建执行实例
 
 ### 4.11 关键接口定义（概念级）
 
@@ -1948,9 +2014,20 @@ interface BattleSaveData {
 14. **时间轴系统**（v0.14）：
     - 新增 `TimelineAsset` 数据结构（id, totalDuration, tags）
     - 新增 `TimelineRegistry` 全局注册表（register, get, has）
-    - `BaseAction.bindToTag(tagName)` 绑定 Action 到时间轴 Tag
+    - ~~`BaseAction.bindToTag(tagName)` 绑定 Action 到时间轴 Tag~~ → v0.15 移除
     - 时间轴数据来源：渲染端资产 → 转换脚本 → JSON
     - 设计原则：框架只定义机制，调度策略由项目层实现
+15. **AbilityExecutionInstance + Timeline 执行系统**（v0.15）：
+    - 新增 `AbilityExecutionInstance` 管理单次技能执行的状态和 Timeline 推进
+    - 新增 `ActivateInstanceComponent` 响应事件创建执行实例
+    - 支持多实例并行执行（脱手技能场景）
+    - `tagActions` 配置支持通配符匹配（`prefix*`）
+    - `ExecutionContext` 新增 `execution` 字段（id, timelineId, elapsed, currentTag）
+    - **API 变更**：
+      - Ability 状态：`idle/active` → `pending/granted`
+      - Component Hook：`onActivate/onDeactivate` → `onApply/onRemove`
+      - 移除 `Action.bindToTag()`，改用 `tagActions` 配置
+    - 新增 `TimelineSkillComponent` 示例（CD + 资源 + Timeline 的完整技能）
 
 ### 待实现
 
@@ -2000,7 +2077,10 @@ interface BattleSaveData {
 | GameEventComponent | - | 事件驱动的 Action 执行器 |
 | TimelineAsset | AnimMontage | 时间序列资产 ✅ v0.14 |
 | TimelineRegistry | - | 时间轴注册表（存储和查找 TimelineAsset）✅ v0.14 |
-| bindToTag | AnimNotify | Action 绑定到时间轴 Tag ✅ v0.14 |
+| ~~bindToTag~~ | ~~AnimNotify~~ | ~~Action 绑定到时间轴 Tag~~ ✅ v0.14 → v0.15 移除 |
+| tagActions | - | Tag → Actions 映射配置 ✅ v0.15 |
+| AbilityExecutionInstance | - | 单次技能执行实例，管理 Timeline 推进 ✅ v0.15 |
+| ActivateInstanceComponent | - | 创建执行实例的组件 ✅ v0.15 |
 | EventCollector | - | 通用事件收集器 ✅ v0.12 |
 | eventChain | - | 事件链（追溯触发历史）✅ v0.13 |
 | getCurrentEvent | - | 获取当前触发事件（eventChain 最后一个）✅ v0.13 |
@@ -2016,8 +2096,9 @@ interface BattleSaveData {
 | System | 全局逻辑处理器（如AbilitySystem） |
 | Actor | 游戏实体，OOP设计 |
 | AbilitySet | 能力容器，持有 Ability 列表 ✅ NEW |
-| Ability | 能力实例，EC设计 |
+| Ability | 能力实例，EC设计，状态：`pending → granted → expired` ✅ v0.15 |
 | AbilityComponent | 能力组件（TimeDuration、StatModifier、GameEventComponent等） |
+| AbilityExecutionInstance | 单次技能执行实例，管理 Timeline 推进 ✅ v0.15 |
 
 ### C. 属性系统术语
 

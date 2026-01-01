@@ -1,6 +1,7 @@
 # Logic Game Framework 重构代码审查
 
 Date: 2026-01-01
+Version: v0.12
 
 ## Completed Work
 
@@ -17,12 +18,18 @@ Date: 2026-01-01
   - `AbilitySystem` → `StandardAbilitySystem`（移至 `stdlib/systems/`）
   - `BattleInstance` → `StandardBattleInstance`（文件重命名）
   - 注释说明这些是可选的标准实现，项目可自行实现
+- [x] **统一事件模型（v0.12）** ✅ NEW
+  - 移除 `BattleEvent`，统一使用 `GameEventBase` 作为唯一事件类型
+  - `ExecutionContext` 新增 `triggerEvent` 字段，移除 `logicTime`/`customData`/`triggerSource`
+  - `EventCollector` 简化为通用事件收集器，移除具体事件便捷方法
+  - Action 直接通过 `eventCollector.emit(event)` 发出完整事件对象
+  - 添加 `examples/` 目录的 `index.ts` 导出文件
 
 ## Todo Items
 
 - [x] 为 stdlib 提供类型安全的事件工厂 → 已在 examples/events/BattleGameEvents.ts 实现
 - [x] 提取 `AbilitySet.tick()` 和 `receiveEvent()` 中重复的过期清理逻辑 → 已提取为 `processAbilities()`
-- [ ] 为 examples 目录添加 index.ts 导出
+- [x] 为 examples 目录添加 index.ts 导出 → v0.12 完成
 
 ## Key Decisions
 
@@ -32,6 +39,8 @@ Date: 2026-01-01
 - **Component 构造时注入** - 运行时不可修改，简化生命周期管理
 - **gameplayState: unknown** - 框架不假设游戏状态类型，项目层通过类型断言访问
 - **标准实现在 stdlib** - Core 只提供接口和基类，具体实现（StandardAbilitySystem、StandardBattleInstance）在 stdlib
+- **单一事件类型** ✅ v0.12 - 移除 BattleEvent，GameEventBase 同时服务内部触发和表演输出
+- **triggerEvent 替代分散字段** ✅ v0.12 - ExecutionContext 携带完整触发事件，不再拆分 logicTime、customData 等
 
 ## Notes
 
@@ -57,6 +66,25 @@ src/
         └── StandardBattleInstance.ts  ← 重命名
 ```
 
+### v0.12 统一事件模型亮点
+
+1. **单一事件类型** - `GameEventBase` 既用于内部触发，也用于表演输出
+2. **triggerEvent** - ExecutionContext 携带完整触发事件，Action 可获取任意字段
+3. **emit(event)** - EventCollector 只提供通用方法，不限制事件结构
+4. **examples 导出** - 方便项目引用示例代码作为起点
+
+```typescript
+// Action 中发出事件
+const event: DamageGameEvent = {
+  kind: 'damage',
+  logicTime: ctx.triggerEvent.logicTime,
+  source: ctx.source,
+  target,
+  damage: 50,
+};
+ctx.eventCollector.emit(event);
+```
+
 ### 代码质量评价
 
-整体设计方向正确，代码质量较高。ExecutionContext 问题已修复，标准实现命名更清晰。
+整体设计方向正确，代码质量较高。v0.12 进一步简化了框架层，体现"框架层薄、游戏层厚"的设计理念。
