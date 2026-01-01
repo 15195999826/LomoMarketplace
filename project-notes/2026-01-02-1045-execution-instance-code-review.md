@@ -13,14 +13,14 @@ Git Commit: 0a0ed37
 
 ## Todo Items
 
-- [ ] 补充测试覆盖
-  - ExecutionInstance.tick() 时间推进、Tag 触发
-  - 通配符匹配 `prefix*` 模式测试
-  - 多实例并行（脱手技能场景）
-  - cancel() 行为验证
-  - 边界条件：Timeline 不存在、空 tagActions
+- [x] 补充测试覆盖 ✅ 2026-01-02
+  - ExecutionInstance.tick() 时间推进、Tag 触发 ✅
+  - 通配符匹配 `prefix*` 模式测试 ✅
+  - 多实例并行（脱手技能场景）✅
+  - cancel() 行为验证 ✅
+  - 边界条件：Timeline 不存在、空 tagActions ✅
+- [x] 文档说明 `flushEvents` vs `getCollectedEvents` 的使用场景 ✅ 2026-01-02
 - [ ] 明确 Timeline 不存在时的错误处理策略（静默 warn vs throw error）
-- [ ] 文档说明 `flushEvents` vs `getCollectedEvents` 的使用场景
 
 ## Key Decisions
 

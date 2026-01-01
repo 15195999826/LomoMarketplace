@@ -2,7 +2,7 @@
  * GameEventComponent - 事件驱动的 Action 执行组件
  *
  * 根据 GameEvent 执行 Action 链的能力组件。
- * 这是框架中**唯一**触发 Action 执行的组件。
+ * 适用于**瞬发被动技能**，如反伤、触发治疗等。
  *
  * ## 核心设计思想：统一事件模型
  *
@@ -27,10 +27,23 @@
  *                      执行 Action 链
  * ```
  *
+ * ## ⚠️ 事件收集说明
+ *
+ * **重要**：GameEventComponent 执行 Action 后**不收集产生的事件**。
+ * 每次执行都会创建临时的 EventCollector，执行完后丢弃。
+ *
+ * 适用场景：
+ * - 瞬发被动（反伤、触发治疗）：Action 直接修改游戏状态
+ * - Action 内部自行处理事件通知
+ *
+ * 如需收集事件（用于表演层展示），请使用 **ActivateInstanceComponent**：
+ * - 基于 Timeline 驱动
+ * - 通过 AbilityExecutionInstance.flushEvents() 获取事件
+ *
  * ## 使用示例
  *
  * ```typescript
- * // 被动技能：受到伤害时反伤
+ * // 被动技能：受到伤害时反伤（瞬发，不需要事件收集）
  * new GameEventComponent({
  *   triggers: [
  *     { eventKind: 'damage', filter: (e, ctx) => e.target.id === ctx.owner.id },

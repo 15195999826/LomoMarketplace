@@ -18,10 +18,18 @@ Git Commit: 0a0ed37
 
 ## Todo Items
 
-- [ ] 为 Ability 系统添加测试覆盖（目前未找到相关测试文件）
-- [ ] 统一 `EventTrigger` 和 `TriggerMode` 的类型定义（目前在两处重复）
+- [x] 为 Ability 系统添加测试覆盖 ✅ 2026-01-02（新增 81 个测试用例）
+  - `Ability.test.ts` - 33 tests
+  - `AbilityExecutionInstance.test.ts` - 26 tests
+  - `ActivateInstanceComponent.test.ts` - 22 tests
+- [x] 统一 `EventTrigger` 和 `TriggerMode` 的类型定义 ✅ 2026-01-02
+  - 保留 `GameEventComponent.ts` 中的定义
+  - `ActivateInstanceComponent.ts` 从其导入并重新导出
+- [x] `GameEventComponent` 中的 eventCollector 行为已文档说明 ✅ 2026-01-02
+  - 明确说明不收集事件，适用于瞬发被动技能
+  - 需要事件收集时使用 ActivateInstanceComponent
+- [x] 文档说明 `flushEvents` vs `getCollectedEvents` ✅ 2026-01-02
 - [ ] 考虑实现 `StackModifierComponent` 解决层数变化时 Modifier 不自动更新的问题
-- [ ] `GameEventComponent` 中的 eventCollector 未收集事件，需修复或明确文档说明
 - [ ] 完善序列化/反序列化机制（多数 Component 的 deserialize 不完整）
 - [ ] 考虑将全局 TimelineRegistry 改为依赖注入方式
 

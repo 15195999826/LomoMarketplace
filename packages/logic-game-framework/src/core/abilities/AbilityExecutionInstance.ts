@@ -216,7 +216,18 @@ export class AbilityExecutionInstance {
   }
 
   /**
-   * 获取收集的事件
+   * 获取收集的事件（不清空）
+   *
+   * 返回事件数组的副本，不会清空内部缓冲区。
+   * 适用于调试、日志或只读查询。
+   *
+   * @returns 事件数组副本
+   *
+   * @example
+   * ```typescript
+   * // 调试时查看事件
+   * console.log('Events:', instance.getCollectedEvents());
+   * ```
    */
   getCollectedEvents(): GameEventBase[] {
     return this.eventCollector.collect();
@@ -224,6 +235,18 @@ export class AbilityExecutionInstance {
 
   /**
    * 清空并获取收集的事件
+   *
+   * 返回事件数组并清空内部缓冲区。
+   * 适用于表演层消费事件，每帧调用一次。
+   *
+   * @returns 事件数组（非副本，注意不要修改）
+   *
+   * @example
+   * ```typescript
+   * // 每帧消费事件（推荐）
+   * const events = instance.flushEvents();
+   * performanceLayer.play(events);
+   * ```
    */
   flushEvents(): GameEventBase[] {
     return this.eventCollector.flush();

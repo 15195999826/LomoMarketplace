@@ -4,6 +4,24 @@
  * 在逻辑执行过程中收集所有产生的事件。
  * 收集的事件与 GameEventBase 同类型，既可用于逻辑层触发，也可输出给表演层。
  *
+ * ## 获取事件的两种方式
+ *
+ * | 方法 | 行为 | 适用场景 |
+ * |------|------|----------|
+ * | `collect()` | 返回副本，不清空 | 调试、日志、只读查询 |
+ * | `flush()` | 返回原数组，清空缓冲区 | 表演层消费、帧结束处理 |
+ *
+ * ## 典型使用模式
+ *
+ * ```typescript
+ * // 方式1：每帧消费事件（推荐）
+ * const events = instance.flushEvents();
+ * performanceLayer.play(events);
+ *
+ * // 方式2：调试时查看事件
+ * console.log('Collected:', instance.getCollectedEvents());
+ * ```
+ *
  * @example
  * ```typescript
  * // 在 Action 中发出事件

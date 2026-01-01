@@ -61,11 +61,11 @@ Git Commit: 0a0ed37
 
 ## Todo Items
 
-- [ ] 为 `AbilityExecutionInstance` 添加单元测试
-- [ ] 为 `ActivateInstanceComponent` 添加单元测试
+- [x] 为 `AbilityExecutionInstance` 添加单元测试 ✅ 2026-01-02
+- [x] 为 `ActivateInstanceComponent` 添加单元测试 ✅ 2026-01-02
+- [x] 清理 index.ts 中重复导出的类型（`EventTrigger`/`TriggerMode`）✅ 2026-01-02
 - [ ] 考虑让 `tickExecutions` 返回事件或明确文档说明
 - [ ] 考虑增加取消时的清理机制（`cancelTag` 或 `onCancel` hook）
-- [ ] 清理 index.ts 中重复导出的类型（`EventTrigger`/`TriggerMode`）
 
 ## Key Decisions
 

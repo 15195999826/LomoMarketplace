@@ -46,7 +46,5 @@ export {
   ActivateInstanceComponent,
   ActivateInstanceComponentConfig,
   TagActionsConfig,
-  EventTrigger as ActivateEventTrigger,
-  TriggerMode as ActivateTriggerMode,
-  createEventTrigger as createActivateEventTrigger,
+  // EventTrigger, TriggerMode, createEventTrigger 已从 GameEventComponent 统一导出
 } from './ActivateInstanceComponent.js';

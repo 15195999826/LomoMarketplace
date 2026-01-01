@@ -35,25 +35,13 @@ import {
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAction } from '../actions/Action.js';
 import { getLogger } from '../utils/Logger.js';
+// 复用 GameEventComponent 的类型定义
+import type { EventTrigger, TriggerMode } from './GameEventComponent.js';
+import { createEventTrigger } from './GameEventComponent.js';
 
-// ========== 类型定义 ==========
-
-/**
- * 事件触发器配置
- */
-export type EventTrigger<TEvent extends GameEventBase = GameEventBase> = {
-  /** 监听的事件类型（kind 字符串） */
-  readonly eventKind: string;
-  /** 条件过滤器（可选） */
-  readonly filter?: (event: TEvent, context: ComponentLifecycleContext) => boolean;
-};
-
-/**
- * 触发模式
- * - 'any': 任意一个触发器匹配即执行（OR）
- * - 'all': 所有触发器都匹配才执行（AND）
- */
-export type TriggerMode = 'any' | 'all';
+// 重新导出以保持 API 兼容
+export type { EventTrigger, TriggerMode };
+export { createEventTrigger };
 
 /**
  * Tag Action 映射
@@ -186,21 +174,4 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
       tagActionsCount: Object.keys(this.tagActions).length,
     };
   }
-}
-
-// ========== 工厂函数 ==========
-
-/**
- * 创建事件触发器（类型安全）
- */
-export function createEventTrigger<TEvent extends GameEventBase>(
-  eventKind: TEvent['kind'],
-  config?: {
-    filter?: (event: TEvent, context: ComponentLifecycleContext) => boolean;
-  }
-): EventTrigger<TEvent> {
-  return {
-    eventKind,
-    filter: config?.filter,
-  };
 }
