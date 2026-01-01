@@ -56,6 +56,8 @@ LomoMarketplace/
 
 ### 1. Logic Game Framework (`@lomo/logic-game-framework`)
 
+> ⚠️ **开发中** - 此框架正在积极开发中，API 可能随时变更，不考虑向后兼容。
+
 A logic-performance separated game framework for turn-based/ATB games.
 
 **Architecture:**
@@ -85,8 +87,9 @@ import { BattleUnit, DamageAction } from '@lomo/logic-game-framework/stdlib'
 
 **Commands:**
 ```bash
-pnpm --filter @lomo/logic-game-framework build
-pnpm --filter @lomo/logic-game-framework test
+pnpm --filter @lomo/logic-game-framework build      # 构建
+pnpm --filter @lomo/logic-game-framework test:run   # 运行测试（单次）
+pnpm --filter @lomo/logic-game-framework test       # 运行测试（watch 模式）
 ```
 
 ### 2. InkMon Ecosystem
@@ -136,12 +139,12 @@ pnpm --filter @lomo/logic-game-framework test
 
 ### Common Commands
 ```bash
-pnpm install                                    # Install dependencies
-pnpm build:all                                  # Build everything
-pnpm build:core                                 # Build @inkmon/core
-pnpm build:mcp                                  # Build MCP server
-pnpm dev:web                                    # Start web dev server
-pnpm --filter @lomo/logic-game-framework test   # Run framework tests
+pnpm install                                         # Install dependencies
+pnpm build:all                                       # Build everything
+pnpm build:core                                      # Build @inkmon/core
+pnpm build:mcp                                       # Build MCP server
+pnpm dev:web                                         # Start web dev server
+pnpm --filter @lomo/logic-game-framework test:run    # Run framework tests (单次)
 ```
 
 ### Testing Plugins Locally

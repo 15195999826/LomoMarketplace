@@ -82,8 +82,12 @@ export interface IAbilityComponent {
   /**
    * 接收游戏事件
    * 根据事件类型决定如何响应，执行链式 Action
+   *
+   * @param event 游戏事件
+   * @param context 组件生命周期上下文
+   * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    */
-  onEvent?(event: GameEventBase, context: ComponentLifecycleContext): void;
+  onEvent?(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void;
 
   // ═══════ 序列化 ═══════
 

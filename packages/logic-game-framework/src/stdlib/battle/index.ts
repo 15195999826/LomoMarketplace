@@ -1,6 +1,6 @@
 export {
-  BattleInstance,
+  StandardBattleInstance,
   BattleConfig,
   BattleMode,
   BattleResult,
-} from './BattleInstance.js';
+} from './StandardBattleInstance.js';

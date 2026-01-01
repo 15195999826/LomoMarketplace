@@ -41,7 +41,11 @@
       "Bash(git show:*)",
       "Bash(python:*)",
       "Bash(pnpm --filter @lomo/logic-game-framework build:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Skill(exploring-project)",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm test\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build && pnpm test:run\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; pnpm test:run\")"
     ]
   },
   "enableAllProjectMcpServers": true,

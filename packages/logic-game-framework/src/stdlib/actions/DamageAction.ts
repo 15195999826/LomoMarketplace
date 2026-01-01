@@ -151,8 +151,10 @@ export class DamageAction extends BaseAction {
     // 优先使用计算器返回的结果，否则尝试从目标Actor获取HP判断
     let isKill = calcResult.isKill ?? false;
     if (calcResult.isKill === undefined) {
-      // 尝试从 battle 实例获取目标 Actor 的 HP
-      const targetActor = ctx.battle.getActor(target.id);
+      // 尝试从 gameplayState 获取目标 Actor 的 HP
+      // 注意：gameplayState 是 unknown，需要运行时类型检查
+      const state = ctx.gameplayState as { getActor?: (id: string) => unknown } | null;
+      const targetActor = state?.getActor?.(target.id);
       if (targetActor && typeof targetActor === 'object') {
         const actor = targetActor as { hp?: number; attributes?: { getCurrentValue?(name: string): number } };
         // 检查是否有 hp 属性或 attributes.getCurrentValue 方法

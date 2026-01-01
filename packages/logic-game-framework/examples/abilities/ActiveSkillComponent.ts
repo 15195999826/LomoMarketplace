@@ -123,7 +123,7 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
   /**
    * 响应事件
    */
-  onEvent(event: GameEventBase, context: ComponentLifecycleContext): void {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
     // 只处理 inputAction 事件
     if (event.kind !== 'inputAction') {
       return;
@@ -142,7 +142,7 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
     }
 
     // 执行激活流程
-    this.tryActivate(inputEvent, context);
+    this.tryActivate(inputEvent, context, gameplayState);
   }
 
   // ========== 激活流程 ==========
@@ -150,7 +150,11 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
   /**
    * 尝试激活技能
    */
-  private tryActivate(event: InputActionEvent, context: ComponentLifecycleContext): void {
+  private tryActivate(
+    event: InputActionEvent,
+    context: ComponentLifecycleContext,
+    gameplayState: unknown
+  ): void {
     // 1. 检查 CD
     if (!this.checkCooldown()) {
       getLogger().debug(`Skill on cooldown: ${context.ability.configId}`);
@@ -176,7 +180,7 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
     this.startCooldown();
 
     // 6. 执行 Action 链
-    this.executeActions(event, context);
+    this.executeActions(event, context, gameplayState);
   }
 
   /**
@@ -242,8 +246,12 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
   /**
    * 执行 Action 链
    */
-  private executeActions(event: InputActionEvent, context: ComponentLifecycleContext): void {
-    const execContext = this.buildExecutionContext(event, context);
+  private executeActions(
+    event: InputActionEvent,
+    context: ComponentLifecycleContext,
+    gameplayState: unknown
+  ): void {
+    const execContext = this.buildExecutionContext(event, context, gameplayState);
 
     for (const action of this.config.actions) {
       try {
@@ -262,10 +270,11 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
    */
   private buildExecutionContext(
     event: InputActionEvent,
-    context: ComponentLifecycleContext
+    context: ComponentLifecycleContext,
+    gameplayState: unknown
   ): ExecutionContext {
     return {
-      battle: null as unknown as ExecutionContext['battle'],
+      gameplayState,
       source: context.owner,
       primaryTarget: event.targets[0] ?? context.owner,
       ability: {

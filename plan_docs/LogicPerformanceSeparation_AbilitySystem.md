@@ -1,8 +1,8 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.8 (AttributeSet 命名重构)
+> 文档版本：v0.10 (gameplayState + 标准实现重命名)
 > 创建日期：2025-12-27
-> 更新日期：2025-12-31
+> 更新日期：2026-01-01
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
 
 **相关文档**：
@@ -55,22 +55,42 @@
 | Actor | 游戏实体基类 | 必须继承实现 |
 | System | 全局逻辑处理器 | 可继承扩展 |
 | AttributeSet | 类型安全的属性集（对外）、RawAttributeSet（底层） | 属性名可定义，公式固定 |
+| AbilitySet | 能力容器，管理 grant/revoke/event ✅ NEW | 可继承扩展 |
 | Ability | 能力实例容器 | 可继承扩展 |
 | AbilityComponent | 能力功能模块接口 | 必须实现接口 |
+| GameEventBase | 事件基础接口（kind + logicTime）✅ NEW | 游戏自定义具体类型 |
 | Action | 效果执行单元接口 | 必须实现接口 |
-| BattleEvent | 事件信封结构 | payload类型可扩展 |
+| BattleEvent | 表演层事件信封结构 | payload类型可扩展 |
 
 ### 2.3 标准库提供（StdLib）
 
 | 模块 | 内容 | 说明 |
 |------|------|------|
+| **StandardAbilitySystem** | 标准能力系统 ✅ v0.10 | System 的标准实现，项目可自行实现 |
+| **StandardBattleInstance** | 标准战斗实例 ✅ v0.10 | GameplayInstance 的标准实现 |
 | 标准Action | Damage, Heal, AddBuff, Move, Knockback... | 覆盖常见战斗效果 |
-| 标准Component | Duration, Stack, Cooldown, Cost, Trigger... | 覆盖常见能力行为 |
+| 标准Component | Duration, Stack, StatModifier... | 覆盖常见能力行为 |
+| GameEventComponent | 事件驱动的 Action 执行器 | 唯一触发 Action 的组件 |
 | 标准Attribute | HP, MaxHP, ATK, DEF, Speed... | 作为示例，游戏可自定义 |
-| BattleInstance | 战斗玩法实例 | GameplayInstance的标准实现 |
 | BattleUnit | 战斗单位 | Actor的标准实现 |
 
-### 2.4 框架不管（由游戏层实现）
+**标准实现说明**：stdlib 中的实现都是可选的，项目可以：
+- 直接使用
+- 继承扩展
+- 基于 core 完全自行实现
+
+### 2.4 示例代码（examples/）✅ NEW
+
+| 模块 | 内容 | 说明 |
+|------|------|------|
+| events/BattleGameEvents.ts | DamageEvent, DeathEvent... | 游戏事件类型示例 |
+| events/ActionTriggerFactories.ts | createEventTrigger | 触发器工厂示例 |
+| abilities/AbilityTags.ts | RPG/MOBA/回合制标签 | 标签定义示例 |
+| abilities/ActiveSkillComponent.ts | 主动技能组件 | CD/Cost/激活流程示例 |
+
+**设计原则**：框架层不定义具体的标签、事件类型、组件实现，由游戏自定义。示例代码供参考。
+
+### 2.5 框架不管（由游戏层实现）
 
 | 内容 | 说明 |
 |------|------|
@@ -237,64 +257,143 @@ class BattleUnit extends Actor {
 Ability（技能/Buff）采用Entity-Component模式，因为能力的组合是动态的。
 
 ```typescript
-interface Ability {
-    id: string;           // 实例唯一标识
-    configId: string;     // 配置表引用
-    source: ActorRef;     // 施加者
-    owner: ActorRef;      // 持有者
-    components: AbilityComponent[];
+class Ability {
+    readonly id: string;           // 实例唯一标识
+    readonly configId: string;     // 配置表引用
+    readonly source: ActorRef;     // 施加者
+    readonly owner: ActorRef;      // 持有者
+    readonly tags: readonly string[];  // 标签
+    readonly components: readonly IAbilityComponent[];  // 不可变
+}
+```
+
+**关键设计决策**：
+- **Component 在构造时注入，运行时不可修改**
+- 双层触发机制：内部 Hook + 事件响应
+- 标签使用 `string[]`，框架不预定义具体标签
+
+### 4.5.1 AbilitySet（能力容器）✅ NEW
+
+**AbilitySet** 取代 `Actor.abilities: Ability[]`，是统一的能力容器：
+
+```typescript
+class AbilitySet<T extends AttributesConfig> {
+    readonly owner: ActorRef;
+    readonly attributes: AttributeSet<T>;
+
+    // 能力管理
+    grantAbility(ability: Ability): void;
+    revokeAbility(abilityId: string, reason: AbilityRevokeReason): boolean;
+    revokeAbilitiesByTag(tag: string, reason: AbilityRevokeReason): number;
+
+    // 内部 Hook
+    tick(dt: number): void;
+
+    // 事件接收
+    receiveEvent(event: GameEventBase): void;
+
+    // 查询方法
+    findAbilityById(id: string): Ability | undefined;
+    findAbilitiesByTag(tag: string): Ability[];
+    hasAbility(configId: string): boolean;
+
+    // 回调
+    onAbilityGranted(callback): () => void;
+    onAbilityRevoked(callback): () => void;
+}
+```
+
+**职责**：
+- 管理 Ability 的获得 (grant) 和移除 (revoke)
+- 持有 owner 和 attributes 引用
+- 分发事件到所有 Ability 的 Component
+- 驱动内部 Hook (tick)
+- 自动清理过期的 Ability
+
+### 4.5.2 双层触发机制 ✅ NEW
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     双层触发机制                              │
+├──────────────────────┬──────────────────────────────────────┤
+│  内部 Hook（框架级）   │  事件系统（业务级）                    │
+├──────────────────────┼──────────────────────────────────────┤
+│  onTick(dt)          │  receiveEvent(event)                 │
+│  onActivate(ctx)     │                                      │
+│  onDeactivate(ctx)   │  → GameEventComponent 响应            │
+├──────────────────────┼──────────────────────────────────────┤
+│  用于标准组件：        │  用于被动技能：                        │
+│  - DurationComponent │  - 受伤时反击                         │
+│  - StatModifier      │  - 击杀时回血                         │
+│                      │  - 回合开始时触发                      │
+└──────────────────────┴──────────────────────────────────────┘
+```
+
+**设计理由**：
+- 时间驱动（tick）和事件驱动（receiveEvent）分离
+- 标准组件使用内部 Hook，不需要关心业务事件
+- GameEventComponent 专门负责业务事件 → Action 执行
+
+### 4.5.3 AbilityComponent 设计
+
+```typescript
+interface IAbilityComponent {
+    readonly type: string;
+    readonly state: ComponentState;
+
+    // 初始化（Ability 构造时调用）
+    initialize(ability: IAbilityForComponent): void;
+
+    // ═══ 内部 Hook（框架级）═══
+    onActivate?(context: ComponentLifecycleContext): void;
+    onDeactivate?(context: ComponentLifecycleContext): void;
+    onTick?(dt: number): void;
+
+    // ═══ 事件响应（业务级）═══
+    onEvent?(event: GameEventBase, context: ComponentLifecycleContext): void;
 }
 ```
 
 **常见AbilityComponent**：
 
-| Component | 职责 |
-|-----------|------|
-| InputComponent | 主动技能标记，UI/快捷键配置 |
-| TriggerComponent | 被动触发器，事件监听 |
-| DurationComponent | 持续时间/回合 |
-| StackComponent | 层数管理 |
-| CooldownComponent | 冷却时间 |
-| CostComponent | 消耗（法力等） |
-| StatModifierComponent | 属性修改 |
-| EffectComponent | 执行效果（调用Action） |
-
-**Input vs Trigger 的区别**：
-
-| 维度 | InputComponent | TriggerComponent |
-|------|----------------|------------------|
-| 触发方式 | 玩家主动选择 | 系统自动检测条件 |
-| UI需求 | 需要显示在技能栏 | 不需要玩家操作 |
-| 目标选择 | 可能需要玩家选择 | 通常自动确定 |
+| Component | 职责 | 使用的钩子 |
+|-----------|------|-----------|
+| DurationComponent | 持续时间/回合 | onTick |
+| StatModifierComponent | 属性修改 | onActivate, onDeactivate |
+| GameEventComponent | 事件驱动执行 Action | onEvent |
+| StackComponent | 层数管理 | onActivate |
+| CooldownComponent | 冷却时间 | onTick |
 
 **组合示例**：
 
 | 类型 | 组成 |
 |------|------|
-| 主动技能 | Ability + [Input, Cooldown, Cost, Effect] |
-| 被动技能 | Ability + [Trigger, StatModifier] |
+| 主动技能 | Ability + [GameEventComponent(监听 inputAction)] |
+| 被动技能 | Ability + [GameEventComponent(监听 damage/death)] |
 | 持续Buff | Ability + [Duration, StatModifier] |
 | 可叠加Buff | Ability + [Duration, Stack, StatModifier] |
-| 混合技能 | Ability + [Input, Trigger, Cooldown, Effect] |
 
-### 4.6 AbilitySystem的职责
+### 4.6 StandardAbilitySystem（标准能力系统）✅ v0.10
 
-AbilitySystem是System层级，负责管理所有Actor的Ability。
+StandardAbilitySystem 是 **stdlib 提供的标准实现**，简化为**事件广播器**。
 
 ```typescript
-class AbilitySystem extends System {
-    tick(actors: Actor[], dt: number) {
+// stdlib/systems/StandardAbilitySystem.ts
+class StandardAbilitySystem extends System {
+    // Tick 分发
+    tick(actors: Actor[], dt: number): void {
         for (const actor of actors) {
-            for (const ability of actor.abilities) {
-                ability.dispatchToComponents('onTick', dt);
+            if (hasAbilitySet(actor)) {
+                actor.abilitySet.tick(dt);
             }
         }
     }
 
-    dispatchHook(hookName: string, context: HookContext) {
-        for (const actor of context.relatedActors) {
-            for (const ability of actor.abilities) {
-                ability.dispatchToComponents(hookName, context);
+    // 事件广播（gameplayState 由调用方传入）
+    broadcastEvent(event: GameEventBase, actors: Actor[], gameplayState: unknown): void {
+        for (const actor of actors) {
+            if (hasAbilitySet(actor)) {
+                actor.abilitySet.receiveEvent(event, gameplayState);
             }
         }
     }
@@ -303,9 +402,13 @@ class AbilitySystem extends System {
 
 | 职责 | 说明 |
 |------|------|
-| Tick分发 | 每帧/每回合遍历所有Actor的Ability |
-| 钩子分发 | 游戏事件（受伤、击杀）通知相关Ability |
-| 生命周期管理 | Ability的创建、销毁 |
+| Tick 分发 | 驱动所有 Actor 的 AbilitySet.tick() |
+| 事件广播 | 将 GameEvent 广播到所有 AbilitySet |
+
+**设计说明**：
+- 这是 **stdlib 中的标准实现**，项目可以完全自行实现 System
+- `gameplayState: unknown` 由调用方传入，可以是实例引用或快照
+- Ability 的生命周期（grant/revoke）由 AbilitySet 管理
 
 ### 4.7 事件策略：避免事件订阅
 
@@ -331,17 +434,130 @@ class BattleInstance {
         // 1. 应用伤害
         target.attributes.modifyCurrent('HP', -damage);
 
-        // 2. 主动分发钩子（不是事件订阅）
-        this.abilitySystem.dispatchHook('onDamaged', {
-            relatedActors: [source, target],
-            data: { source, target, damage }
+        // 2. 广播 GameEvent（不是事件订阅）
+        this.abilitySystem.broadcastEvent({
+            kind: 'damage',
+            logicTime: this.logicTime,
+            source: source.toRef(),
+            target: target.toRef(),
+            damage,
         });
 
-        // 3. 返回事件
+        // 3. 返回 BattleEvent（给表演层）
         return { type: 'damage', source, target, damage };
     }
 }
 ```
+
+### 4.7.1 GameEvent 事件系统 ✅ NEW
+
+**GameEvent** 是 Ability 系统内部的事件机制，用于触发被动技能。
+
+```typescript
+// 框架只提供基础接口约束
+interface GameEventBase {
+    readonly kind: string;       // 事件类型标识
+    readonly logicTime: number;  // 逻辑时间戳
+    readonly [key: string]: unknown;  // 允许扩展
+}
+```
+
+**与 BattleEvent 的区别**：
+
+| | GameEvent | BattleEvent |
+|---|-----------|-------------|
+| 用途 | Ability 系统内部 | 逻辑层 → 表演层 |
+| 消费者 | GameEventComponent | 动画/特效系统 |
+| 定义位置 | 游戏自定义 | 游戏自定义 |
+| 示例 | damage, death, turnStart | DamageAnimation, HealEffect |
+
+**框架设计原则**：
+- 框架**不**对事件结构做假设（不预定义 source/target）
+- 具体事件类型由游戏自定义
+- 示例代码放在 `examples/events/` 目录
+
+**游戏自定义事件示例**：
+
+```typescript
+// examples/events/BattleGameEvents.ts
+type DamageGameEvent = GameEventBase & {
+    kind: 'damage';
+    source: ActorRef;
+    target: ActorRef;
+    damage: number;
+    isCritical: boolean;
+};
+
+type DeathGameEvent = GameEventBase & {
+    kind: 'death';
+    unit: ActorRef;
+    killer?: ActorRef;
+};
+
+// 游戏的事件联合类型
+type MyGameEvent = DamageGameEvent | DeathGameEvent | TurnStartGameEvent;
+```
+
+### 4.7.2 GameEventComponent（统一事件模型）✅ NEW
+
+**GameEventComponent** 是框架中**唯一**触发 Action 执行的组件。
+
+**核心设计思想**：所有 Action 执行都是事件驱动的
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    GameEvent（统一入口）                     │
+├─────────────────────────────────────────────────────────────┤
+│  主动技能：InputActionEvent                                 │
+│    - 玩家选择技能和目标                                     │
+│    - 战斗系统创建 { kind: 'inputAction', abilityId, ... }   │
+│    - 广播事件，技能的 GameEventComponent 匹配并执行         │
+├─────────────────────────────────────────────────────────────┤
+│  被动技能：DamageEvent / DeathEvent / TurnStartEvent ...    │
+│    - 游戏逻辑产生事件                                       │
+│    - 广播事件，被动技能的 GameEventComponent 匹配并执行     │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+                    GameEventComponent.onEvent()
+                              ↓
+                      执行 Action 链
+```
+
+**使用示例**：
+
+```typescript
+// 火球术：主动技能
+const fireball = new Ability({
+    configId: 'skill_fireball',
+    tags: ['active', 'fire'],
+    components: [
+        new GameEventComponent([{
+            eventKind: 'inputAction',
+            filter: (event, ctx) => event.abilityId === ctx.ability.configId,
+            actions: [new DamageAction({ damage: 50, element: 'fire' })],
+        }]),
+    ],
+}, caster.toRef());
+
+// 荆棘护甲：被动技能（受伤时反弹）
+const thornArmor = new Ability({
+    configId: 'passive_thorn',
+    tags: ['passive'],
+    components: [
+        new GameEventComponent([{
+            eventKind: 'damage',
+            filter: (event, ctx) => event.target.id === ctx.owner.id,
+            actions: [new ReflectDamageAction({ percent: 0.1 })],
+        }]),
+    ],
+}, hero.toRef());
+```
+
+**这种设计的优势**：
+1. **统一模型**：主动/被动技能都通过事件触发，Action 执行方式一致
+2. **解耦**：战斗系统只负责发事件，不关心技能具体怎么执行
+3. **可扩展**：可以实现"当有人使用技能时"的响应（如反制、打断）
+4. **可记录**：所有操作都是事件，方便回放/录像/网络同步
 
 ### 4.8 时间模型
 
@@ -1256,14 +1472,22 @@ function executeAction(source, target, damage, abilityId, ...) { }
 
 // 好：传递上下文引用
 interface ExecutionContext {
-    battle: BattleInstance;    // 引用，不复制
+    gameplayState: unknown;    // 游戏状态（快照或实例引用）✅ v0.10
     source: ActorRef;          // 引用
     primaryTarget: ActorRef;   // 引用
-    ability: Ability;          // 引用
+    ability: IAbility;         // 引用
     // 临时数据按需添加
 }
 function executeAction(ctx: ExecutionContext) { }
+
+// Action 中通过类型断言访问
+const state = ctx.gameplayState as MyBattleState;
+const turn = state.turnNumber;
 ```
+
+**v0.10 更新**：`battle` 改为 `gameplayState: unknown`，框架不假设游戏状态类型，项目可以传入：
+- 实例引用（实时数据）
+- 状态快照（事件发生时的数据，便于调试和回放）
 
 ### 8.2 事件描述问题 ⚠️
 
@@ -1488,17 +1712,34 @@ interface BattleSaveData {
    - API 分层导出（对外 API vs 内部 API）
    - Modifier 创建辅助函数
 7. **命名重构**：`TypedAttributeSet` → `AttributeSet`，`AttributeSet` → `RawAttributeSet`
+8. **AbilitySet 双层触发机制**（v0.9）：
+   - `AbilitySet` 能力容器（grant/revoke/tick/receiveEvent）
+   - `GameEventBase` 事件基础接口（框架层）
+   - `GameEventComponent` 事件驱动的 Action 执行器（StdLib）
+   - `Ability` 重构（Component 构造时注入，不可变）
+   - 双层触发：内部 Hook（tick/activate/deactivate）+ 事件响应（onEvent）
+9. **框架层简化**（v0.9）：
+   - 移除 `AbilityTags`（移至 examples）
+   - 移除具体事件类型（移至 examples）
+   - 移除便捷工厂函数（移至 examples）
+   - `ActionComponent` 重命名为 `GameEventComponent`
+10. **gameplayState + 标准实现重命名**（v0.10）：
+    - `ExecutionContext.battle` → `gameplayState: unknown`
+    - 事件传递链加入 gameplayState 参数
+    - `AbilitySystem` → `StandardAbilitySystem`（移至 stdlib/systems/）
+    - `BattleInstance` → `StandardBattleInstance`（重命名文件）
+    - Core 只保留接口和基类，具体实现在 stdlib
 
 ### 待实现
 
 1. **原型验证**：用简化版实现验证核心流程
    - ~~实现AttributeSet基础版~~ ✅
-   - 实现Ability + Component基础版
+   - ~~实现Ability + Component基础版~~ ✅
    - 实现Action工厂基础版
    - 实现简单的BattleInstance流程
 
 2. **细节完善**（实现过程中）：
-   - AbilityComponent的具体接口
+   - ~~AbilityComponent的具体接口~~ ✅
    - BattleEvent结构定义
 
 3. **工具链规划**（后期）：
@@ -1526,14 +1767,17 @@ interface BattleSaveData {
 |-----------|------------|------|
 | Actor | AbilitySystemComponent拥有者 | 游戏实体（OOP设计） |
 | Ability | GameplayAbility + GameplayEffect | 技能/Buff（EC设计） |
+| AbilitySet | AbilitySystemComponent | 能力容器（管理 grant/revoke）✅ NEW |
 | AbilityComponent | - | Ability的功能模块 |
 | AttributeSet\<T\> | AttributeSet | 类型安全的属性集（对外接口） |
 | RawAttributeSet | AttributeSet | 底层实现类（@internal） |
 | Attribute | GameplayAttribute | 属性（如HP、ATK） |
 | Modifier | GameplayModifier | 属性修改器 |
 | Action | GameplayAbility中的逻辑单元 | 最小执行单元 |
+| GameEvent | - | Ability 系统内部事件 ✅ NEW |
+| GameEventComponent | - | 事件驱动的 Action 执行器 ✅ NEW |
 | TimelineAsset | AnimMontage | 时间序列资产 |
-| BattleEvent | - | 逻辑层输出的事件 |
+| BattleEvent | - | 逻辑层 → 表演层事件 |
 
 ### B. 架构层级术语
 
@@ -1543,8 +1787,9 @@ interface BattleSaveData {
 | GameplayInstance | 玩法实例（如BattleInstance） |
 | System | 全局逻辑处理器（如AbilitySystem） |
 | Actor | 游戏实体，OOP设计 |
+| AbilitySet | 能力容器，持有 Ability 列表 ✅ NEW |
 | Ability | 能力实例，EC设计 |
-| AbilityComponent | 能力组件（Duration、Trigger等） |
+| AbilityComponent | 能力组件（Duration、StatModifier、GameEventComponent等） |
 
 ### C. 属性系统术语
 

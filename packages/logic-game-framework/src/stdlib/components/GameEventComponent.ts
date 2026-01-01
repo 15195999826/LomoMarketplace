@@ -134,7 +134,7 @@ export class GameEventComponent extends BaseAbilityComponent {
    *
    * 遍历所有触发器，匹配事件类型和条件后执行 Action 链
    */
-  onEvent(event: GameEventBase, context: ComponentLifecycleContext): void {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
     for (const trigger of this.triggers) {
       // 检查事件类型
       if (event.kind !== trigger.eventKind) {
@@ -147,7 +147,7 @@ export class GameEventComponent extends BaseAbilityComponent {
       }
 
       // 执行 Action 链
-      this.executeActions(trigger.actions, event, context);
+      this.executeActions(trigger.actions, event, context, gameplayState);
     }
   }
 
@@ -157,9 +157,10 @@ export class GameEventComponent extends BaseAbilityComponent {
   private executeActions(
     actions: IAction[],
     event: GameEventBase,
-    context: ComponentLifecycleContext
+    context: ComponentLifecycleContext,
+    gameplayState: unknown
   ): void {
-    const execContext = this.buildExecutionContext(event, context);
+    const execContext = this.buildExecutionContext(event, context, gameplayState);
 
     for (const action of actions) {
       try {
@@ -180,11 +181,12 @@ export class GameEventComponent extends BaseAbilityComponent {
    */
   private buildExecutionContext(
     event: GameEventBase,
-    context: ComponentLifecycleContext
+    context: ComponentLifecycleContext,
+    gameplayState: unknown
   ): ExecutionContext {
     return {
-      // battle 为 null，Action 应避免依赖 battle 实例
-      battle: null as unknown as ExecutionContext['battle'],
+      // 游戏状态由调用方传入（快照或实例引用）
+      gameplayState,
       // source 和 primaryTarget 都是 owner，Action 自己从 event 取真正的目标
       source: context.owner,
       primaryTarget: context.owner,

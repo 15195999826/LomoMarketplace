@@ -9,11 +9,6 @@ import type { ActorRef, TargetRef } from '../types/common.js';
 import type { EventCollector } from '../events/EventCollector.js';
 
 // 前向声明（避免循环依赖）
-export interface IGameplayInstance {
-  readonly id: string;
-  getActor(id: string): unknown;
-}
-
 export interface IAbility {
   readonly id: string;
   readonly configId: string;
@@ -26,8 +21,17 @@ export interface IAbility {
  * Action 执行时可访问的所有信息
  */
 export type ExecutionContext = {
-  /** 战斗实例引用 */
-  readonly battle: IGameplayInstance;
+  /**
+   * 游戏状态
+   *
+   * 框架层不对类型做假设，由项目层定义具体类型。
+   * 项目可以传入：
+   * - 游戏实例引用（实时数据）
+   * - 状态快照（事件发生时的数据）
+   *
+   * Action 中通过类型断言访问：`ctx.gameplayState as MyBattleState`
+   */
+  readonly gameplayState: unknown;
 
   /** 技能释放者 */
   readonly source: ActorRef;
@@ -61,7 +65,7 @@ export type ExecutionContext = {
  * 创建执行上下文
  */
 export function createExecutionContext(params: {
-  battle: IGameplayInstance;
+  gameplayState: unknown;
   source: ActorRef;
   primaryTarget: ActorRef;
   ability?: IAbility;
@@ -70,7 +74,7 @@ export function createExecutionContext(params: {
   triggerSource?: ActorRef;
 }): ExecutionContext {
   return {
-    battle: params.battle,
+    gameplayState: params.gameplayState,
     source: params.source,
     primaryTarget: params.primaryTarget,
     ability: params.ability,

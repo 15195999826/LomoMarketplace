@@ -4,12 +4,12 @@
  * 本测试展示如何使用框架的核心功能：
  * - 使用 defineAttributes() 创建类型安全的属性系统
  * - 创建自定义战斗单位
- * - 使用 BattleInstance 管理战斗流程
+ * - 使用 StandardBattleInstance 管理战斗流程
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GameWorld } from '../../src/core/world/GameWorld.js';
 import { Actor } from '../../src/core/entity/Actor.js';
-import { BattleInstance } from '../../src/stdlib/battle/index.js';
+import { StandardBattleInstance } from '../../src/stdlib/battle/index.js';
 import { defineAttributes, type AttributeSet } from '../../src/core/attributes/index.js';
 import { SilentLogger, setLogger } from '../../src/core/utils/Logger.js';
 
@@ -149,16 +149,16 @@ describe('Basic Battle Integration', () => {
     });
   });
 
-  describe('BattleInstance', () => {
+  describe('StandardBattleInstance', () => {
     it('should create battle instance', () => {
-      const battle = new BattleInstance({ mode: 'turn-based' });
+      const battle = new StandardBattleInstance({ mode: 'turn-based' });
 
       expect(battle.type).toBe('Battle');
       expect(battle.state).toBe('created');
     });
 
     it('should add units to teams', () => {
-      const battle = new BattleInstance();
+      const battle = new StandardBattleInstance();
 
       const unitA = new TestUnit('Unit A', 'A');
       const unitB = new TestUnit('Unit B', 'B');
@@ -171,7 +171,7 @@ describe('Basic Battle Integration', () => {
     });
 
     it('should start and end battle', () => {
-      const battle = new BattleInstance();
+      const battle = new StandardBattleInstance();
 
       const unitA = new TestUnit('Unit A', 'A');
       const unitB = new TestUnit('Unit B', 'B');
@@ -188,7 +188,7 @@ describe('Basic Battle Integration', () => {
     });
 
     it('should detect team A win when team B is eliminated', () => {
-      const battle = new BattleInstance();
+      const battle = new StandardBattleInstance();
 
       const unitA = new TestUnit('Unit A', 'A');
       const unitB = new TestUnit('Unit B', 'B');
@@ -218,7 +218,7 @@ describe('Basic Battle Integration', () => {
     it('should create and manage battle instances', () => {
       const world = GameWorld.getInstance();
 
-      const battle = world.createInstance(() => new BattleInstance());
+      const battle = world.createInstance(() => new StandardBattleInstance());
 
       expect(world.instanceCount).toBe(1);
       expect(world.getInstance(battle.id)).toBe(battle);

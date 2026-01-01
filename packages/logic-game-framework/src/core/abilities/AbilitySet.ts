@@ -192,8 +192,11 @@ export class AbilitySet<T extends AttributesConfig> {
    * 接收游戏事件
    *
    * 将事件分发到所有 Ability 的 Component（ActionComponent 响应）
+   *
+   * @param event 游戏事件
+   * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    */
-  receiveEvent(event: GameEventBase): void {
+  receiveEvent(event: GameEventBase, gameplayState: unknown): void {
     // 收集过期的 Ability
     const expiredAbilities: Ability[] = [];
 
@@ -205,7 +208,7 @@ export class AbilitySet<T extends AttributesConfig> {
 
       try {
         const context = this.createLifecycleContext(ability);
-        ability.receiveEvent(event, context);
+        ability.receiveEvent(event, context, gameplayState);
       } catch (error) {
         getLogger().error(`Ability event handling error: ${ability.id}`, { error, event: event.kind });
       }

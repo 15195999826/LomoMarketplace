@@ -23,5 +23,3 @@ export {
   createAbilitySet,
   hasAbilitySet,
 } from './AbilitySet.js';
-
-export { AbilitySystem } from './AbilitySystem.js';

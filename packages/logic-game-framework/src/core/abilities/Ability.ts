@@ -163,14 +163,18 @@ export class Ability implements IAbilityForComponent {
 
   /**
    * 接收游戏事件，分发到所有 Component
+   *
+   * @param event 游戏事件
+   * @param context 组件生命周期上下文
+   * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    */
-  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext): void {
+  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
     if (this._state === 'expired') return;
 
     for (const component of this.components) {
       if (component.state === 'active' && component.onEvent) {
         try {
-          component.onEvent(event, context);
+          component.onEvent(event, context, gameplayState);
         } catch (error) {
           getLogger().error(`Component event error: ${component.type}`, { error, event: event.kind });
         }

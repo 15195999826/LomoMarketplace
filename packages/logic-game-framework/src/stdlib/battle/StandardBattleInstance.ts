@@ -1,15 +1,24 @@
 /**
- * BattleInstance - 战斗实例
+ * StandardBattleInstance - 标准战斗实例
  *
- * GameplayInstance 的标准战斗实现
- * 支持回合制和 ATB 两种模式
+ * GameplayInstance 的标准战斗实现，支持回合制和 ATB 两种模式。
+ *
+ * ## 标准实现说明
+ *
+ * 这是一个可选的标准实现，项目可以：
+ * - 直接使用此实现
+ * - 继承此类进行扩展
+ * - 基于 core 的 GameplayInstance 基类完全自行实现
+ *
+ * 如果项目需要自定义的战斗流程、回合管理、或其他高级功能，
+ * 建议基于 core 自行实现 GameplayInstance。
  */
 
 import { GameplayInstance } from '../../core/world/GameplayInstance.js';
 import type { Actor } from '../../core/entity/Actor.js';
 import type { BattleEvent } from '../../core/events/BattleEvent.js';
 import { EventTypes } from '../../core/events/BattleEvent.js';
-import { AbilitySystem } from '../../core/abilities/AbilitySystem.js';
+import { StandardAbilitySystem } from '../systems/StandardAbilitySystem.js';
 import type { IAction } from '../../core/actions/Action.js';
 import { createExecutionContext, type ExecutionContext } from '../../core/actions/ExecutionContext.js';
 import type { ActorRef } from '../../core/types/common.js';
@@ -39,9 +48,9 @@ export interface BattleConfig {
 }
 
 /**
- * BattleInstance
+ * StandardBattleInstance - 标准战斗实例
  */
-export class BattleInstance extends GameplayInstance {
+export class StandardBattleInstance extends GameplayInstance {
   readonly type = 'Battle';
 
   /** 战斗模式 */
@@ -57,7 +66,7 @@ export class BattleInstance extends GameplayInstance {
   private _result: BattleResult = 'ongoing';
 
   /** AbilitySystem 引用 */
-  private abilitySystem: AbilitySystem;
+  private abilitySystem: StandardAbilitySystem;
 
   constructor(config: BattleConfig = {}) {
     super(config.id);
@@ -65,8 +74,8 @@ export class BattleInstance extends GameplayInstance {
     this.mode = config.mode ?? 'turn-based';
     this.maxRounds = config.maxRounds ?? 0;
 
-    // 添加 AbilitySystem
-    this.abilitySystem = new AbilitySystem();
+    // 添加 StandardAbilitySystem
+    this.abilitySystem = new StandardAbilitySystem();
     this.addSystem(this.abilitySystem);
   }
 
@@ -143,7 +152,7 @@ export class BattleInstance extends GameplayInstance {
 
     // 创建执行上下文
     const ctx = createExecutionContext({
-      battle: this,
+      gameplayState: this,
       source,
       primaryTarget: target,
       logicTime: this._logicTime,
@@ -221,9 +230,12 @@ export class BattleInstance extends GameplayInstance {
 
   /**
    * 广播事件到所有 Actor 的 AbilitySet
+   *
+   * 这里传入 this（StandardBattleInstance）作为 gameplayState，
+   * 项目可以重写此方法来传入快照。
    */
   broadcastEvent(event: GameEventBase): void {
-    this.abilitySystem.broadcastEvent(event, this.actors);
+    this.abilitySystem.broadcastEvent(event, this.actors, this);
   }
 
   // ========== 战斗结束 ==========

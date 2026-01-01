@@ -1,6 +1,5 @@
 export {
   ExecutionContext,
-  IGameplayInstance,
   IAbility,
   createExecutionContext,
   cloneContext,
