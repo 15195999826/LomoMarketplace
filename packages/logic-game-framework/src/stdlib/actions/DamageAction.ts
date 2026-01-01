@@ -13,7 +13,6 @@ import {
   CallbackTriggers,
 } from '../../core/actions/index.js';
 import type { ActorRef } from '../../core/types/common.js';
-import { EventTypes } from '../../core/events/BattleEvent.js';
 import { StandardAttributes } from '../attributes/StandardAttributes.js';
 
 /**
@@ -171,7 +170,12 @@ export class DamageAction extends BaseAction {
     }
 
     // 发出事件
-    const event = ctx.eventCollector.emitDamage(ctx.source, target, damage, {
+    const event = ctx.eventCollector.emit({
+      kind: 'damage',
+      logicTime: ctx.triggerEvent.logicTime,
+      source: ctx.source,
+      target,
+      damage,
       damageType: this.damageType,
       isCritical,
       isKill,

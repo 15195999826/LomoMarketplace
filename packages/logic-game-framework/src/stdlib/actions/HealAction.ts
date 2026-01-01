@@ -12,7 +12,6 @@ import {
   createFailureResult,
   CallbackTriggers,
 } from '../../core/actions/index.js';
-import { EventTypes } from '../../core/events/BattleEvent.js';
 
 /**
  * HealAction
@@ -74,12 +73,14 @@ export class HealAction extends BaseAction {
     const overheal = 0; // 需要外部计算
 
     // 发出事件
-    const event = ctx.eventCollector.emitHeal(
-      ctx.source,
+    const event = ctx.eventCollector.emit({
+      kind: 'heal',
+      logicTime: ctx.triggerEvent.logicTime,
+      source: ctx.source,
       target,
-      actualHeal,
-      overheal > 0 ? overheal : undefined
-    );
+      healAmount: actualHeal,
+      overheal: overheal > 0 ? overheal : undefined,
+    });
 
     // 构建回调触发器
     const triggers: string[] = [CallbackTriggers.ON_HEAL];

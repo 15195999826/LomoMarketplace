@@ -16,11 +16,9 @@
 
 import { GameplayInstance } from '../../core/world/GameplayInstance.js';
 import type { Actor } from '../../core/entity/Actor.js';
-import type { BattleEvent } from '../../core/events/BattleEvent.js';
-import { EventTypes } from '../../core/events/BattleEvent.js';
 import { StandardAbilitySystem } from '../systems/StandardAbilitySystem.js';
 import type { IAction } from '../../core/actions/Action.js';
-import { createExecutionContext, type ExecutionContext } from '../../core/actions/ExecutionContext.js';
+import { createExecutionContext } from '../../core/actions/ExecutionContext.js';
 import type { ActorRef } from '../../core/types/common.js';
 import type { GameEventBase } from '../../core/events/GameEvent.js';
 import { getLogger } from '../../core/utils/Logger.js';
@@ -128,7 +126,7 @@ export class StandardBattleInstance extends GameplayInstance {
   /**
    * 推进逻辑时间（ATB 模式使用）
    */
-  advance(dt: number): BattleEvent[] {
+  advance(dt: number): GameEventBase[] {
     if (!this.isRunning || this._result !== 'ongoing') {
       return [];
     }
@@ -144,18 +142,28 @@ export class StandardBattleInstance extends GameplayInstance {
 
   /**
    * 处理行动（回合制模式使用）
+   *
+   * @param action 要执行的 Action
+   * @param source 效果来源
+   * @param target 主目标
+   * @param triggerEvent 可选的触发事件，如果不提供则创建默认事件
    */
-  processAction(action: IAction, source: ActorRef, target: ActorRef): BattleEvent[] {
+  processAction(
+    action: IAction,
+    source: ActorRef,
+    target: ActorRef,
+    triggerEvent?: GameEventBase
+  ): GameEventBase[] {
     if (!this.isRunning || this._result !== 'ongoing') {
       return [];
     }
 
     // 创建执行上下文
     const ctx = createExecutionContext({
+      triggerEvent: triggerEvent ?? { kind: 'directAction', logicTime: this._logicTime },
       gameplayState: this,
       source,
       primaryTarget: target,
-      logicTime: this._logicTime,
       eventCollector: this.eventCollector,
     });
 
@@ -167,7 +175,12 @@ export class StandardBattleInstance extends GameplayInstance {
       // 这里不再需要分发 hook
     } catch (error) {
       getLogger().error('Action execution failed', { error });
-      this.eventCollector.emitError('action_failed', 'Action execution failed');
+      this.eventCollector.emit({
+        kind: 'error',
+        logicTime: this._logicTime,
+        errorType: 'action_failed',
+        message: 'Action execution failed',
+      });
     }
 
     // 检查战斗结束条件
@@ -181,7 +194,7 @@ export class StandardBattleInstance extends GameplayInstance {
   /**
    * 开始新回合
    */
-  startRound(): BattleEvent[] {
+  startRound(): GameEventBase[] {
     this.currentRound++;
 
     // 广播回合开始事件到所有 AbilitySet
@@ -196,7 +209,9 @@ export class StandardBattleInstance extends GameplayInstance {
     }
 
     // 发出回合开始事件（给表演层）
-    this.eventCollector.emit(EventTypes.TURN_START, {
+    this.eventCollector.emit({
+      kind: 'turnStart',
+      logicTime: this._logicTime,
       roundNumber: this.currentRound,
     });
 
@@ -206,7 +221,7 @@ export class StandardBattleInstance extends GameplayInstance {
   /**
    * 结束当前回合
    */
-  endRound(): BattleEvent[] {
+  endRound(): GameEventBase[] {
     // 广播回合结束事件到所有 AbilitySet
     const allUnits = [...this.getAliveTeamA(), ...this.getAliveTeamB()];
     for (const unit of allUnits) {
@@ -282,7 +297,9 @@ export class StandardBattleInstance extends GameplayInstance {
       ...this.getAliveTeamB().map((u) => u.toRef()),
     ];
 
-    this.eventCollector.emit(EventTypes.BATTLE_END, {
+    this.eventCollector.emit({
+      kind: 'battleEnd',
+      logicTime: this._logicTime,
       battleId: this.id,
       winner: result === 'ongoing' ? undefined : result === 'draw' ? 'draw' : result === 'teamA_win' ? 'teamA' : 'teamB',
       survivors,
@@ -304,7 +321,9 @@ export class StandardBattleInstance extends GameplayInstance {
     });
 
     // 发出战斗开始事件（给表演层）
-    this.eventCollector.emit(EventTypes.BATTLE_START, {
+    this.eventCollector.emit({
+      kind: 'battleStart',
+      logicTime: this._logicTime,
       battleId: this.id,
       participants,
     });

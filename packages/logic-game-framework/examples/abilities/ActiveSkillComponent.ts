@@ -274,7 +274,10 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
     gameplayState: unknown
   ): ExecutionContext {
     return {
+      // 触发信息
+      triggerEvent: event,
       gameplayState,
+      // 参与者
       source: context.owner,
       primaryTarget: event.targets[0] ?? context.owner,
       ability: {
@@ -283,10 +286,10 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
         owner: context.owner,
         source: context.owner,
       },
-      logicTime: event.logicTime,
+      // 输出通道
       eventCollector: new EventCollector(),
+      // 执行状态
       affectedTargets: event.targets,
-      customData: { gameEvent: event },
       callbackDepth: 0,
     };
   }

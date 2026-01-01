@@ -116,7 +116,7 @@ export abstract class BaseAction implements IAction {
     }
 
     // 检查递归深度
-    const currentDepth = ctx.callbackDepth ?? 0;
+    const currentDepth = ctx.callbackDepth;
     if (currentDepth >= MAX_CALLBACK_DEPTH) {
       getLogger().warn(`Callback depth exceeded maximum (${MAX_CALLBACK_DEPTH}), skipping further callbacks`, {
         actionType: this.type,

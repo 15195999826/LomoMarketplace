@@ -80,8 +80,8 @@
  * ## 设计原则
  *
  * - 框架不对事件结构做假设（不知道 source/target）
- * - Action 通过 `context.customData.gameEvent` 获取原始事件数据
- * - 游戏自定义事件类型，自己在 Action 中解析
+ * - Action 通过 `ctx.triggerEvent` 获取触发事件数据
+ * - 游戏自定义事件类型，Action 中通过类型断言解析
  */
 
 import {
@@ -177,7 +177,8 @@ export class GameEventComponent extends BaseAbilityComponent {
   /**
    * 构建 Action 执行上下文
    *
-   * 只提供基础信息，Action 自己从 gameEvent 获取需要的数据
+   * source 和 primaryTarget 默认都是 owner，
+   * Action 通过 ctx.triggerEvent 获取事件中的真正参与者。
    */
   private buildExecutionContext(
     event: GameEventBase,
@@ -185,9 +186,10 @@ export class GameEventComponent extends BaseAbilityComponent {
     gameplayState: unknown
   ): ExecutionContext {
     return {
-      // 游戏状态由调用方传入（快照或实例引用）
+      // 触发信息
+      triggerEvent: event,
       gameplayState,
-      // source 和 primaryTarget 都是 owner，Action 自己从 event 取真正的目标
+      // 参与者（默认都是 owner，Action 可从 triggerEvent 取真正目标）
       source: context.owner,
       primaryTarget: context.owner,
       ability: {
@@ -196,11 +198,10 @@ export class GameEventComponent extends BaseAbilityComponent {
         owner: context.owner,
         source: context.owner,
       },
-      logicTime: event.logicTime,
+      // 输出通道
       eventCollector: new EventCollector(),
+      // 执行状态
       affectedTargets: [],
-      // 事件原样传递，Action 自己解析
-      customData: { gameEvent: event },
       callbackDepth: 0,
     };
   }

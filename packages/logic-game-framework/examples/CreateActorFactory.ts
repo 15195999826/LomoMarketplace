@@ -18,7 +18,7 @@
 // 使用编译后的 dist 路径，以便直接运行 .ts 文件
 import { Actor } from '../dist/core/entity/Actor.js';
 import { GameplayInstance } from '../dist/core/world/GameplayInstance.js';
-import type { BattleEvent } from '../dist/core/events/BattleEvent.js';
+import type { GameEventBase } from '../dist/core/events/GameEvent.js';
 
 // ============================================================
 // 定义一个简单的 BattleUnit
@@ -48,7 +48,7 @@ class BattleUnit extends Actor {
 class SimpleBattle extends GameplayInstance {
   readonly type = 'SimpleBattle';
 
-  advance(dt: number): BattleEvent[] {
+  advance(dt: number): GameEventBase[] {
     return this.baseAdvance(dt);
   }
 }

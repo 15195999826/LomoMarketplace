@@ -1,12 +1,11 @@
 /**
- * GameEvent - 游戏事件基础类型系统
+ * GameEvent - 统一事件类型系统
  *
  * 框架只提供事件的基础接口约束，具体事件类型由游戏自定义。
  *
- * 用于 AbilitySet 内部事件分发，触发 ActionComponent 响应。
- * 与 BattleEvent 的区别：
- * - BattleEvent: 逻辑层 → 表演层，用于动画/特效
- * - GameEvent: Ability 系统内部，用于触发被动技能
+ * 同一事件类型用于：
+ * - Ability 系统内部分发，触发被动技能
+ * - 通过 EventCollector 输出给表演层
  *
  * @example
  * ```typescript

@@ -9,7 +9,7 @@ import { generateId } from '../utils/IdGenerator.js';
 import { getLogger } from '../utils/Logger.js';
 import type { Actor } from '../entity/Actor.js';
 import { System, type IGameplayInstanceForSystem } from '../entity/System.js';
-import type { BattleEvent } from '../events/BattleEvent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
 import { EventCollector } from '../events/EventCollector.js';
 
 /**
@@ -73,20 +73,19 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
    * @param dt 时间增量（毫秒）
    * @returns 产生的事件列表
    */
-  abstract advance(dt: number): BattleEvent[];
+  abstract advance(dt: number): GameEventBase[];
 
   /**
    * 基础的 advance 实现
    * 子类可调用此方法作为基础实现
    */
-  protected baseAdvance(dt: number): BattleEvent[] {
+  protected baseAdvance(dt: number): GameEventBase[] {
     if (!this.isRunning) {
       return [];
     }
 
     // 推进逻辑时间
     this._logicTime += dt;
-    this.eventCollector.setLogicTime(this._logicTime);
 
     // 按优先级执行 System
     for (const system of this.systems) {

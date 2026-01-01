@@ -12,7 +12,6 @@ import {
   createFailureResult,
   CallbackTriggers,
 } from '../../core/actions/index.js';
-import { EventTypes } from '../../core/events/BattleEvent.js';
 
 /**
  * Buff 刷新策略
@@ -92,17 +91,17 @@ export class AddBuffAction extends BaseAction {
     const isRefresh = false; // 需要外部判断
 
     // 发出事件
-    const event = ctx.eventCollector.emitBuffApplied(
-      ctx.source,
+    const event = ctx.eventCollector.emit({
+      kind: 'buffApplied',
+      logicTime: ctx.triggerEvent.logicTime,
+      source: ctx.source,
       target,
-      this.buffConfigId,
-      {
-        buffName: this.buffName,
-        stacks: this.stacks,
-        duration: this.duration,
-        isRefresh,
-      }
-    );
+      buffId: this.buffConfigId,
+      buffName: this.buffName,
+      stacks: this.stacks,
+      duration: this.duration,
+      isRefresh,
+    });
 
     // 构建回调触发器
     const triggers: string[] = [CallbackTriggers.ON_BUFF_APPLIED];

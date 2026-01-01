@@ -3,7 +3,7 @@
  */
 
 import type { ActorRef } from '../types/common.js';
-import type { BattleEvent } from '../events/BattleEvent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
 
 /**
  * Action 执行结果
@@ -13,7 +13,7 @@ export type ActionResult = {
   readonly success: boolean;
 
   /** 产生的事件列表 */
-  readonly events: BattleEvent[];
+  readonly events: GameEventBase[];
 
   /** 触发的回调标识列表 */
   readonly callbackTriggers: string[];
@@ -56,7 +56,7 @@ export type CallbackTrigger = (typeof CallbackTriggers)[keyof typeof CallbackTri
  * 创建成功结果
  */
 export function createSuccessResult(
-  events: BattleEvent[],
+  events: GameEventBase[],
   affectedTargets: ActorRef[],
   callbackTriggers: string[] = [],
   data?: Record<string, unknown>
@@ -75,7 +75,7 @@ export function createSuccessResult(
  */
 export function createFailureResult(
   reason: string,
-  events: BattleEvent[] = []
+  events: GameEventBase[] = []
 ): ActionResult {
   return {
     success: false,
@@ -90,7 +90,7 @@ export function createFailureResult(
  * 合并多个结果
  */
 export function mergeResults(results: ActionResult[]): ActionResult {
-  const allEvents: BattleEvent[] = [];
+  const allEvents: GameEventBase[] = [];
   const allTriggers: string[] = [];
   const allTargets: ActorRef[] = [];
   const allData: Record<string, unknown> = {};
