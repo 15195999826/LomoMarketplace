@@ -28,3 +28,6 @@ export * from './abilities/index.js';
 
 // World
 export * from './world/index.js';
+
+// Timeline
+export * from './timeline/index.js';

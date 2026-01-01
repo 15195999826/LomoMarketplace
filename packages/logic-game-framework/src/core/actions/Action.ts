@@ -50,6 +50,17 @@ export interface IAction {
    * 获取目标
    */
   getTargets?(ctx: Readonly<ExecutionContext>): ActorRef[];
+
+  /**
+   * 绑定到时间轴 Tag
+   * 当 Ability 配置了时间轴时，此 Action 会在指定 Tag 时间点执行
+   */
+  bindToTag?(tagName: string): this;
+
+  /**
+   * 获取绑定的时间轴 Tag
+   */
+  getBoundTag?(): string | undefined;
 }
 
 /**
@@ -72,7 +83,10 @@ export abstract class BaseAction implements IAction {
   /** 目标选择器 */
   protected targetSelector: TargetSelector = defaultTargetSelector;
 
-  /** 回调列表 @deprecated */
+  /** 绑定的时间轴 Tag 名称 */
+  protected boundTag?: string;
+
+  /** 回调列表 */
   protected callbacks: ActionCallback[] = [];
 
   /**
@@ -106,6 +120,37 @@ export abstract class BaseAction implements IAction {
    */
   getTargets(ctx: Readonly<ExecutionContext>): ActorRef[] {
     return this.targetSelector(ctx);
+  }
+
+  /**
+   * 绑定到时间轴 Tag
+   *
+   * 当 Ability 配置了时间轴时，此 Action 会在指定 Tag 时间点执行。
+   * 当 Ability 无时间轴时，此设置被忽略，Action 立即执行。
+   *
+   * @param tagName 时间轴 Tag 名称（如 "ActionPoint0", "hit_frame"）
+   * @returns this，支持链式调用
+   *
+   * @example
+   * ```typescript
+   * new DamageAction({ damage: 100 })
+   *   .setTargetSelector(TargetSelectors.currentTarget)
+   *   .bindToTag("ActionPoint0")
+   *   .onCritical(new AddBuffAction({ buffId: 'burning' }));
+   * ```
+   */
+  bindToTag(tagName: string): this {
+    this.boundTag = tagName;
+    return this;
+  }
+
+  /**
+   * 获取绑定的时间轴 Tag
+   *
+   * @returns Tag 名称，未绑定则返回 undefined
+   */
+  getBoundTag(): string | undefined {
+    return this.boundTag;
   }
 
   /**

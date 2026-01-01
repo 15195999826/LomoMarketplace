@@ -1,6 +1,6 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.13 (eventChain + 回调机制重构)
+> 文档版本：v0.14 (时间轴系统)
 > 创建日期：2025-12-27
 > 更新日期：2026-01-01
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
@@ -701,28 +701,60 @@ class BattleInstance {
 └─────────────────┘
 ```
 
-### 4.10 关键接口定义（概念级）
+### 4.10 时间轴系统 ✅ v0.14
 
-**时间序列资产**
+时间轴描述 Ability 执行过程中的时间节点（Tag），数据来源于渲染端资产。
+
+**TimelineAsset 数据结构**
 ```typescript
-interface ITimelineAsset {
-    id: string;
-    totalDuration: number;
-    markers: { name: string; time: number; }[];
+interface TimelineAsset {
+    readonly id: string;              // 唯一标识（对应资产 RowName）
+    readonly totalDuration: number;   // 总时长（毫秒）
+    readonly tags: Readonly<Record<string, number>>;  // tagName → time
 }
+
+// 示例
+const fireballTimeline: TimelineAsset = {
+    id: 'anim_fireball',
+    totalDuration: 1200,
+    tags: {
+        'ActionPoint0': 300,   // 300ms 处触发伤害
+        'ActionPoint1': 600,   // 600ms 处触发第二段
+        'end': 1200,           // 动画结束
+    },
+};
 ```
 
-**技能配置**
+**Action 绑定到 Tag**
+```typescript
+new DamageAction({ damage: 100 })
+    .setTargetSelector(TargetSelectors.currentTarget)
+    .bindToTag("ActionPoint0")  // ⭐ 绑定到时间轴 Tag
+    .onCritical(new AddBuffAction({ buffId: 'burning' }));
+```
+
+**时间轴注册表**
+```typescript
+const registry = getTimelineRegistry();
+registry.register(fireballTimeline);
+const timeline = registry.get('anim_fireball');
+```
+
+**设计原则**：
+- 框架只定义数据结构和 `bindToTag()` 机制
+- 调度策略（串行/并行、等待动画等）由项目层实现
+- 无时间轴的 Ability = 瞬时触发，所有 Action 立即执行
+- 有时间轴的 Ability = Action 在绑定的 Tag 时间点执行
+
+### 4.11 关键接口定义（概念级）
+
+**技能配置**（项目层定义）
 ```typescript
 interface AbilityConfig {
     id: string;
-    timelineAsset: string;           // 引用时间资产
-    actionBindings: {                // marker → actions
-        marker: string;
-        actions: ActionConfig[];
-    }[];
-    interruptible: {                 // 可打断区间
-        duringMarkers: [string, string];
+    timelineId?: string;           // 可选，引用时间轴
+    interruptible?: {              // 可打断区间
+        duringTags: [string, string];
     };
 }
 ```
@@ -1913,6 +1945,12 @@ interface BattleSaveData {
     - 回调机制重构：`processCallbacks()` 遍历事件，根据字段（isCritical, isKill）触发
     - TargetSelector 示例重命名：`triggerSource` → `currentSource`，新增 `originalTarget`
     - 设计原则：回调是技能内的条件分支，不是独立 Ability
+14. **时间轴系统**（v0.14）：
+    - 新增 `TimelineAsset` 数据结构（id, totalDuration, tags）
+    - 新增 `TimelineRegistry` 全局注册表（register, get, has）
+    - `BaseAction.bindToTag(tagName)` 绑定 Action 到时间轴 Tag
+    - 时间轴数据来源：渲染端资产 → 转换脚本 → JSON
+    - 设计原则：框架只定义机制，调度策略由项目层实现
 
 ### 待实现
 
@@ -1960,7 +1998,9 @@ interface BattleSaveData {
 | Action | GameplayAbility中的逻辑单元 | 最小执行单元 |
 | GameEvent | - | 统一事件类型（内部触发+表演输出）✅ v0.12 |
 | GameEventComponent | - | 事件驱动的 Action 执行器 |
-| TimelineAsset | AnimMontage | 时间序列资产 |
+| TimelineAsset | AnimMontage | 时间序列资产 ✅ v0.14 |
+| TimelineRegistry | - | 时间轴注册表（存储和查找 TimelineAsset）✅ v0.14 |
+| bindToTag | AnimNotify | Action 绑定到时间轴 Tag ✅ v0.14 |
 | EventCollector | - | 通用事件收集器 ✅ v0.12 |
 | eventChain | - | 事件链（追溯触发历史）✅ v0.13 |
 | getCurrentEvent | - | 获取当前触发事件（eventChain 最后一个）✅ v0.13 |

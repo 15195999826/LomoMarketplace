@@ -17,7 +17,7 @@ Date: 2026-01-01
 ## Todo Items
 
 - [x] 回调机制重构（onCritical 等）- eventChain 模式 ✅
-- [ ] 时间轴处理（bindToTag 功能）- 描述在动画抛出的 Tag 处执行功能
+- [x] 时间轴处理（bindToTag 功能）- 描述在动画抛出的 Tag 处执行功能 ✅
 
 ## Key Decisions
 
@@ -59,6 +59,20 @@ Date: 2026-01-01
    - 不是拆成多个 Ability，而是 Action 内部的条件触发
    - `processCallbacks()` 遍历 result.events，根据事件字段（isCritical, isKill 等）触发回调
    - 回调 Action 接收新的 eventChain（追加触发事件）
+
+7. **时间轴系统设计** ✅ v0.14
+   - `TimelineAsset` 数据结构：`{ id, totalDuration, tags: Record<string, number> }`
+   - 数据来源：渲染端资产 → 转换脚本 → JSON
+   - Action 通过 `bindToTag(tagName)` 链式调用绑定到时间轴 Tag
+   - 框架只定义数据结构和 `bindToTag()` 机制
+   - 调度策略（串行/并行、等待动画等）由项目层实现
+   - 使用示例：
+     ```typescript
+     new DamageAction({ damage: 100 })
+       .setTargetSelector(TargetSelectors.currentTarget)
+       .bindToTag("ActionPoint0")
+       .onCritical(new AddBuffAction({ buffId: 'burning' }));
+     ```
 
 ## Notes
 
