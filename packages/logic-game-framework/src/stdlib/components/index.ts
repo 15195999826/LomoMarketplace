@@ -19,12 +19,3 @@ export {
   addFinalStat,
   mulFinalStat,
 } from './StatModifierComponent.js';
-
-// Re-export from core for backward compatibility
-export {
-  GameEventComponent,
-  GameEventComponentConfig,
-  EventTrigger,
-  TriggerMode,
-  createEventTrigger,
-} from '../../core/abilities/GameEventComponent.js';

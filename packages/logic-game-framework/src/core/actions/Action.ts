@@ -230,11 +230,6 @@ export type ActionConfig = {
   type: string;
   /** Action 特定参数 */
   params?: Record<string, unknown>;
-  /** 回调配置 @deprecated */
-  callbacks?: Array<{
-    trigger: string;
-    action: ActionConfig;
-  }>;
 };
 
 /**
@@ -275,17 +270,7 @@ export class ActionFactory implements IActionFactory {
       return new NoopAction();
     }
 
-    const action = creator(config.params ?? {});
-
-    // 添加回调（deprecated）
-    if (config.callbacks && action instanceof BaseAction) {
-      for (const cb of config.callbacks) {
-        const callbackAction = this.create(cb.action);
-        action.addCallback(cb.trigger, callbackAction);
-      }
-    }
-
-    return action;
+    return creator(config.params ?? {});
   }
 }
 

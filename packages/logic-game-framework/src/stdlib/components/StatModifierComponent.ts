@@ -146,17 +146,6 @@ export class StatModifierComponent extends BaseAbilityComponent {
   }
 
   /**
-   * @deprecated 由于 configs 是 readonly，此方法无法完整恢复状态
-   * 请使用静态方法 StatModifierComponent.fromSerialized() 代替
-   */
-  deserialize(data: object): void {
-    const d = data as { configs: StatModifierConfig[]; scale?: number };
-    // configs 是 readonly，不能重新赋值
-    // 只恢复 scale
-    this.currentScale = d.scale ?? 1;
-  }
-
-  /**
    * 从序列化数据创建新的 StatModifierComponent 实例
    *
    * @param data 序列化数据
