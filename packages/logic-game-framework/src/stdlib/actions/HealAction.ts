@@ -10,7 +10,7 @@ import {
   type ExecutionContext,
   createSuccessResult,
   createFailureResult,
-  CallbackTriggers,
+  getCurrentEvent,
 } from '../../core/actions/index.js';
 import type { ActorRef } from '../../core/types/common.js';
 
@@ -56,8 +56,9 @@ export class HealAction extends BaseAction {
       return createFailureResult('No targets selected');
     }
 
-    // 获取来源（从 ability 或 triggerEvent）
-    const source = ctx.ability?.owner ?? (ctx.triggerEvent as { source?: ActorRef }).source;
+    // 获取来源（从 ability 或当前触发事件）
+    const currentEvent = getCurrentEvent(ctx);
+    const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
 
     // 计算治疗量
     let amount = this.healAmount;
@@ -77,8 +78,6 @@ export class HealAction extends BaseAction {
 
     // 对每个目标进行治疗
     const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
-    const allTriggers: string[] = [];
-    const affectedTargets: ActorRef[] = [];
 
     for (const target of targets) {
       // 实际治疗量（考虑过量治疗）
@@ -86,10 +85,10 @@ export class HealAction extends BaseAction {
       const actualHeal = amount;
       const overheal = 0; // 需要外部计算
 
-      // 发出事件
+      // 发出事件（事件包含完整信息：target, overheal）
       const event = ctx.eventCollector.emit({
         kind: 'heal',
-        logicTime: ctx.triggerEvent.logicTime,
+        logicTime: currentEvent.logicTime,
         source,
         target,
         healAmount: actualHeal,
@@ -97,21 +96,9 @@ export class HealAction extends BaseAction {
       });
 
       allEvents.push(event);
-      affectedTargets.push(target);
-
-      // 收集回调触发器
-      allTriggers.push(CallbackTriggers.ON_HEAL);
-      if (overheal > 0) {
-        allTriggers.push(CallbackTriggers.ON_OVERHEAL);
-      }
     }
 
-    const result = createSuccessResult(
-      allEvents,
-      affectedTargets,
-      [...new Set(allTriggers)],
-      { healAmount: amount, targetCount: targets.length }
-    );
+    const result = createSuccessResult(allEvents, { healAmount: amount, targetCount: targets.length });
 
     return this.processCallbacks(result, ctx as ExecutionContext);
   }

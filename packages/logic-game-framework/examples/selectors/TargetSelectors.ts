@@ -11,12 +11,13 @@
  *
  * new DamageAction()
  *     .setDamage(50)
- *     .setTargetSelector(TargetSelectors.triggerTarget);
+ *     .setTargetSelector(TargetSelectors.currentTarget);
  * ```
  */
 
 import type { ActorRef } from '../../src/core/types/common.js';
 import type { ExecutionContext } from '../../src/core/actions/ExecutionContext.js';
+import { getCurrentEvent, getOriginalEvent } from '../../src/core/actions/ExecutionContext.js';
 import type { TargetSelector } from '../../src/core/actions/TargetSelector.js';
 
 /**
@@ -26,29 +27,46 @@ import type { TargetSelector } from '../../src/core/actions/TargetSelector.js';
  */
 export const TargetSelectors = {
   /**
-   * 从 triggerEvent 获取 source
+   * 从当前触发事件获取 source
    * 常用于：反伤（目标是攻击我的人）
    */
-  triggerSource: ((ctx: ExecutionContext): ActorRef[] => {
-    const event = ctx.triggerEvent as { source?: ActorRef };
+  currentSource: ((ctx: ExecutionContext): ActorRef[] => {
+    const event = getCurrentEvent(ctx) as { source?: ActorRef };
     return event.source ? [event.source] : [];
   }) as TargetSelector,
 
   /**
-   * 从 triggerEvent 获取 target
-   * 常用于：主动技能（目标是被选中的人）
+   * 从当前触发事件获取 target
+   * 常用于：回调中对被命中目标施加效果
    */
-  triggerTarget: ((ctx: ExecutionContext): ActorRef[] => {
-    const event = ctx.triggerEvent as { target?: ActorRef };
+  currentTarget: ((ctx: ExecutionContext): ActorRef[] => {
+    const event = getCurrentEvent(ctx) as { target?: ActorRef };
     return event.target ? [event.target] : [];
   }) as TargetSelector,
 
   /**
-   * 从 triggerEvent 获取 targets 数组
+   * 从当前触发事件获取 targets 数组
    * 常用于：AOE 技能
    */
-  triggerTargets: ((ctx: ExecutionContext): ActorRef[] => {
-    const event = ctx.triggerEvent as { targets?: ActorRef[] };
+  currentTargets: ((ctx: ExecutionContext): ActorRef[] => {
+    const event = getCurrentEvent(ctx) as { targets?: ActorRef[] };
+    return event.targets ?? [];
+  }) as TargetSelector,
+
+  /**
+   * 从原始触发事件获取 target
+   * 常用于：主动技能（玩家选择的目标）
+   */
+  originalTarget: ((ctx: ExecutionContext): ActorRef[] => {
+    const event = getOriginalEvent(ctx) as { target?: ActorRef };
+    return event.target ? [event.target] : [];
+  }) as TargetSelector,
+
+  /**
+   * 从原始触发事件获取 targets 数组
+   */
+  originalTargets: ((ctx: ExecutionContext): ActorRef[] => {
+    const event = getOriginalEvent(ctx) as { targets?: ActorRef[] };
     return event.targets ?? [];
   }) as TargetSelector,
 
@@ -97,7 +115,7 @@ export const TargetSelectors = {
     selector: (ctx: ExecutionContext, event: TEvent) => ActorRef[]
   ): TargetSelector => {
     return (ctx: ExecutionContext): ActorRef[] => {
-      return selector(ctx, ctx.triggerEvent as TEvent);
+      return selector(ctx, getCurrentEvent(ctx) as TEvent);
     };
   },
 };

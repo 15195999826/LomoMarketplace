@@ -10,7 +10,7 @@ import {
   type ExecutionContext,
   createSuccessResult,
   createFailureResult,
-  CallbackTriggers,
+  getCurrentEvent,
 } from '../../core/actions/index.js';
 import type { ActorRef } from '../../core/types/common.js';
 import { StandardAttributes } from '../attributes/StandardAttributes.js';
@@ -121,8 +121,9 @@ export class DamageAction extends BaseAction {
       return createFailureResult('No targets selected');
     }
 
-    // 获取来源（从 ability 或 triggerEvent）
-    const source = ctx.ability?.owner ?? (ctx.triggerEvent as { source?: ActorRef }).source;
+    // 获取来源（从 ability 或当前触发事件）
+    const currentEvent = getCurrentEvent(ctx);
+    const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
     if (!source) {
       return createFailureResult('No source found');
     }
@@ -146,8 +147,6 @@ export class DamageAction extends BaseAction {
 
     // 对每个目标造成伤害
     const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
-    const allTriggers: string[] = [];
-    const affectedTargets: ActorRef[] = [];
 
     for (const target of targets) {
       // 使用伤害计算器
@@ -173,10 +172,10 @@ export class DamageAction extends BaseAction {
         }
       }
 
-      // 发出事件
+      // 发出事件（事件包含完整信息：target, isCritical, isKill）
       const event = ctx.eventCollector.emit({
         kind: 'damage',
-        logicTime: ctx.triggerEvent.logicTime,
+        logicTime: currentEvent.logicTime,
         source,
         target,
         damage,
@@ -186,26 +185,11 @@ export class DamageAction extends BaseAction {
       });
 
       allEvents.push(event);
-      affectedTargets.push(target);
-
-      // 收集回调触发器
-      allTriggers.push(CallbackTriggers.ON_HIT);
-      if (isCritical) {
-        allTriggers.push(CallbackTriggers.ON_CRITICAL);
-      }
-      if (isKill) {
-        allTriggers.push(CallbackTriggers.ON_KILL);
-      }
     }
 
-    const result = createSuccessResult(
-      allEvents,
-      affectedTargets,
-      [...new Set(allTriggers)],
-      { damage: baseValue, targetCount: targets.length }
-    );
+    const result = createSuccessResult(allEvents, { damage: baseValue, targetCount: targets.length });
 
-    // 处理回调（deprecated）
+    // 处理回调
     return this.processCallbacks(result, ctx as ExecutionContext);
   }
 }

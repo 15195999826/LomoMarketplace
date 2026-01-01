@@ -1,6 +1,6 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.11 (Unity 风格 getComponent + 过期机制重构)
+> 文档版本：v0.13 (eventChain + 回调机制重构)
 > 创建日期：2025-12-27
 > 更新日期：2026-01-01
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
@@ -539,9 +539,11 @@ class BattleInstance {
 }
 ```
 
-### 4.7.1 GameEvent 事件系统 ✅ NEW
+### 4.7.1 GameEvent 统一事件模型 ✅ v0.12
 
-**GameEvent** 是 Ability 系统内部的事件机制，用于触发被动技能。
+**GameEvent** 是框架的**统一事件类型**，用于：
+- Ability 系统内部分发，触发被动技能
+- 通过 EventCollector 输出给表演层
 
 ```typescript
 // 框架只提供基础接口约束
@@ -552,14 +554,14 @@ interface GameEventBase {
 }
 ```
 
-**与 BattleEvent 的区别**：
+**统一事件的优势**：
 
-| | GameEvent | BattleEvent |
-|---|-----------|-------------|
-| 用途 | Ability 系统内部 | 逻辑层 → 表演层 |
-| 消费者 | GameEventComponent | 动画/特效系统 |
-| 定义位置 | 游戏自定义 | 游戏自定义 |
-| 示例 | damage, death, turnStart | DamageAnimation, HealEffect |
+| 特性 | 说明 |
+|------|------|
+| 单一事件类型 | 不再区分 GameEvent 和 BattleEvent |
+| 游戏自定义 | 具体事件类型由游戏定义（damage, heal 等） |
+| 双重用途 | 既触发被动技能，又输出给表演层 |
+| 简化架构 | 减少概念负担，Action 直接 emit 事件 |
 
 **框架设计原则**：
 - 框架**不**对事件结构做假设（不预定义 source/target）
@@ -725,14 +727,19 @@ interface AbilityConfig {
 }
 ```
 
-**战斗事件（逻辑层输出）**
+**战斗事件（逻辑层输出）** ✅ v0.12 使用 GameEventBase
 ```typescript
-interface BattleEvent {
-    type: string;
-    logicTime: number;               // 逻辑时间戳
-    sourceUnitId?: string;
-    // ... 具体事件数据
-}
+// 游戏自定义事件，继承 GameEventBase
+type DamageGameEvent = GameEventBase & {
+    kind: 'damage';
+    source: ActorRef;
+    target: ActorRef;
+    damage: number;
+    isCritical?: boolean;
+};
+
+// Action 通过 eventCollector.emit() 发出事件
+ctx.eventCollector.emit({ kind: 'damage', logicTime, source, target, damage });
 ```
 
 ### 4.11 扩展接口定义
@@ -842,32 +849,33 @@ interface IAction {
 
 interface ActionResult {
     success: boolean;
-    events: BattleEvent[];
-    callbackTriggers: string[];  // 如 'onCrit', 'onKill'
+    events: GameEventBase[];  // 产出的事件
+    failureReason?: string;   // 失败原因
+    data?: Record<string, unknown>;  // 额外数据
 }
+// v0.13: 移除 callbackTriggers（回调由事件字段触发）
 ```
 
-**BattleEvent 扩展**
+**GameEvent 扩展** ✅ v0.12
 ```typescript
-// 事件信封（固定结构）
-interface BattleEvent<T = unknown> {
-    readonly type: string;
+// 统一事件基类（框架定义）
+interface GameEventBase {
+    readonly kind: string;
     readonly logicTime: number;
-    readonly payload: T;
+    readonly [key: string]: unknown;
 }
 
-// 标准事件（StdLib）
-type DamageEvent = BattleEvent<{
+// 游戏自定义事件（示例）
+type DamageGameEvent = GameEventBase & {
+    kind: 'damage';
     source: ActorRef;
     target: ActorRef;
     damage: number;
     isCritical: boolean;
-}>;
+};
 
-// 游戏可扩展自定义事件
-type MyCustomEvent = BattleEvent<{
-    customData: string;
-}>;
+// 游戏事件联合类型
+type MyGameEvent = DamageGameEvent | HealGameEvent | DeathGameEvent;
 ```
 
 ### 4.12 错误处理策略
@@ -1370,37 +1378,72 @@ TargetSelector.createCone(range: 3, angleDegrees: 60);
 | NearestAroundTile | 周围最近单位 |
 | Override | 由上层指定（用于回调） |
 
-### 6.5 回调机制
+### 6.5 回调机制 ✅ v0.13
 
-Action执行后可根据结果触发回调Action：
+**核心设计原则**：回调是技能内的条件分支，不是独立 Ability。
 
 ```typescript
+// 语义：一个技能，包含条件效果
 Action.damage()
     .setDamageExpression("ATK * 1.5")
-
-    // 暴击时触发
-    .onCritical(
-        Action.addBuff().setBuffId("bleeding")
-    )
-
-    // 击中时触发
-    .onHit(
-        Action.heal().setTarget({ ref: 'source' }).setValue(10)
-    )
-
-    // 击杀时触发
-    .onKill(
-        Action.heal().setTarget({ ref: 'source' }).setExpression("MaxHP * 0.1")
-    );
+    .onCritical(Action.addBuff().setBuffId("bleeding"))  // 暴击时加流血
+    .onKill(Action.heal().setTarget(TargetSelectors.abilityOwner).setValue(50));  // 击杀回血
 ```
 
-**回调目标策略**：
+**执行机制**（v0.13）：
 
-| 策略 | 说明 |
-|------|------|
-| Affected | 被当前Action影响的目标 |
-| Source | 技能释放者 |
-| None | 使用Action自身的目标选择器 |
+```typescript
+// Action.processCallbacks() 实现
+protected processCallbacks(result: ActionResult, ctx: ExecutionContext): ActionResult {
+    const allEvents = [...result.events];
+
+    for (const event of result.events) {
+        // 根据事件字段判断触发条件
+        const triggeredCallbacks = this.getTriggeredCallbacks(event);
+
+        for (const callback of triggeredCallbacks) {
+            // 创建回调上下文（追加事件到 eventChain）
+            const callbackCtx = createCallbackContext(ctx, event);
+            const callbackResult = callback.action.execute(callbackCtx);
+            allEvents.push(...callbackResult.events);
+        }
+    }
+
+    return { ...result, events: allEvents };
+}
+
+// 回调触发判断（基于事件字段）
+private getTriggeredCallbacks(event: unknown): ActionCallback[] {
+    const e = event as { kind?: string; isCritical?: boolean; isKill?: boolean };
+    return this.callbacks.filter(cb => {
+        if (e.kind === 'damage') {
+            if (cb.trigger === 'onHit') return true;
+            if (cb.trigger === 'onCritical' && e.isCritical) return true;
+            if (cb.trigger === 'onKill' && e.isKill) return true;
+        }
+        return false;
+    });
+}
+```
+
+**回调中的目标选择**（使用 TargetSelector）：
+
+| 选择器 | 说明 | 典型用途 |
+|--------|------|----------|
+| `currentSource` | 当前事件的 source | 反伤（目标是攻击者） |
+| `currentTarget` | 当前事件的 target | 回调中对被命中目标施加效果 |
+| `originalTarget` | 原始事件的 target | 主动技能（玩家选择的目标） |
+| `abilityOwner` | 能力持有者 | 自我增益 |
+
+**eventChain 追溯**：
+
+```
+InputAction(选择火球术, 目标=敌人A)
+    → DamageEvent(source=我, target=敌人A, isCritical=true)
+        → AddBuffEvent(source=我, target=敌人A, buffId=流血)  ← 暴击回调
+```
+
+回调 Action 可通过 `getOriginalEvent(ctx)` 追溯到玩家的原始输入。
 
 ### 6.6 Action类型列表
 
@@ -1560,24 +1603,42 @@ type TargetRef =
 // 差：每层复制数据
 function executeAction(source, target, damage, abilityId, ...) { }
 
-// 好：传递上下文引用
+// 好：传递上下文引用 ✅ v0.13
 interface ExecutionContext {
-    gameplayState: unknown;    // 游戏状态（快照或实例引用）✅ v0.10
-    source: ActorRef;          // 引用
-    primaryTarget: ActorRef;   // 引用
-    ability: IAbility;         // 引用
-    // 临时数据按需添加
+    eventChain: readonly GameEventBase[];  // 事件链（追溯触发历史）
+    gameplayState: unknown;                // 游戏状态（快照或实例引用）
+    ability?: IAbility;                    // 引用
+    eventCollector: EventCollector;        // 事件输出通道
 }
 function executeAction(ctx: ExecutionContext) { }
 
-// Action 中通过类型断言访问
-const state = ctx.gameplayState as MyBattleState;
-const turn = state.turnNumber;
+// 辅助函数
+function getCurrentEvent(ctx: ExecutionContext): GameEventBase;   // 当前触发事件
+function getOriginalEvent(ctx: ExecutionContext): GameEventBase;  // 原始触发事件
+function createCallbackContext(ctx: ExecutionContext, event: GameEventBase): ExecutionContext;
+
+// Action 中访问当前触发事件
+const event = getCurrentEvent(ctx) as DamageGameEvent;
+const damage = event.damage;
+
+// 回调时创建新上下文（追加事件到链）
+const callbackCtx = createCallbackContext(ctx, damageEvent);
+callbackAction.execute(callbackCtx);  // 回调 Action 可追溯完整事件链
+
+// Action 中发出新事件
+ctx.eventCollector.emit({ kind: 'heal', logicTime: event.logicTime, ... });
 ```
 
-**v0.10 更新**：`battle` 改为 `gameplayState: unknown`，框架不假设游戏状态类型，项目可以传入：
-- 实例引用（实时数据）
-- 状态快照（事件发生时的数据，便于调试和回放）
+**v0.13 更新**：
+- `triggerEvent` → `eventChain: readonly GameEventBase[]`，支持事件追溯
+- 新增辅助函数：`getCurrentEvent()`, `getOriginalEvent()`, `createCallbackContext()`
+- 回调执行时向 eventChain 追加新事件，保留完整触发链
+- 移除 `source`/`primaryTarget`，由 TargetSelector 从 eventChain 提取
+
+**v0.12 更新**：
+- ~~新增 `triggerEvent` 字段~~ → 已升级为 `eventChain`
+- 移除 `logicTime`、`customData` 等分散字段，从 eventChain 中获取
+- Action 通过 `eventCollector.emit()` 发出事件对象，不再使用便捷方法
 
 ### 8.2 事件描述问题 ⚠️
 
@@ -1609,7 +1670,7 @@ type BattleEvent =
     | { type: 'buff_applied'; source: ActorRef; target: ActorRef; buffId: string; stacks: number };
 ```
 
-### 8.3 目标选择表达问题 ⚠️
+### 8.3 目标选择表达问题 ⚠️ → ✅ v0.13 已解决
 
 **DESKTK痛点**：回调中如何表达目标定义不清晰。例如"当暴击时对{X}DoSomething"，这个{X}在配置中难以表达。
 
@@ -1622,32 +1683,44 @@ onCritical: {
 }
 ```
 
-**设计原则**：
-- **语义化引用**：目标引用应自解释
-- **上下文感知**：不同场景下可用的目标引用不同
-- **IDE提示友好**：使用字符串字面量类型，而非枚举数字
+**v0.13 解决方案**：TargetSelector 函数 + eventChain
 
-**建议方案**：
 ```typescript
-// 好：语义化目标引用
-type TargetRef =
-    | { ref: 'affected' }    // 被当前Action命中的目标（伤害/治疗的接受者）
-    | { ref: 'source' }      // 技能释放者
-    | { ref: 'trigger' }     // 触发者（反击时：攻击我的人）
-    | { ref: 'primary' }     // 主目标（技能的首选目标）
-    | { ref: 'ability_owner' }  // 能力持有者（Buff挂载的人）
-    | { ref: 'all_affected' }   // 所有被影响的目标（AOE场景）
-    | { ref: 'custom', selector: TargetSelector };
+// TargetSelector 是函数类型
+type TargetSelector = (ctx: ExecutionContext) => ActorRef[];
 
-// 使用示例：语义一目了然
+// 预定义选择器（examples/selectors/TargetSelectors.ts）
+const TargetSelectors = {
+    currentSource: (ctx) => {
+        const event = getCurrentEvent(ctx) as { source?: ActorRef };
+        return event.source ? [event.source] : [];
+    },
+    currentTarget: (ctx) => {
+        const event = getCurrentEvent(ctx) as { target?: ActorRef };
+        return event.target ? [event.target] : [];
+    },
+    originalTarget: (ctx) => {
+        const event = getOriginalEvent(ctx) as { target?: ActorRef };
+        return event.target ? [event.target] : [];
+    },
+    abilityOwner: (ctx) => ctx.ability ? [ctx.ability.owner] : [],
+};
+
+// 使用示例：语义清晰，IDE 可跳转
 Action.damage()
     .onCritical(
-        Action.addBuff("bleeding").to({ ref: 'affected' })  // 给被暴击的目标加流血
+        Action.addBuff("bleeding").setTargetSelector(TargetSelectors.currentTarget)
     )
     .onKill(
-        Action.heal(50).to({ ref: 'source' })  // 击杀时自己回血
+        Action.heal(50).setTargetSelector(TargetSelectors.abilityOwner)
     );
 ```
+
+**设计优势**：
+- **函数式**：TargetSelector 是纯函数，不持有状态
+- **配置驱动**：常用场景用预定义选择器
+- **灵活性**：特殊场景直接写函数
+- **eventChain 追溯**：可访问原始事件和当前事件
 
 ### 8.4 时序配置脱离动画的困境
 
@@ -1827,6 +1900,19 @@ interface BattleSaveData {
     - `DurationComponent` → `TimeDurationComponent`（基于时间）
     - `AbilitySet` 提取 `processAbilities()` 统一过期清理逻辑
     - `AbilityRevokedCallback` 新增 `expireReason` 参数
+12. **统一事件模型**（v0.12）：
+    - 移除 `BattleEvent`，统一使用 `GameEventBase` 作为唯一事件类型
+    - `ExecutionContext` 新增 `triggerEvent` 字段，移除 `logicTime`/`customData`/`triggerSource`
+    - `EventCollector` 简化为通用事件收集器，移除具体事件便捷方法
+    - Action 直接通过 `eventCollector.emit(event)` 发出完整事件对象
+    - 添加 `examples/` 目录的 `index.ts` 导出文件
+13. **eventChain + 回调机制重构**（v0.13）：
+    - `ExecutionContext.triggerEvent` → `eventChain: readonly GameEventBase[]`
+    - 新增辅助函数：`getCurrentEvent()`, `getOriginalEvent()`, `createCallbackContext()`
+    - `ActionResult` 简化：移除 `affectedTargets`/`callbackTriggers`
+    - 回调机制重构：`processCallbacks()` 遍历事件，根据字段（isCritical, isKill）触发
+    - TargetSelector 示例重命名：`triggerSource` → `currentSource`，新增 `originalTarget`
+    - 设计原则：回调是技能内的条件分支，不是独立 Ability
 
 ### 待实现
 
@@ -1872,10 +1958,14 @@ interface BattleSaveData {
 | Attribute | GameplayAttribute | 属性（如HP、ATK） |
 | Modifier | GameplayModifier | 属性修改器 |
 | Action | GameplayAbility中的逻辑单元 | 最小执行单元 |
-| GameEvent | - | Ability 系统内部事件 ✅ NEW |
-| GameEventComponent | - | 事件驱动的 Action 执行器 ✅ NEW |
+| GameEvent | - | 统一事件类型（内部触发+表演输出）✅ v0.12 |
+| GameEventComponent | - | 事件驱动的 Action 执行器 |
 | TimelineAsset | AnimMontage | 时间序列资产 |
-| BattleEvent | - | 逻辑层 → 表演层事件 |
+| EventCollector | - | 通用事件收集器 ✅ v0.12 |
+| eventChain | - | 事件链（追溯触发历史）✅ v0.13 |
+| getCurrentEvent | - | 获取当前触发事件（eventChain 最后一个）✅ v0.13 |
+| getOriginalEvent | - | 获取原始触发事件（eventChain 第一个）✅ v0.13 |
+| TargetSelector | - | 目标选择器函数 `(ctx) => ActorRef[]` ✅ v0.13 |
 
 ### B. 架构层级术语
 

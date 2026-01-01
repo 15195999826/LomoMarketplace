@@ -2,11 +2,15 @@
  * Action 执行结果
  */
 
-import type { ActorRef } from '../types/common.js';
 import type { GameEventBase } from '../events/GameEvent.js';
 
 /**
  * Action 执行结果
+ *
+ * 简化设计：
+ * - events 包含所有产生的事件，每个事件有完整的 target/source 信息
+ * - 不再需要 affectedTargets（冗余，从 events 可得）
+ * - 不再需要 callbackTriggers（从事件字段判断，如 isCritical）
  */
 export type ActionResult = {
   /** 是否执行成功 */
@@ -14,12 +18,6 @@ export type ActionResult = {
 
   /** 产生的事件列表 */
   readonly events: GameEventBase[];
-
-  /** 触发的回调标识列表 */
-  readonly callbackTriggers: string[];
-
-  /** 被影响的目标列表 */
-  readonly affectedTargets: ActorRef[];
 
   /** 失败原因（当 success 为 false 时） */
   readonly failureReason?: string;
@@ -29,43 +27,15 @@ export type ActionResult = {
 };
 
 /**
- * 回调触发器常量
- */
-export const CallbackTriggers = {
-  /** 命中时 */
-  ON_HIT: 'onHit',
-  /** 暴击时 */
-  ON_CRITICAL: 'onCritical',
-  /** 击杀时 */
-  ON_KILL: 'onKill',
-  /** 治疗时 */
-  ON_HEAL: 'onHeal',
-  /** 过量治疗时 */
-  ON_OVERHEAL: 'onOverheal',
-  /** Buff 应用时 */
-  ON_BUFF_APPLIED: 'onBuffApplied',
-  /** Buff 刷新时 */
-  ON_BUFF_REFRESHED: 'onBuffRefreshed',
-  /** Buff 叠加时 */
-  ON_BUFF_STACKED: 'onBuffStacked',
-} as const;
-
-export type CallbackTrigger = (typeof CallbackTriggers)[keyof typeof CallbackTriggers];
-
-/**
  * 创建成功结果
  */
 export function createSuccessResult(
   events: GameEventBase[],
-  affectedTargets: ActorRef[],
-  callbackTriggers: string[] = [],
   data?: Record<string, unknown>
 ): ActionResult {
   return {
     success: true,
     events,
-    callbackTriggers,
-    affectedTargets,
     data,
   };
 }
@@ -80,8 +50,6 @@ export function createFailureResult(
   return {
     success: false,
     events,
-    callbackTriggers: [],
-    affectedTargets: [],
     failureReason: reason,
   };
 }
@@ -91,8 +59,6 @@ export function createFailureResult(
  */
 export function mergeResults(results: ActionResult[]): ActionResult {
   const allEvents: GameEventBase[] = [];
-  const allTriggers: string[] = [];
-  const allTargets: ActorRef[] = [];
   const allData: Record<string, unknown> = {};
 
   let allSuccess = true;
@@ -100,8 +66,6 @@ export function mergeResults(results: ActionResult[]): ActionResult {
 
   for (const result of results) {
     allEvents.push(...result.events);
-    allTriggers.push(...result.callbackTriggers);
-    allTargets.push(...result.affectedTargets);
 
     if (result.data) {
       Object.assign(allData, result.data);
@@ -115,19 +79,9 @@ export function mergeResults(results: ActionResult[]): ActionResult {
     }
   }
 
-  // 去重目标
-  const uniqueTargets = allTargets.filter(
-    (target, index, self) => self.findIndex((t) => t.id === target.id) === index
-  );
-
-  // 去重触发器
-  const uniqueTriggers = [...new Set(allTriggers)];
-
   return {
     success: allSuccess,
     events: allEvents,
-    callbackTriggers: uniqueTriggers,
-    affectedTargets: uniqueTargets,
     failureReason: firstFailureReason,
     data: Object.keys(allData).length > 0 ? allData : undefined,
   };

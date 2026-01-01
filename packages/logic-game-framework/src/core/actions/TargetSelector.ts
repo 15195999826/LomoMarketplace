@@ -15,12 +15,12 @@
  * ```typescript
  * // 项目层定义选择器
  * const MySelectors = {
- *   triggerTarget: (ctx) => [(ctx.triggerEvent as MyEvent).target],
+ *   currentTarget: (ctx) => [(getCurrentEvent(ctx) as MyEvent).target],
  * };
  *
  * // Action 使用
  * new DamageAction({ damage: 50 })
- *     .setTargetSelector(MySelectors.triggerTarget);
+ *     .setTargetSelector(MySelectors.currentTarget);
  *
  * // 或直接写函数
  * new HealAction({ heal: 100 })

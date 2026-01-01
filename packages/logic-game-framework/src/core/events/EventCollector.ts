@@ -7,10 +7,11 @@
  * @example
  * ```typescript
  * // 在 Action 中发出事件
+ * const currentEvent = getCurrentEvent(ctx);
  * const event: DamageGameEvent = {
  *   kind: 'damage',
- *   logicTime: ctx.triggerEvent.logicTime,
- *   source: ctx.source,
+ *   logicTime: currentEvent.logicTime,
+ *   source,
  *   target,
  *   damage: 50,
  * };

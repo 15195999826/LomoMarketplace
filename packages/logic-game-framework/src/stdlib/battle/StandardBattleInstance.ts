@@ -168,7 +168,7 @@ export class StandardBattleInstance extends GameplayInstance {
 
     // 创建执行上下文
     const ctx = createExecutionContext({
-      triggerEvent: triggerEvent ?? defaultEvent,
+      eventChain: [triggerEvent ?? defaultEvent],
       gameplayState: this,
       eventCollector: this.eventCollector,
     });

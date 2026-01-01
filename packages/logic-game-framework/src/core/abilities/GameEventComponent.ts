@@ -199,7 +199,7 @@ export class GameEventComponent extends BaseAbilityComponent {
     gameplayState: unknown
   ): ExecutionContext {
     return createExecutionContext({
-      triggerEvent: event,
+      eventChain: [event],
       gameplayState,
       eventCollector: new EventCollector(),
       ability: {

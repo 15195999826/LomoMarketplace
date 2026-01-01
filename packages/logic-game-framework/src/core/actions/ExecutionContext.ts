@@ -7,10 +7,19 @@
  * ## 设计原则
  *
  * ExecutionContext 是"输入 + 输出通道"：
- * - 输入：triggerEvent, gameplayState, ability
+ * - 输入：eventChain, gameplayState, ability
  * - 输出：eventCollector
  *
- * 目标选择由 Action 自身的 TargetSelector 负责，从 triggerEvent 中提取。
+ * ## 事件链
+ *
+ * eventChain 记录了完整的事件触发链路：
+ * ```
+ * [InputActionEvent] → 玩家使用技能
+ * [InputActionEvent, DamageEvent(crit)] → 暴击回调
+ * [InputActionEvent, DamageEvent(crit), DamageEvent(kill)] → 击杀回调
+ * ```
+ *
+ * 当前触发事件是 eventChain 的最后一个元素。
  */
 
 import type { ActorRef } from '../types/common.js';
@@ -29,27 +38,35 @@ export interface IAbility {
  * 执行上下文
  *
  * Action 执行时可访问的所有信息：
- * 1. 触发信息 - 什么事件触发了这次执行
+ * 1. 事件链 - 完整的触发链路
  * 2. 能力信息 - 哪个能力触发的
- * 3. 输出通道 - 如何产生副作用
+ * 3. 游戏状态 - 当前游戏数据
+ * 4. 输出通道 - 事件收集器
  */
 export type ExecutionContext = {
-  // ========== 触发信息 ==========
+  // ========== 事件链 ==========
 
   /**
-   * 触发事件
+   * 事件链
    *
-   * 触发此 Action 链执行的 GameEvent。
-   * Action 可从中获取事件相关数据（如伤害值、来源等）。
+   * 记录了完整的事件触发链路。
+   * - 第一个元素是原始触发事件（如玩家输入）
+   * - 最后一个元素是当前触发事件（导致此 Action 执行的事件）
+   * - 回调时会追加新事件到链尾
    *
    * @example
    * ```typescript
-   * const event = ctx.triggerEvent as DamageGameEvent;
-   * const damage = event.damage;
-   * const source = event.source;
+   * // 获取当前触发事件
+   * const currentEvent = ctx.eventChain.at(-1)!;
+   *
+   * // 获取原始触发事件
+   * const originalEvent = ctx.eventChain[0];
+   *
+   * // 检查是否是回调执行
+   * const isCallback = ctx.eventChain.length > 1;
    * ```
    */
-  readonly triggerEvent: GameEventBase;
+  readonly eventChain: readonly GameEventBase[];
 
   /**
    * 游戏状态
@@ -83,23 +100,60 @@ export type ExecutionContext = {
    * 事件收集器
    *
    * Action 通过 eventCollector.emit() 产生新的 GameEvent。
+   * 整个技能执行（包括回调）共享同一个 eventCollector。
    */
   readonly eventCollector: EventCollector;
 };
+
+// ========== 辅助函数 ==========
+
+/**
+ * 获取当前触发事件
+ *
+ * 即 eventChain 的最后一个元素。
+ */
+export function getCurrentEvent(ctx: ExecutionContext): GameEventBase {
+  return ctx.eventChain.at(-1)!;
+}
+
+/**
+ * 获取原始触发事件
+ *
+ * 即 eventChain 的第一个元素。
+ */
+export function getOriginalEvent(ctx: ExecutionContext): GameEventBase {
+  return ctx.eventChain[0];
+}
 
 /**
  * 创建执行上下文
  */
 export function createExecutionContext(params: {
-  triggerEvent: GameEventBase;
+  eventChain: GameEventBase[];
   gameplayState: unknown;
   eventCollector: EventCollector;
   ability?: IAbility;
 }): ExecutionContext {
   return {
-    triggerEvent: params.triggerEvent,
+    eventChain: params.eventChain,
     gameplayState: params.gameplayState,
     ability: params.ability,
     eventCollector: params.eventCollector,
+  };
+}
+
+/**
+ * 创建回调执行上下文
+ *
+ * 在原有上下文基础上追加新事件到事件链。
+ * 其他字段（gameplayState, eventCollector, ability）保持不变。
+ */
+export function createCallbackContext(
+  ctx: ExecutionContext,
+  callbackEvent: GameEventBase
+): ExecutionContext {
+  return {
+    ...ctx,
+    eventChain: [...ctx.eventChain, callbackEvent],
   };
 }

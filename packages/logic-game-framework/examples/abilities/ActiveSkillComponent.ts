@@ -41,7 +41,7 @@ import {
 } from '../../src/core/abilities/AbilityComponent.js';
 import type { GameEventBase } from '../../src/core/events/GameEvent.js';
 import type { IAction } from '../../src/core/actions/Action.js';
-import type { ExecutionContext } from '../../src/core/actions/ExecutionContext.js';
+import { createExecutionContext } from '../../src/core/actions/ExecutionContext.js';
 import { EventCollector } from '../../src/core/events/EventCollector.js';
 import { getLogger } from '../../src/core/utils/Logger.js';
 
@@ -272,26 +272,18 @@ export class ActiveSkillComponent extends BaseAbilityComponent {
     event: InputActionEvent,
     context: ComponentLifecycleContext,
     gameplayState: unknown
-  ): ExecutionContext {
-    return {
-      // 触发信息
-      triggerEvent: event,
+  ) {
+    return createExecutionContext({
+      eventChain: [event],
       gameplayState,
-      // 参与者
-      source: context.owner,
-      primaryTarget: event.targets[0] ?? context.owner,
+      eventCollector: new EventCollector(),
       ability: {
         id: context.ability.id,
         configId: context.ability.configId,
         owner: context.owner,
         source: context.owner,
       },
-      // 输出通道
-      eventCollector: new EventCollector(),
-      // 执行状态
-      affectedTargets: event.targets,
-      callbackDepth: 0,
-    };
+    });
   }
 
   // ========== 查询接口 ==========

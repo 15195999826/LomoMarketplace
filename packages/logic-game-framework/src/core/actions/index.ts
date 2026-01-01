@@ -2,12 +2,13 @@ export {
   ExecutionContext,
   IAbility,
   createExecutionContext,
+  createCallbackContext,
+  getCurrentEvent,
+  getOriginalEvent,
 } from './ExecutionContext.js';
 
 export {
   ActionResult,
-  CallbackTriggers,
-  CallbackTrigger,
   createSuccessResult,
   createFailureResult,
   mergeResults,

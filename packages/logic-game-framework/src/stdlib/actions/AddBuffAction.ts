@@ -10,7 +10,7 @@ import {
   type ExecutionContext,
   createSuccessResult,
   createFailureResult,
-  CallbackTriggers,
+  getCurrentEvent,
 } from '../../core/actions/index.js';
 import type { ActorRef } from '../../core/types/common.js';
 
@@ -91,22 +91,21 @@ export class AddBuffAction extends BaseAction {
       return createFailureResult('Buff config ID is required');
     }
 
-    // 获取来源（从 ability 或 triggerEvent）
-    const source = ctx.ability?.owner ?? (ctx.triggerEvent as { source?: ActorRef }).source;
+    // 获取来源（从 ability 或当前触发事件）
+    const currentEvent = getCurrentEvent(ctx);
+    const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
 
     // 对每个目标添加 Buff
     const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
-    const allTriggers: string[] = [];
-    const affectedTargets: ActorRef[] = [];
 
     for (const target of targets) {
       // 检查目标是否已有此 Buff（简化实现）
       const isRefresh = false; // 需要外部判断
 
-      // 发出事件
+      // 发出事件（事件包含完整信息：target, isRefresh, stacks）
       const event = ctx.eventCollector.emit({
         kind: 'buffApplied',
-        logicTime: ctx.triggerEvent.logicTime,
+        logicTime: currentEvent.logicTime,
         source,
         target,
         buffId: this.buffConfigId,
@@ -117,29 +116,14 @@ export class AddBuffAction extends BaseAction {
       });
 
       allEvents.push(event);
-      affectedTargets.push(target);
-
-      // 收集回调触发器
-      allTriggers.push(CallbackTriggers.ON_BUFF_APPLIED);
-      if (isRefresh) {
-        allTriggers.push(CallbackTriggers.ON_BUFF_REFRESHED);
-      }
-      if (this.stacks > 1) {
-        allTriggers.push(CallbackTriggers.ON_BUFF_STACKED);
-      }
     }
 
-    const result = createSuccessResult(
-      allEvents,
-      affectedTargets,
-      [...new Set(allTriggers)],
-      {
-        buffConfigId: this.buffConfigId,
-        stacks: this.stacks,
-        duration: this.duration,
-        targetCount: targets.length,
-      }
-    );
+    const result = createSuccessResult(allEvents, {
+      buffConfigId: this.buffConfigId,
+      stacks: this.stacks,
+      duration: this.duration,
+      targetCount: targets.length,
+    });
 
     return this.processCallbacks(result, ctx as ExecutionContext);
   }
