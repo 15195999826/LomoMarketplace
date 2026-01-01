@@ -5,12 +5,12 @@
 description: "逻辑表演分离的通用游戏框架，支持回合制/ATB 战斗"
 tracked_paths:
   - "packages/logic-game-framework/src/"
-last_updated: "2025-12-31"
+last_updated: "2026-01-02"
 ```
 <!-- region Generated Config End -->
 
 <!-- SECTION: core-concepts -->
-<!-- TRACKED_FILES: Actor.ts, AttributeSet.ts, Ability.ts, Action.ts, BattleEvent.ts -->
+<!-- TRACKED_FILES: Actor.ts, AttributeSet.ts, Ability.ts, Action.ts, BattleEvent.ts, Timeline.ts, AbilityExecutionInstance.ts -->
 ## 1. Core Concepts
 
 | Concept | Responsibility |
@@ -18,8 +18,10 @@ last_updated: "2025-12-31"
 | `Actor` | 游戏实体基类（OOP 设计），管理状态、位置、阵营 |
 | `AttributeSet` | 四层属性计算，Modifier 管理，脏标记缓存 |
 | `Ability` | 技能/Buff 容器，EC 模式组合 Component |
+| `AbilityExecutionInstance` | 技能执行实例，管理 Timeline 推进和 Tag 触发 |
 | `Action` | 效果执行原语，链式回调机制 |
-| `BattleEvent` | 逻辑层输出给表演层的事件信封 |
+| `Timeline` | 时间轴资产，定义 Tag 时间点（从渲染端动画导入） |
+| `GameEvent` | 通用事件信封，用于事件链传递和回调触发 |
 | `System` | 全局逻辑处理器（如回合系统、ATB 系统） |
 
 ### 架构分层
@@ -35,6 +37,22 @@ last_updated: "2025-12-31"
 │           Game Implementation            │  ← 具体游戏
 │  (如 InkMon Battle)                      │
 └─────────────────────────────────────────┘
+```
+
+### Timeline 执行流程
+
+```
+Ability.activate()
+    ↓
+ActivateInstanceComponent.onActivate()
+    ↓ (创建)
+AbilityExecutionInstance(tagActions: {tagName → Action[]})
+    ↓ (tick 推进)
+检测 Tag 到达 → 执行绑定的 Action 列表
+    ↓
+Action.execute() → 收集 GameEvent
+    ↓
+表演层消费 events
 ```
 <!-- END_SECTION -->
 
@@ -74,6 +92,9 @@ type ActorState = 'active' | 'inactive' | 'dead' | 'removed';
 // Ability 状态
 type AbilityState = 'idle' | 'active' | 'channeling' | 'executing' | 'cooldown' | 'expired';
 
+// 执行实例状态
+type ExecutionState = 'executing' | 'completed' | 'cancelled';
+
 // Modifier 类型
 enum ModifierType {
   AddBase = 'AddBase',
@@ -82,19 +103,26 @@ enum ModifierType {
   MulFinal = 'MulFinal',
 }
 
-// 属性修改器
-interface AttributeModifier {
-  id: string;
-  attributeName: string;
-  modifierType: ModifierType;
-  value: number;
-  source: string;
+// 时间轴资产
+interface TimelineAsset {
+  readonly id: string;
+  readonly totalDuration: number;
+  readonly tags: Record<string, number>;  // tagName → time(ms)
 }
 
 // Action 接口
 interface IAction {
   readonly type: string;
   execute(ctx: ExecutionContext): ActionResult;
+}
+
+// 执行上下文（eventChain 机制）
+interface ExecutionContext {
+  readonly eventChain: GameEventBase[];  // 事件链（用于回调触发）
+  readonly gameplayState: unknown;
+  readonly eventCollector: IEventCollector;
+  readonly ability?: AbilityInfo;
+  readonly execution?: ExecutionInfo;
 }
 ```
 
@@ -109,7 +137,9 @@ interface IAction {
 | `Ability.activate(ctx)` | 激活能力（应用 Modifier） |
 | `Ability.deactivate(ctx)` | 失效能力（移除 Modifier） |
 | `Action.execute(ctx)` | 执行效果 |
-| `Action.onHit(action)` | 添加命中回调 |
+| `AbilityExecutionInstance.tick(dt)` | 推进时间，触发 Tag |
+| `getCurrentEvent(ctx)` | 获取事件链末端事件 |
+| `getOriginalEvent(ctx)` | 获取事件链起始事件 |
 <!-- END_SECTION -->
 
 <!-- SECTION: formulas-algorithms -->
@@ -139,48 +169,70 @@ BodyValue = (100 + 30) × 1.3 = 169
 CurrentValue = (169 + 50) × 1.1 = 240.9
 ```
 
-### Action 回调链
+### Action 事件链机制
 
 ```
-DamageAction.execute()
+DamageAction.execute(ctx)
   ├─ 计算伤害
-  ├─ 触发 onHit
-  │    └─ ApplyDebuffAction.execute()
-  ├─ 如果暴击触发 onCritical
-  │    └─ BonusDamageAction.execute()
-  └─ 如果击杀触发 onKill
-       └─ HealAction.execute()
+  ├─ emit DamageEvent
+  ├─ createCallbackContext(ctx, damageEvent) ← 事件入链
+  ├─ 触发回调 Action（使用新 context）
+  │    └─ 回调可通过 getCurrentEvent 访问触发事件
+  └─ 回调结束后事件自动出链
 ```
+
+事件链用途：
+- 回调 Action 可查询触发原因（如"是被谁攻击触发的"）
+- 支持条件判断（如"只有暴击时才触发"）
+- 防止无限回调（深度限制）
 <!-- END_SECTION -->
 
 ## 5. Usage Examples
 
 ```typescript
-import { Actor, AttributeSet, Ability } from '@lomo/logic-game-framework';
-import { BattleUnit, DamageAction, AddBuffAction } from '@lomo/logic-game-framework/stdlib';
+import {
+  Ability, AttributeSet,
+  AbilityExecutionInstance,
+  createExecutionContext
+} from '@lomo/logic-game-framework';
+import { DamageAction } from '@lomo/logic-game-framework/stdlib';
 
-// 创建战斗单位
-const unit = new BattleUnit('hero');
-unit.attributes.defineAttribute('hp', 1000, 0); // min=0
-unit.attributes.defineAttribute('atk', 100);
+// ===== 1. Timeline 执行实例 =====
 
-// 添加属性修改器（如装备效果）
-unit.attributes.addModifier({
+// 注册时间轴
+getTimelineRegistry().register({
+  id: 'skill_fireball',
+  totalDuration: 1200,
+  tags: { 'cast': 0, 'hit': 600, 'end': 1200 },
+});
+
+// 创建执行实例
+const instance = new AbilityExecutionInstance({
+  timelineId: 'skill_fireball',
+  tagActions: {
+    'hit': [new DamageAction({ base: 100 })],  // 600ms 时执行伤害
+  },
+  eventChain: [triggerEvent],
+  gameplayState: battle,
+  abilityInfo: { id, configId, owner, source },
+});
+
+// 游戏循环中推进
+const triggeredTags = instance.tick(deltaTime);
+const events = instance.flushEvents();  // 表演层消费
+
+// ===== 2. 属性系统 =====
+
+const attrs = new AttributeSet();
+attrs.defineAttribute('atk', 100);
+attrs.addModifier({
   id: 'weapon-1',
   attributeName: 'atk',
-  modifierType: ModifierType.AddBase,
+  modifierType: 'AddBase',
   value: 50,
   source: 'equipment',
 });
-
-// 创建伤害 Action 并添加命中回调
-const attack = new DamageAction({ base: 100, scaling: 1.0, type: 'physical' })
-  .onHit(new AddBuffAction({ buffId: 'bleed', duration: 3000 }))
-  .onKill(new HealAction({ amount: 50 }));
-
-// 执行
-const result = attack.execute(context);
-// result.events 包含所有产生的 BattleEvent
+console.log(attrs.getCurrentValue('atk'));  // 150
 ```
 
 ## 6. Extension Guide
@@ -199,4 +251,6 @@ How to extend this module:
 | Modifier 不生效 | 检查 `attributeName` 是否与 `defineAttribute` 一致 |
 | 循环依赖警告 | 属性 A 依赖 B，B 依赖 A，检查计算逻辑 |
 | Ability 不过期 | 确保添加了 `DurationComponent` |
-| 回调不触发 | 检查 `callbackTriggers` 是否包含对应 trigger |
+| Timeline 未找到 | 确保在 `getTimelineRegistry().register()` 注册 |
+| Tag 未触发 | 检查 `tagActions` key 是否与 timeline tags 一致 |
+| 事件链为空 | 确保 `createCallbackContext` 正确传入父 context |

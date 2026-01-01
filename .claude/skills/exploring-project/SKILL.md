@@ -7,8 +7,8 @@ description: Provides project architecture overview including directory structur
 
 <!-- region Generated Config Start -->
 ```yaml
-last_tracked_commit: "a46f1172aec18d7167ec20ce575da63f9f11665c"
-last_updated: "2025-12-31"
+last_tracked_commit: "9265a1ca51c9b70bdddb9d71af12ed725e56b8b9"
+last_updated: "2026-01-02"
 ```
 <!-- region Generated Config End -->
 
