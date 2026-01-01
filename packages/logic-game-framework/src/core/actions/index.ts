@@ -2,7 +2,6 @@ export {
   ExecutionContext,
   IAbility,
   createExecutionContext,
-  cloneContext,
 } from './ExecutionContext.js';
 
 export {
@@ -25,3 +24,5 @@ export {
   getActionFactory,
   setActionFactory,
 } from './Action.js';
+
+export { TargetSelector } from './TargetSelector.js';

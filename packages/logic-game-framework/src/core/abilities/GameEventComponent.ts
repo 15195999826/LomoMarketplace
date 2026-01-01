@@ -1,7 +1,7 @@
 /**
  * GameEventComponent - 事件驱动的 Action 执行组件
  *
- * 根据 GameEvent 执行链式 Action 的能力组件。
+ * 根据 GameEvent 执行 Action 链的能力组件。
  * 这是框架中**唯一**触发 Action 执行的组件。
  *
  * ## 核心设计思想：统一事件模型
@@ -27,86 +27,70 @@
  *                      执行 Action 链
  * ```
  *
- * ## 这种设计的优势
- *
- * 1. **统一模型**：主动/被动技能都通过事件触发，Action 执行方式一致
- * 2. **解耦**：战斗系统只负责发事件，不关心技能具体怎么执行
- * 3. **可扩展**：可以实现"当有人使用技能时"的响应（如反制、打断）
- * 4. **可记录**：所有操作都是事件，方便回放/录像/网络同步
- *
- * ## 主动技能示例
+ * ## 使用示例
  *
  * ```typescript
- * // 火球术：主动技能
- * const fireball = new Ability({
- *   configId: 'skill_fireball',
- *   tags: ['active', 'fire'],
- *   components: [
- *     new GameEventComponent([{
- *       eventKind: 'inputAction',
- *       filter: (event, ctx) => event.abilityId === ctx.ability.configId,
- *       actions: [new DamageAction({ damage: 50, element: 'fire' })],
- *     }]),
+ * // 被动技能：受到伤害时反伤
+ * new GameEventComponent({
+ *   triggers: [
+ *     { eventKind: 'damage', filter: (e, ctx) => e.target.id === ctx.owner.id },
  *   ],
- * }, caster.toRef());
+ *   actions: [new ReflectDamageAction()],
+ * });
  *
- * // 玩家使用技能时，战斗系统广播事件
- * battle.broadcastEvent({
- *   kind: 'inputAction',
- *   logicTime: battle.logicTime,
- *   actor: caster.toRef(),
- *   abilityId: 'skill_fireball',
- *   targets: [enemy.toRef()],
+ * // 多触发条件（任意一个满足）
+ * new GameEventComponent({
+ *   triggers: [
+ *     { eventKind: 'turnStart' },
+ *     { eventKind: 'onHit' },
+ *   ],
+ *   triggerMode: 'any',
+ *   actions: [new HealAction()],
  * });
  * ```
- *
- * ## 被动技能示例
- *
- * ```typescript
- * // 荆棘护甲：受到伤害时反弹
- * const thornArmor = new Ability({
- *   configId: 'passive_thorn',
- *   tags: ['passive'],
- *   components: [
- *     new GameEventComponent([{
- *       eventKind: 'damage',
- *       filter: (event, ctx) => event.target.id === ctx.owner.id,
- *       actions: [new ReflectDamageAction({ percent: 0.1 })],
- *     }]),
- *   ],
- * }, hero.toRef());
- * ```
- *
- * ## 设计原则
- *
- * - 框架不对事件结构做假设（不知道 source/target）
- * - Action 通过 `ctx.triggerEvent` 获取触发事件数据
- * - 游戏自定义事件类型，Action 中通过类型断言解析
  */
 
 import {
   BaseAbilityComponent,
   ComponentTypes,
   type ComponentLifecycleContext,
-} from '../../core/abilities/AbilityComponent.js';
-import type { GameEventBase } from '../../core/events/GameEvent.js';
-import type { IAction } from '../../core/actions/Action.js';
-import type { ExecutionContext } from '../../core/actions/ExecutionContext.js';
-import { EventCollector } from '../../core/events/EventCollector.js';
-import { getLogger } from '../../core/utils/Logger.js';
+} from './AbilityComponent.js';
+import type { GameEventBase } from '../events/GameEvent.js';
+import type { IAction } from '../actions/Action.js';
+import type { ExecutionContext } from '../actions/ExecutionContext.js';
+import { createExecutionContext } from '../actions/ExecutionContext.js';
+import { EventCollector } from '../events/EventCollector.js';
+import { getLogger } from '../utils/Logger.js';
 
 // ========== 类型定义 ==========
 
 /**
  * 事件触发器配置
  *
- * 定义：监听什么事件 + 满足什么条件 + 执行什么 Action
+ * 定义：监听什么事件 + 满足什么条件
  */
 export type EventTrigger<TEvent extends GameEventBase = GameEventBase> = {
   /** 监听的事件类型（kind 字符串） */
   readonly eventKind: string;
   /** 条件过滤器（可选） */
   readonly filter?: (event: TEvent, context: ComponentLifecycleContext) => boolean;
+};
+
+/**
+ * 触发模式
+ * - 'any': 任意一个触发器匹配即执行（OR）
+ * - 'all': 所有触发器都匹配才执行（AND）
+ */
+export type TriggerMode = 'any' | 'all';
+
+/**
+ * GameEventComponent 配置
+ */
+export type GameEventComponentConfig = {
+  /** 触发器列表 */
+  readonly triggers: EventTrigger[];
+  /** 触发模式，默认 'any' */
+  readonly triggerMode?: TriggerMode;
   /** 要执行的 Action 链 */
   readonly actions: IAction[];
 };
@@ -123,46 +107,78 @@ export class GameEventComponent extends BaseAbilityComponent {
   readonly type = ComponentTypes.TRIGGER;
 
   private readonly triggers: EventTrigger[];
+  private readonly triggerMode: TriggerMode;
+  private readonly actions: IAction[];
 
-  constructor(triggers: EventTrigger[]) {
+  constructor(config: GameEventComponentConfig) {
     super();
-    this.triggers = triggers;
+    this.triggers = config.triggers;
+    this.triggerMode = config.triggerMode ?? 'any';
+    this.actions = config.actions;
   }
 
   /**
    * 响应游戏事件
    *
-   * 遍历所有触发器，匹配事件类型和条件后执行 Action 链
+   * 根据 triggerMode 检查触发器，匹配后执行 Action 链
    */
   onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
-    for (const trigger of this.triggers) {
-      // 检查事件类型
-      if (event.kind !== trigger.eventKind) {
-        continue;
-      }
+    const shouldExecute = this.checkTriggers(event, context);
 
-      // 检查自定义条件
-      if (trigger.filter && !trigger.filter(event, context)) {
-        continue;
-      }
-
-      // 执行 Action 链
-      this.executeActions(trigger.actions, event, context, gameplayState);
+    if (shouldExecute) {
+      this.executeActions(event, context, gameplayState);
     }
+  }
+
+  /**
+   * 检查触发器是否匹配
+   */
+  private checkTriggers(event: GameEventBase, context: ComponentLifecycleContext): boolean {
+    if (this.triggers.length === 0) {
+      return false;
+    }
+
+    if (this.triggerMode === 'any') {
+      // 任意一个匹配即可
+      return this.triggers.some((trigger) => this.matchTrigger(trigger, event, context));
+    } else {
+      // 所有都匹配
+      return this.triggers.every((trigger) => this.matchTrigger(trigger, event, context));
+    }
+  }
+
+  /**
+   * 检查单个触发器是否匹配
+   */
+  private matchTrigger(
+    trigger: EventTrigger,
+    event: GameEventBase,
+    context: ComponentLifecycleContext
+  ): boolean {
+    // 检查事件类型
+    if (event.kind !== trigger.eventKind) {
+      return false;
+    }
+
+    // 检查自定义条件
+    if (trigger.filter && !trigger.filter(event, context)) {
+      return false;
+    }
+
+    return true;
   }
 
   /**
    * 执行 Action 链
    */
   private executeActions(
-    actions: IAction[],
     event: GameEventBase,
     context: ComponentLifecycleContext,
     gameplayState: unknown
   ): void {
     const execContext = this.buildExecutionContext(event, context, gameplayState);
 
-    for (const action of actions) {
+    for (const action of this.actions) {
       try {
         action.execute(execContext);
       } catch (error) {
@@ -176,39 +192,30 @@ export class GameEventComponent extends BaseAbilityComponent {
 
   /**
    * 构建 Action 执行上下文
-   *
-   * source 和 primaryTarget 默认都是 owner，
-   * Action 通过 ctx.triggerEvent 获取事件中的真正参与者。
    */
   private buildExecutionContext(
     event: GameEventBase,
     context: ComponentLifecycleContext,
     gameplayState: unknown
   ): ExecutionContext {
-    return {
-      // 触发信息
+    return createExecutionContext({
       triggerEvent: event,
       gameplayState,
-      // 参与者（默认都是 owner，Action 可从 triggerEvent 取真正目标）
-      source: context.owner,
-      primaryTarget: context.owner,
+      eventCollector: new EventCollector(),
       ability: {
         id: context.ability.id,
         configId: context.ability.configId,
         owner: context.owner,
         source: context.owner,
       },
-      // 输出通道
-      eventCollector: new EventCollector(),
-      // 执行状态
-      affectedTargets: [],
-      callbackDepth: 0,
-    };
+    });
   }
 
   serialize(): object {
     return {
       triggersCount: this.triggers.length,
+      triggerMode: this.triggerMode,
+      actionsCount: this.actions.length,
     };
   }
 }
@@ -220,28 +227,21 @@ export class GameEventComponent extends BaseAbilityComponent {
  *
  * @example
  * ```typescript
- * // 游戏定义自己的事件类型
  * type MyDamageEvent = GameEventBase & { kind: 'damage'; target: ActorRef; };
  *
  * const trigger = createEventTrigger<MyDamageEvent>('damage', {
  *   filter: (event, ctx) => event.target.id === ctx.owner.id,
- *   actions: [myAction],
  * });
- *
- * new GameEventComponent([trigger]);
  * ```
  */
 export function createEventTrigger<TEvent extends GameEventBase>(
   eventKind: TEvent['kind'],
-  config: {
+  config?: {
     filter?: (event: TEvent, context: ComponentLifecycleContext) => boolean;
-    actions: IAction[];
   }
 ): EventTrigger<TEvent> {
   return {
     eventKind,
-    filter: config.filter,
-    actions: config.actions,
+    filter: config?.filter,
   };
 }
-

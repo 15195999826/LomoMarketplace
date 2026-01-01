@@ -20,9 +20,11 @@ export {
   mulFinalStat,
 } from './StatModifierComponent.js';
 
-// GameEventComponent - 事件驱动的 Action 执行组件
+// Re-export from core for backward compatibility
 export {
   GameEventComponent,
+  GameEventComponentConfig,
   EventTrigger,
+  TriggerMode,
   createEventTrigger,
-} from './GameEventComponent.js';
+} from '../../core/abilities/GameEventComponent.js';

@@ -3,6 +3,14 @@
  *
  * Action 执行时的上下文信息。
  * 仅存在于 Action 链执行流程中。
+ *
+ * ## 设计原则
+ *
+ * ExecutionContext 是"输入 + 输出通道"：
+ * - 输入：triggerEvent, gameplayState, ability
+ * - 输出：eventCollector
+ *
+ * 目标选择由 Action 自身的 TargetSelector 负责，从 triggerEvent 中提取。
  */
 
 import type { ActorRef } from '../types/common.js';
@@ -20,11 +28,10 @@ export interface IAbility {
 /**
  * 执行上下文
  *
- * Action 执行时可访问的所有信息，按职责分组：
+ * Action 执行时可访问的所有信息：
  * 1. 触发信息 - 什么事件触发了这次执行
- * 2. 参与者 - 谁在执行、目标是谁
+ * 2. 能力信息 - 哪个能力触发的
  * 3. 输出通道 - 如何产生副作用
- * 4. 执行状态 - 回调机制相关
  */
 export type ExecutionContext = {
   // ========== 触发信息 ==========
@@ -39,6 +46,7 @@ export type ExecutionContext = {
    * ```typescript
    * const event = ctx.triggerEvent as DamageGameEvent;
    * const damage = event.damage;
+   * const source = event.source;
    * ```
    */
   readonly triggerEvent: GameEventBase;
@@ -59,29 +67,24 @@ export type ExecutionContext = {
    */
   readonly gameplayState: unknown;
 
-  // ========== 参与者 ==========
+  // ========== 能力信息 ==========
 
-  /** 效果来源（技能释放者） */
-  readonly source: ActorRef;
-
-  /** 主目标 */
-  readonly primaryTarget: ActorRef;
-
-  /** 触发此 Action 的能力 */
+  /**
+   * 触发此 Action 的能力（可选）
+   *
+   * 对于由 GameEventComponent 触发的 Action，这里是对应的 Ability。
+   * 对于其他场景触发的 Action，可能为 undefined。
+   */
   readonly ability?: IAbility;
 
   // ========== 输出通道 ==========
 
-  /** 事件收集器（收集产生的事件） */
+  /**
+   * 事件收集器
+   *
+   * Action 通过 eventCollector.emit() 产生新的 GameEvent。
+   */
   readonly eventCollector: EventCollector;
-
-  // ========== 执行状态 ==========
-
-  /** 被影响的目标列表（用于回调中的 affected 引用） */
-  affectedTargets: ActorRef[];
-
-  /** 回调深度（用于防止无限递归） */
-  callbackDepth: number;
 };
 
 /**
@@ -90,40 +93,13 @@ export type ExecutionContext = {
 export function createExecutionContext(params: {
   triggerEvent: GameEventBase;
   gameplayState: unknown;
-  source: ActorRef;
-  primaryTarget: ActorRef;
   eventCollector: EventCollector;
   ability?: IAbility;
 }): ExecutionContext {
   return {
-    // 触发信息
     triggerEvent: params.triggerEvent,
     gameplayState: params.gameplayState,
-    // 参与者
-    source: params.source,
-    primaryTarget: params.primaryTarget,
     ability: params.ability,
-    // 输出通道
     eventCollector: params.eventCollector,
-    // 执行状态
-    affectedTargets: [],
-    callbackDepth: 0,
-  };
-}
-
-/**
- * 克隆执行上下文（用于回调 Action）
- *
- * 保持引用共享（triggerEvent, gameplayState, eventCollector），
- * 但允许修改参与者和执行状态。
- */
-export function cloneContext(
-  ctx: ExecutionContext,
-  overrides?: Partial<Pick<ExecutionContext, 'source' | 'primaryTarget'>>
-): ExecutionContext {
-  return {
-    ...ctx,
-    ...overrides,
-    affectedTargets: [...ctx.affectedTargets],
   };
 }

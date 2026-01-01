@@ -5,11 +5,26 @@
  * 与 Component（负责"何时执行"）配合使用
  */
 
-import type { TargetRef, ActorRef } from '../types/common.js';
+import type { ActorRef } from '../types/common.js';
 import type { ExecutionContext } from './ExecutionContext.js';
 import type { ActionResult } from './ActionResult.js';
-import { createFailureResult } from './ActionResult.js';
+import type { TargetSelector } from './TargetSelector.js';
 import { getLogger } from '../utils/Logger.js';
+
+/**
+ * 默认目标选择器
+ * 尝试从 triggerEvent 中获取 target 或 targets
+ */
+const defaultTargetSelector: TargetSelector = (ctx: ExecutionContext): ActorRef[] => {
+  const event = ctx.triggerEvent as { target?: ActorRef; targets?: ActorRef[] };
+  if (event.targets) {
+    return event.targets;
+  }
+  if (event.target) {
+    return [event.target];
+  }
+  return [];
+};
 
 /**
  * Action 接口
@@ -26,27 +41,27 @@ export interface IAction {
   execute(ctx: Readonly<ExecutionContext>): ActionResult;
 
   /**
-   * 设置目标（可选，用于链式调用）
+   * 设置目标选择器
    */
-  setTarget?(target: TargetRef): this;
+  setTargetSelector?(selector: TargetSelector): this;
+
+  /**
+   * 获取目标
+   */
+  getTargets?(ctx: Readonly<ExecutionContext>): ActorRef[];
 }
 
 /**
  * 回调 Action 配置
+ *
+ * @deprecated 回调机制待重构，建议使用事件驱动方式
  */
 export type ActionCallback = {
   /** 触发条件 */
   readonly trigger: string;
   /** 要执行的 Action */
   readonly action: IAction;
-  /** 回调目标策略 */
-  readonly targetStrategy: 'affected' | 'source' | 'none';
 };
-
-/**
- * 回调递归深度限制
- */
-const MAX_CALLBACK_DEPTH = 10;
 
 /**
  * Action 基类
@@ -55,10 +70,10 @@ const MAX_CALLBACK_DEPTH = 10;
 export abstract class BaseAction implements IAction {
   abstract readonly type: string;
 
-  /** 目标引用 */
-  protected targetRef: TargetRef = { ref: 'primary' };
+  /** 目标选择器 */
+  protected targetSelector: TargetSelector = defaultTargetSelector;
 
-  /** 回调列表 */
+  /** 回调列表 @deprecated */
   protected callbacks: ActionCallback[] = [];
 
   /**
@@ -67,23 +82,46 @@ export abstract class BaseAction implements IAction {
   abstract execute(ctx: Readonly<ExecutionContext>): ActionResult;
 
   /**
-   * 设置目标
+   * 设置目标选择器
+   *
+   * @example
+   * ```typescript
+   * // 使用预定义选择器
+   * action.setTargetSelector(TargetSelectors.triggerSource);
+   *
+   * // 使用自定义选择器
+   * action.setTargetSelector((ctx) => {
+   *   const event = ctx.triggerEvent as MyEvent;
+   *   return [event.target];
+   * });
+   * ```
    */
-  setTarget(target: TargetRef): this {
-    this.targetRef = target;
+  setTargetSelector(selector: TargetSelector): this {
+    this.targetSelector = selector;
     return this;
   }
 
   /**
-   * 添加回调
+   * 获取目标列表
+   * 调用 targetSelector 解析目标
    */
-  addCallback(trigger: string, action: IAction, targetStrategy: ActionCallback['targetStrategy'] = 'affected'): this {
-    this.callbacks.push({ trigger, action, targetStrategy });
+  getTargets(ctx: Readonly<ExecutionContext>): ActorRef[] {
+    return this.targetSelector(ctx);
+  }
+
+  /**
+   * 添加回调
+   * @deprecated 回调机制待重构
+   */
+  addCallback(trigger: string, action: IAction): this {
+    this.callbacks.push({ trigger, action });
+    getLogger().warn('ActionCallback is deprecated, consider using event-driven approach');
     return this;
   }
 
   /**
    * 命中时回调
+   * @deprecated 回调机制待重构
    */
   onHit(action: IAction): this {
     return this.addCallback('onHit', action);
@@ -91,6 +129,7 @@ export abstract class BaseAction implements IAction {
 
   /**
    * 暴击时回调
+   * @deprecated 回调机制待重构
    */
   onCritical(action: IAction): this {
     return this.addCallback('onCritical', action);
@@ -98,6 +137,7 @@ export abstract class BaseAction implements IAction {
 
   /**
    * 击杀时回调
+   * @deprecated 回调机制待重构
    */
   onKill(action: IAction): this {
     return this.addCallback('onKill', action);
@@ -105,23 +145,10 @@ export abstract class BaseAction implements IAction {
 
   /**
    * 处理回调
-   * 根据执行结果中的 callbackTriggers 执行对应的回调 Action
+   * @deprecated 回调机制待重构，当前仅执行回调但不传递目标信息
    */
-  protected processCallbacks(
-    result: ActionResult,
-    ctx: ExecutionContext
-  ): ActionResult {
+  protected processCallbacks(result: ActionResult, ctx: ExecutionContext): ActionResult {
     if (!result.success || this.callbacks.length === 0) {
-      return result;
-    }
-
-    // 检查递归深度
-    const currentDepth = ctx.callbackDepth;
-    if (currentDepth >= MAX_CALLBACK_DEPTH) {
-      getLogger().warn(`Callback depth exceeded maximum (${MAX_CALLBACK_DEPTH}), skipping further callbacks`, {
-        actionType: this.type,
-        depth: currentDepth,
-      });
       return result;
     }
 
@@ -130,46 +157,17 @@ export abstract class BaseAction implements IAction {
     const additionalTargets = [...result.affectedTargets];
 
     for (const callback of this.callbacks) {
-      // 检查触发条件是否满足
       if (!result.callbackTriggers.includes(callback.trigger)) {
         continue;
       }
 
-      // 确定回调目标
-      let callbackTargets: ActorRef[];
-      switch (callback.targetStrategy) {
-        case 'affected':
-          callbackTargets = result.affectedTargets;
-          break;
-        case 'source':
-          callbackTargets = [ctx.source];
-          break;
-        case 'none':
-          callbackTargets = [ctx.primaryTarget];
-          break;
-        default:
-          callbackTargets = result.affectedTargets;
-      }
-
-      // 对每个目标执行回调 Action
-      for (const target of callbackTargets) {
-        try {
-          const callbackCtx: ExecutionContext = {
-            ...ctx,
-            primaryTarget: target,
-            affectedTargets: [],
-            callbackDepth: currentDepth + 1,  // 递增深度
-          };
-
-          const callbackResult = callback.action.execute(callbackCtx);
-
-          additionalEvents.push(...callbackResult.events);
-          additionalTriggers.push(...callbackResult.callbackTriggers);
-          additionalTargets.push(...callbackResult.affectedTargets);
-        } catch (error) {
-          getLogger().error(`Callback action failed: ${callback.trigger}`, { error });
-          // 回调失败不影响主结果
-        }
+      try {
+        const callbackResult = callback.action.execute(ctx);
+        additionalEvents.push(...callbackResult.events);
+        additionalTriggers.push(...callbackResult.callbackTriggers);
+        additionalTargets.push(...callbackResult.affectedTargets);
+      } catch (error) {
+        getLogger().error(`Callback action failed: ${callback.trigger}`, { error });
       }
     }
 
@@ -206,15 +204,12 @@ export class NoopAction extends BaseAction {
 export type ActionConfig = {
   /** Action 类型 */
   type: string;
-  /** 目标引用 */
-  target?: TargetRef;
   /** Action 特定参数 */
   params?: Record<string, unknown>;
-  /** 回调配置 */
+  /** 回调配置 @deprecated */
   callbacks?: Array<{
     trigger: string;
     action: ActionConfig;
-    targetStrategy?: ActionCallback['targetStrategy'];
   }>;
 };
 
@@ -258,16 +253,11 @@ export class ActionFactory implements IActionFactory {
 
     const action = creator(config.params ?? {});
 
-    // 设置目标
-    if (config.target && action.setTarget) {
-      action.setTarget(config.target);
-    }
-
     // 添加回调
     if (config.callbacks && action instanceof BaseAction) {
       for (const cb of config.callbacks) {
         const callbackAction = this.create(cb.action);
-        action.addCallback(cb.trigger, callbackAction, cb.targetStrategy ?? 'affected');
+        action.addCallback(cb.trigger, callbackAction);
       }
     }
 

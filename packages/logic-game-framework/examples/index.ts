@@ -32,5 +32,8 @@ export * from './events/index.js';
 // 能力相关
 export * from './abilities/index.js';
 
+// 选择器相关
+export { TargetSelectors } from './selectors/TargetSelectors.js';
+
 // BasicCharacter 导出（可选使用）
 export { Character, createAtkBuff, createTimedBuff, runExample } from './BasicCharacter.js';

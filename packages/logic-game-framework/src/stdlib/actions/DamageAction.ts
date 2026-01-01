@@ -115,15 +115,23 @@ export class DamageAction extends BaseAction {
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
-    const target = ctx.primaryTarget;
+    // 使用 TargetSelector 获取目标
+    const targets = this.getTargets(ctx);
+    if (targets.length === 0) {
+      return createFailureResult('No targets selected');
+    }
+
+    // 获取来源（从 ability 或 triggerEvent）
+    const source = ctx.ability?.owner ?? (ctx.triggerEvent as { source?: ActorRef }).source;
+    if (!source) {
+      return createFailureResult('No source found');
+    }
 
     // 计算基础伤害
     let baseValue = this.baseDamage;
 
     // 如果有表达式，可以在这里解析
-    // 目前简化处理，仅使用固定值
     if (this.damageExpression && baseValue === 0) {
-      // 简单解析：如果表达式是数字字符串
       const parsed = parseFloat(this.damageExpression);
       if (!isNaN(parsed)) {
         baseValue = parsed;
@@ -136,67 +144,68 @@ export class DamageAction extends BaseAction {
       return createFailureResult('Damage value must be positive');
     }
 
-    // 使用伤害计算器
-    const calcResult = damageCalculator.calculate(
-      baseValue,
-      ctx.source,
-      target,
-      ctx as ExecutionContext
-    );
+    // 对每个目标造成伤害
+    const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
+    const allTriggers: string[] = [];
+    const affectedTargets: ActorRef[] = [];
 
-    const { damage, isCritical } = calcResult;
+    for (const target of targets) {
+      // 使用伤害计算器
+      const calcResult = damageCalculator.calculate(baseValue, source, target, ctx as ExecutionContext);
+      const { damage, isCritical } = calcResult;
 
-    // 判断是否击杀
-    // 优先使用计算器返回的结果，否则尝试从目标Actor获取HP判断
-    let isKill = calcResult.isKill ?? false;
-    if (calcResult.isKill === undefined) {
-      // 尝试从 gameplayState 获取目标 Actor 的 HP
-      // 注意：gameplayState 是 unknown，需要运行时类型检查
-      const state = ctx.gameplayState as { getActor?: (id: string) => unknown } | null;
-      const targetActor = state?.getActor?.(target.id);
-      if (targetActor && typeof targetActor === 'object') {
-        const actor = targetActor as { hp?: number; attributes?: { getCurrentValue?(name: string): number } };
-        // 检查是否有 hp 属性或 attributes.getCurrentValue 方法
-        let targetHp: number | undefined;
-        if (typeof actor.hp === 'number') {
-          targetHp = actor.hp;
-        } else if (actor.attributes?.getCurrentValue) {
-          targetHp = actor.attributes.getCurrentValue(StandardAttributes.HP);
+      // 判断是否击杀
+      let isKill = calcResult.isKill ?? false;
+      if (calcResult.isKill === undefined) {
+        const state = ctx.gameplayState as { getActor?: (id: string) => unknown } | null;
+        const targetActor = state?.getActor?.(target.id);
+        if (targetActor && typeof targetActor === 'object') {
+          const actor = targetActor as { hp?: number; attributes?: { getCurrentValue?(name: string): number } };
+          let targetHp: number | undefined;
+          if (typeof actor.hp === 'number') {
+            targetHp = actor.hp;
+          } else if (actor.attributes?.getCurrentValue) {
+            targetHp = actor.attributes.getCurrentValue(StandardAttributes.HP);
+          }
+          if (targetHp !== undefined) {
+            isKill = targetHp <= damage;
+          }
         }
-        if (targetHp !== undefined) {
-          isKill = targetHp <= damage;
-        }
+      }
+
+      // 发出事件
+      const event = ctx.eventCollector.emit({
+        kind: 'damage',
+        logicTime: ctx.triggerEvent.logicTime,
+        source,
+        target,
+        damage,
+        damageType: this.damageType,
+        isCritical,
+        isKill,
+      });
+
+      allEvents.push(event);
+      affectedTargets.push(target);
+
+      // 收集回调触发器
+      allTriggers.push(CallbackTriggers.ON_HIT);
+      if (isCritical) {
+        allTriggers.push(CallbackTriggers.ON_CRITICAL);
+      }
+      if (isKill) {
+        allTriggers.push(CallbackTriggers.ON_KILL);
       }
     }
 
-    // 发出事件
-    const event = ctx.eventCollector.emit({
-      kind: 'damage',
-      logicTime: ctx.triggerEvent.logicTime,
-      source: ctx.source,
-      target,
-      damage,
-      damageType: this.damageType,
-      isCritical,
-      isKill,
-    });
+    const result = createSuccessResult(
+      allEvents,
+      affectedTargets,
+      [...new Set(allTriggers)],
+      { damage: baseValue, targetCount: targets.length }
+    );
 
-    // 构建回调触发器
-    const triggers: string[] = [CallbackTriggers.ON_HIT];
-    if (isCritical) {
-      triggers.push(CallbackTriggers.ON_CRITICAL);
-    }
-    if (isKill) {
-      triggers.push(CallbackTriggers.ON_KILL);
-    }
-
-    const result = createSuccessResult([event], [target], triggers, {
-      damage,
-      isCritical,
-      isKill,
-    });
-
-    // 处理回调
+    // 处理回调（deprecated）
     return this.processCallbacks(result, ctx as ExecutionContext);
   }
 }

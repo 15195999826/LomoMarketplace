@@ -24,3 +24,11 @@ export {
   createAbilitySet,
   hasAbilitySet,
 } from './AbilitySet.js';
+
+export {
+  GameEventComponent,
+  GameEventComponentConfig,
+  EventTrigger,
+  TriggerMode,
+  createEventTrigger,
+} from './GameEventComponent.js';

@@ -12,6 +12,7 @@ import {
   createFailureResult,
   CallbackTriggers,
 } from '../../core/actions/index.js';
+import type { ActorRef } from '../../core/types/common.js';
 
 /**
  * HealAction
@@ -49,7 +50,14 @@ export class HealAction extends BaseAction {
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
-    const target = ctx.primaryTarget;
+    // 使用 TargetSelector 获取目标
+    const targets = this.getTargets(ctx);
+    if (targets.length === 0) {
+      return createFailureResult('No targets selected');
+    }
+
+    // 获取来源（从 ability 或 triggerEvent）
+    const source = ctx.ability?.owner ?? (ctx.triggerEvent as { source?: ActorRef }).source;
 
     // 计算治疗量
     let amount = this.healAmount;
@@ -67,31 +75,43 @@ export class HealAction extends BaseAction {
       return createFailureResult('Heal amount must be positive');
     }
 
-    // 实际治疗量（考虑过量治疗）
-    // 简化实现：不检查目标当前 HP
-    const actualHeal = amount;
-    const overheal = 0; // 需要外部计算
+    // 对每个目标进行治疗
+    const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
+    const allTriggers: string[] = [];
+    const affectedTargets: ActorRef[] = [];
 
-    // 发出事件
-    const event = ctx.eventCollector.emit({
-      kind: 'heal',
-      logicTime: ctx.triggerEvent.logicTime,
-      source: ctx.source,
-      target,
-      healAmount: actualHeal,
-      overheal: overheal > 0 ? overheal : undefined,
-    });
+    for (const target of targets) {
+      // 实际治疗量（考虑过量治疗）
+      // 简化实现：不检查目标当前 HP
+      const actualHeal = amount;
+      const overheal = 0; // 需要外部计算
 
-    // 构建回调触发器
-    const triggers: string[] = [CallbackTriggers.ON_HEAL];
-    if (overheal > 0) {
-      triggers.push(CallbackTriggers.ON_OVERHEAL);
+      // 发出事件
+      const event = ctx.eventCollector.emit({
+        kind: 'heal',
+        logicTime: ctx.triggerEvent.logicTime,
+        source,
+        target,
+        healAmount: actualHeal,
+        overheal: overheal > 0 ? overheal : undefined,
+      });
+
+      allEvents.push(event);
+      affectedTargets.push(target);
+
+      // 收集回调触发器
+      allTriggers.push(CallbackTriggers.ON_HEAL);
+      if (overheal > 0) {
+        allTriggers.push(CallbackTriggers.ON_OVERHEAL);
+      }
     }
 
-    const result = createSuccessResult([event], [target], triggers, {
-      healAmount: actualHeal,
-      overheal,
-    });
+    const result = createSuccessResult(
+      allEvents,
+      affectedTargets,
+      [...new Set(allTriggers)],
+      { healAmount: amount, targetCount: targets.length }
+    );
 
     return this.processCallbacks(result, ctx as ExecutionContext);
   }

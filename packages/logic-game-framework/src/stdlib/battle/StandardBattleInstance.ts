@@ -158,12 +158,18 @@ export class StandardBattleInstance extends GameplayInstance {
       return [];
     }
 
+    // 创建包含 source/target 的默认触发事件
+    const defaultEvent: GameEventBase & { source: ActorRef; target: ActorRef } = {
+      kind: 'directAction',
+      logicTime: this._logicTime,
+      source,
+      target,
+    };
+
     // 创建执行上下文
     const ctx = createExecutionContext({
-      triggerEvent: triggerEvent ?? { kind: 'directAction', logicTime: this._logicTime },
+      triggerEvent: triggerEvent ?? defaultEvent,
       gameplayState: this,
-      source,
-      primaryTarget: target,
       eventCollector: this.eventCollector,
     });
 

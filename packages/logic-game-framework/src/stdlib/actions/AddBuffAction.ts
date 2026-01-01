@@ -12,6 +12,7 @@ import {
   createFailureResult,
   CallbackTriggers,
 } from '../../core/actions/index.js';
+import type { ActorRef } from '../../core/types/common.js';
 
 /**
  * Buff 刷新策略
@@ -80,44 +81,65 @@ export class AddBuffAction extends BaseAction {
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
-    const target = ctx.primaryTarget;
+    // 使用 TargetSelector 获取目标
+    const targets = this.getTargets(ctx);
+    if (targets.length === 0) {
+      return createFailureResult('No targets selected');
+    }
 
     if (!this.buffConfigId) {
       return createFailureResult('Buff config ID is required');
     }
 
-    // 检查目标是否已有此 Buff（简化实现）
-    // 实际需要访问目标的 Ability 列表
-    const isRefresh = false; // 需要外部判断
+    // 获取来源（从 ability 或 triggerEvent）
+    const source = ctx.ability?.owner ?? (ctx.triggerEvent as { source?: ActorRef }).source;
 
-    // 发出事件
-    const event = ctx.eventCollector.emit({
-      kind: 'buffApplied',
-      logicTime: ctx.triggerEvent.logicTime,
-      source: ctx.source,
-      target,
-      buffId: this.buffConfigId,
-      buffName: this.buffName,
-      stacks: this.stacks,
-      duration: this.duration,
-      isRefresh,
-    });
+    // 对每个目标添加 Buff
+    const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
+    const allTriggers: string[] = [];
+    const affectedTargets: ActorRef[] = [];
 
-    // 构建回调触发器
-    const triggers: string[] = [CallbackTriggers.ON_BUFF_APPLIED];
-    if (isRefresh) {
-      triggers.push(CallbackTriggers.ON_BUFF_REFRESHED);
+    for (const target of targets) {
+      // 检查目标是否已有此 Buff（简化实现）
+      const isRefresh = false; // 需要外部判断
+
+      // 发出事件
+      const event = ctx.eventCollector.emit({
+        kind: 'buffApplied',
+        logicTime: ctx.triggerEvent.logicTime,
+        source,
+        target,
+        buffId: this.buffConfigId,
+        buffName: this.buffName,
+        stacks: this.stacks,
+        duration: this.duration,
+        isRefresh,
+      });
+
+      allEvents.push(event);
+      affectedTargets.push(target);
+
+      // 收集回调触发器
+      allTriggers.push(CallbackTriggers.ON_BUFF_APPLIED);
+      if (isRefresh) {
+        allTriggers.push(CallbackTriggers.ON_BUFF_REFRESHED);
+      }
+      if (this.stacks > 1) {
+        allTriggers.push(CallbackTriggers.ON_BUFF_STACKED);
+      }
     }
-    if (this.stacks > 1) {
-      triggers.push(CallbackTriggers.ON_BUFF_STACKED);
-    }
 
-    const result = createSuccessResult([event], [target], triggers, {
-      buffConfigId: this.buffConfigId,
-      stacks: this.stacks,
-      duration: this.duration,
-      isRefresh,
-    });
+    const result = createSuccessResult(
+      allEvents,
+      affectedTargets,
+      [...new Set(allTriggers)],
+      {
+        buffConfigId: this.buffConfigId,
+        stacks: this.stacks,
+        duration: this.duration,
+        targetCount: targets.length,
+      }
+    );
 
     return this.processCallbacks(result, ctx as ExecutionContext);
   }
