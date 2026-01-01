@@ -1,5 +1,5 @@
 ---
-allowed-tools: Write, Read, Glob
+allowed-tools: Write, Read, Glob, Bash
 description: Summarize current conversation and save to project-notes/
 argument-hint: "[topic] Optional topic for the note"
 ---
@@ -10,7 +10,13 @@ Summarize the current conversation and save as a session note.
 
 ## Execution Steps
 
-### 1. Review conversation content
+### 1. Get current git commit hash
+
+Run: `git rev-parse --short HEAD`
+
+Save the commit hash for later use.
+
+### 2. Review conversation content
 
 Identify:
 - Main topics discussed
@@ -18,19 +24,20 @@ Identify:
 - Outstanding items and follow-ups
 - Key decisions made
 
-### 2. Determine filename
+### 3. Determine filename
 
-Format: `YYYY-MM-DD-topic.md`
+Format: `YYYY-MM-DD-HHmm-topic.md`
 
-- Date: Use today's date
+- DateTime: Use current date AND time (24-hour format, e.g., `2026-01-01-1430`)
 - Topic: Use `$ARGUMENTS` if provided, otherwise extract from conversation
 
-### 3. Generate note content
+### 4. Generate note content
 
 ```markdown
 # [Topic]
 
-Date: YYYY-MM-DD
+Date: YYYY-MM-DD HH:mm
+Git Commit: [commit-hash]
 
 ## Completed Work
 
@@ -49,16 +56,17 @@ Date: YYYY-MM-DD
 [Other relevant information]
 ```
 
-### 4. Save to project-notes/
+### 5. Save to project-notes/
 
-Use Write tool to save file to `project-notes/YYYY-MM-DD-topic.md`
+Use Write tool to save file to `project-notes/YYYY-MM-DD-HHmm-topic.md`
 
-### 5. Report save location
+### 6. Report save location
 
 ```
 ✅ Session summary saved
 
-File: project-notes/YYYY-MM-DD-topic.md
+File: project-notes/YYYY-MM-DD-HHmm-topic.md
+Commit: [commit-hash]
 
 Summary:
 - Completed: N tasks
