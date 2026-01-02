@@ -8,6 +8,7 @@
  * - `attrs.xxx` → 直接访问 currentValue
  * - `attrs.$xxx` → 访问 ModifierBreakdown 详情
  * - `attrs.xxxAttribute` → 获取属性名引用（类似 UE GetXxxAttribute）
+ * - `attrs.setXxxBase(value)` → 设置基础值（类型安全）
  * - `attrs.onXxxChanged(cb)` → 订阅属性变化（类似 UE OnXxxChanged 委托）
  * - Modifier 操作通过 `_modifierTarget` 内部接口（仅供 AbilityComponent 使用）
  *
@@ -72,16 +73,25 @@ describe('defineAttributes（高层 API）', () => {
       expect(config.attributeName).toBe('attack');
     });
 
-    it('应该能使用 getBase 和 setBase', () => {
+    it('应该能使用 getBase 和 setXxxBase', () => {
       const attrs = defineAttributes({
         attack: { baseValue: 50 },
       });
 
       expect(attrs.getBase('attack')).toBe(50);
 
-      attrs.setBase('attack', 80);
+      attrs.setAttackBase(80);
       expect(attrs.attack).toBe(80);
       expect(attrs.getBase('attack')).toBe(80);
+    });
+
+    it('setBase 不应该在类型上存在', () => {
+      const attrs = defineAttributes({
+        attack: { baseValue: 100 },
+      });
+
+      // 运行时验证：setBase 返回 undefined（隐藏）
+      expect((attrs as any).setBase).toBeUndefined();
     });
 
     it('应该能使用 modifyBase', () => {
@@ -194,7 +204,7 @@ describe('defineAttributes（高层 API）', () => {
         hp: { baseValue: 100, minValue: 0 },
       });
 
-      attrs.setBase('hp', -50);
+      attrs.setHpBase(-50);
       expect(attrs.hp).toBe(0);
     });
 
@@ -203,7 +213,7 @@ describe('defineAttributes（高层 API）', () => {
         hp: { baseValue: 100, maxValue: 100 },
       });
 
-      attrs.setBase('hp', 150);
+      attrs.setHpBase(150);
       expect(attrs.hp).toBe(100);
     });
   });
@@ -219,7 +229,7 @@ describe('defineAttributes（高层 API）', () => {
         changes.push({ old: event.oldValue, new: event.newValue });
       });
 
-      attrs.setBase('attack', 120);
+      attrs.setAttackBase(120);
       attrs._modifierTarget.addModifier(createAddBaseModifier('buff', 'attack', 30));
 
       expect(changes).toHaveLength(2);
@@ -247,23 +257,23 @@ describe('defineAttributes（高层 API）', () => {
       });
 
       // 修改 attack
-      attrs.setBase('attack', 120);
+      attrs.setAttackBase(120);
       expect(attackChanges).toHaveLength(1);
       expect(attackChanges[0]).toEqual({ old: 100, new: 120 });
       expect(defenseChanges).toHaveLength(0); // defense 没有变化
 
       // 修改 defense
-      attrs.setBase('defense', 60);
+      attrs.setDefenseBase(60);
       expect(defenseChanges).toHaveLength(1);
       expect(defenseChanges[0]).toEqual({ old: 50, new: 60 });
 
       // 取消订阅 attack
       unsubAttack();
-      attrs.setBase('attack', 150);
+      attrs.setAttackBase(150);
       expect(attackChanges).toHaveLength(1); // 不再收到通知
 
       // defense 仍然订阅中
-      attrs.setBase('defense', 70);
+      attrs.setDefenseBase(70);
       expect(defenseChanges).toHaveLength(2);
 
       // 清理
@@ -287,8 +297,8 @@ describe('defineAttributes（高层 API）', () => {
         critChanges.push(event.newValue);
       });
 
-      attrs.setBase('maxHp', 150);
-      attrs.setBase('criticalRate', 0.2);
+      attrs.setMaxHpBase(150);
+      attrs.setCriticalRateBase(0.2);
 
       expect(maxHpChanges).toEqual([150]);
       expect(critChanges).toEqual([0.2]);
@@ -311,7 +321,7 @@ describe('defineAttributes（高层 API）', () => {
       attrs.onDefenseChanged(() => changes.push(3));
 
       // 修改属性，应该收到通知
-      attrs.setBase('attack', 110);
+      attrs.setAttackBase(110);
       expect(changes.length).toBeGreaterThan(0);
 
       // 清空记录
@@ -321,8 +331,8 @@ describe('defineAttributes（高层 API）', () => {
       attrs.removeAllChangeListeners();
 
       // 再次修改属性，不应该收到通知
-      attrs.setBase('attack', 120);
-      attrs.setBase('defense', 60);
+      attrs.setAttackBase(120);
+      attrs.setDefenseBase(60);
 
       expect(changes).toHaveLength(0);
     });

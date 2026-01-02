@@ -22,8 +22,9 @@
  * hero.$maxHp.base       // → 100
  * hero.$maxHp.bodyValue  // → 100
  *
- * // 设置基础值
- * hero.setBase('attack', 60);
+ * // 设置基础值（类型安全）
+ * hero.setAttackBase(60);
+ * hero.setMaxHpBase(150);
  *
  * // ❌ 外部无法调用 addModifier（编译错误）
  * // hero.addModifier(...);  // Property 'addModifier' does not exist
@@ -90,7 +91,8 @@ export type IAttributeModifierTarget = {
  * - `attrs.xxx` → 返回 currentValue (number)
  * - `attrs.$xxx` → 返回 ModifierBreakdown
  * - `attrs.xxxAttribute` → 返回属性名字符串字面量（用于 StatModifier）
- * - `attrs.setBase(name, value)` → 设置基础值
+ * - `attrs.setXxxBase(value)` → 设置基础值（类型安全）
+ * - `attrs.onXxxChanged(cb)` → 订阅属性变化事件
  *
  * 注意：Modifier 管理方法已移至内部接口，外部无法直接调用
  */
@@ -137,17 +139,25 @@ export type AttributeSet<T extends AttributesConfig> = {
     callback: (event: AttributeChangeEvent) => void
   ) => () => void;
 } & {
+  /**
+   * setXxxBase: 设置特定属性的基础值
+   *
+   * 类型安全的 setter 方法，支持 IDE 自动补全
+   *
+   * @example
+   * ```typescript
+   * hero.setAtkBase(80);
+   * hero.setMaxHpBase(150);
+   * ```
+   */
+  readonly [K in keyof T as `set${Capitalize<string & K>}Base`]: (value: number) => void;
+} & {
   // ========== 基础值操作 ==========
 
   /**
    * 获取基础值
    */
   getBase<K extends keyof T>(name: K): number;
-
-  /**
-   * 设置基础值
-   */
-  setBase<K extends keyof T>(name: K, value: number): void;
 
   /**
    * 修改基础值（增量）
@@ -305,13 +315,31 @@ function createAttributeProxyHandler<T extends AttributesConfig>(
         }
       }
 
+      // setXxxBase: 设置属性基础值（类似 UE SetXxxBaseValue）
+      if (prop.startsWith('set') && prop.endsWith('Base')) {
+        const capitalizedName = prop.slice(3, -4); // 移除 'set' 前缀和 'Base' 后缀
+        const attrName = capitalizedName.charAt(0).toLowerCase() + capitalizedName.slice(1);
+        if (attrNames.has(attrName)) {
+          return (value: number) => {
+            set.setBase(attrName, value);
+          };
+        }
+      }
+
       // xxx: 如果是属性名，返回 currentValue
       if (attrNames.has(prop)) {
         return set.getCurrentValue(prop);
       }
 
-      // 其他：透传到 AttributeSet（但排除 Modifier 方法）
-      if (prop === 'addModifier' || prop === 'removeModifier' || prop === 'removeModifiersBySource') {
+      // 其他：透传到 AttributeSet（但排除内部方法）
+      // - Modifier 方法：addModifier, removeModifier, removeModifiersBySource
+      // - setBase：应该使用 setXxxBase 代替
+      if (
+        prop === 'addModifier' ||
+        prop === 'removeModifier' ||
+        prop === 'removeModifiersBySource' ||
+        prop === 'setBase'
+      ) {
         return undefined; // 不暴露这些方法
       }
 
@@ -323,10 +351,11 @@ function createAttributeProxyHandler<T extends AttributesConfig>(
     },
 
     set(_target, prop: string | symbol, _value) {
-      // 禁止直接赋值属性（应该用 setBase）
+      // 禁止直接赋值属性（应该用 setXxxBase）
       if (typeof prop === 'string' && attrNames.has(prop)) {
+        const capitalized = prop.charAt(0).toUpperCase() + prop.slice(1);
         throw new Error(
-          `Cannot directly set attribute "${prop}". Use setBase("${prop}", value) instead.`
+          `Cannot directly set attribute "${prop}". Use set${capitalized}Base(value) instead.`
         );
       }
       return false;

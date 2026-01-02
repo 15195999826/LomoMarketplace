@@ -82,7 +82,7 @@ class TestUnit extends Actor {
   onSpawn(): void {
     super.onSpawn();
     // 初始化 HP 为 MaxHP
-    this.attributes.setBase('hp', this.maxHp);
+    this.attributes.setHpBase(this.maxHp);
   }
 }
 

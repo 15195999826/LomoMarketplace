@@ -56,7 +56,7 @@
  *   // 5. 直接修改基础值（少数情况）
  *   takeDamage(damage: number) {
  *     const newHp = Math.max(0, this.attributes.currentHp - damage);
- *     this.attributes.setBase('currentHp', newHp);
+ *     this.attributes.setCurrentHpBase(newHp);
  *   }
  *
  *   // 6. 查看属性详情
