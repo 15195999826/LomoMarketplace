@@ -46,7 +46,14 @@
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm test\")",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build && pnpm test:run\")",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; pnpm test:run\")",
-      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm test:run\")"
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm test:run\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\inkmon-battle''; npx tsc --noEmit\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\inkmon-battle''; npx tsc --noEmit 2>&1\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\inkmon-battle''; npx tsc 2>&1\")",
+      "Bash(powershell -Command \"cd 'E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\inkmon-battle'; npx tsx examples/full-battle-3v3.ts 2>&1\":*)",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build && node dist/examples/atb-battle/run-demo.js\")",
+      "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; node dist/examples/atb-battle/run-demo.js\")",
+      "Bash(powershell -Command:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

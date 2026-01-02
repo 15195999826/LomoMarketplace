@@ -1,13 +1,10 @@
 /**
  * HexBattleInstance - 六边形网格战斗实例
  *
- * 整合 HexGridModel 和 ATB 系统的战斗实例
+ * 整合 HexGridModel、ATB 系统、类型相克和战斗日志
  */
 
-import {
-  GameplayInstance,
-  type BattleEvent,
-} from '@lomo/logic-game-framework';
+import { GameplayInstance, EventCollector, type GameEventBase } from '@lomo/logic-game-framework';
 import {
   HexGridModel,
   type AxialCoord,
@@ -15,8 +12,23 @@ import {
   hexDistance,
   hexNeighbors,
 } from '@lomo/hex-grid';
+import type { Element } from '@inkmon/core';
 import { ATBSystem, type ATBConfig } from './atb/index.js';
 import { InkMonUnit } from './InkMonUnit.js';
+import { TypeSystem } from './systems/TypeSystem.js';
+import { BattleLogger, type LogLevel } from './logger/BattleLogger.js';
+import type {
+  BattleStartEvent,
+  BattleEndEvent,
+  TurnStartEvent,
+  MoveEvent,
+  AttackEvent,
+  DamageEvent,
+  DeathEvent,
+  SkipEvent,
+  InkMonBattleEvent,
+} from './types/BattleEvents.js';
+import { getEffectivenessLevel, type EffectivenessLevel } from './types/TypeEffectiveness.js';
 
 /**
  * 战斗结果
@@ -27,29 +39,41 @@ export type BattleResult = 'ongoing' | 'teamA_win' | 'teamB_win' | 'draw';
  * 六边形战斗配置
  */
 export type HexBattleConfig = {
-  /** 网格宽度（默认 15） */
+  /** 网格宽度（默认 11） */
   gridWidth?: number;
-  /** 网格高度（默认 15） */
+  /** 网格高度（默认 11） */
   gridHeight?: number;
   /** ATB 配置 */
   atbConfig?: ATBConfig;
   /** 最大回合数（默认 100） */
   maxTurns?: number;
+  /** 日志级别 */
+  logLevel?: LogLevel;
+  /** 禁用随机性（用于测试） */
+  deterministicMode?: boolean;
 };
-
-/**
- * 行动类型
- */
-export type ActionType = 'move' | 'attack' | 'skip';
 
 /**
  * 行动结果
  */
 export type ActionResult = {
   success: boolean;
-  events: BattleEvent[];
+  events: InkMonBattleEvent[];
   message?: string;
 };
+
+/**
+ * 伤害计算结果
+ */
+export interface DamageCalcResult {
+  readonly damage: number;
+  readonly element: Element;
+  readonly effectiveness: EffectivenessLevel;
+  readonly typeMultiplier: number;
+  readonly stabMultiplier: number;
+  readonly isCritical: boolean;
+  readonly isSTAB: boolean;
+}
 
 /**
  * HexBattleInstance - 六边形战斗实例
@@ -63,6 +87,12 @@ export class HexBattleInstance extends GameplayInstance {
   /** ATB 系统 */
   private readonly atbSystem: ATBSystem;
 
+  /** 战斗日志器 */
+  readonly logger: BattleLogger;
+
+  /** 事件收集器 */
+  readonly eventCollector: EventCollector;
+
   /** 回合计数 */
   private _turnCount: number = 0;
 
@@ -75,20 +105,33 @@ export class HexBattleInstance extends GameplayInstance {
   /** 单位列表 */
   private units: InkMonUnit[] = [];
 
+  /** 确定性模式（禁用随机） */
+  private readonly deterministicMode: boolean;
+
+  /** 暴击率 */
+  private readonly critRate: number = 0.1;
+
   constructor(config: HexBattleConfig = {}) {
     super();
 
     // 初始化网格模型
     const gridConfig: HexGridConfig = {
-      width: config.gridWidth ?? 15,
-      height: config.gridHeight ?? 15,
+      width: config.gridWidth ?? 11,
+      height: config.gridHeight ?? 11,
     };
     this.gridModel = new HexGridModel(gridConfig);
 
     // 初始化 ATB 系统
     this.atbSystem = new ATBSystem(config.atbConfig);
 
+    // 初始化日志器
+    this.logger = new BattleLogger(config.logLevel ?? 'full');
+
+    // 初始化事件收集器
+    this.eventCollector = new EventCollector();
+
     this.maxTurns = config.maxTurns ?? 100;
+    this.deterministicMode = config.deterministicMode ?? false;
   }
 
   // ========== 属性访问 ==========
@@ -103,6 +146,10 @@ export class HexBattleInstance extends GameplayInstance {
 
   get isOngoing(): boolean {
     return this._result === 'ongoing';
+  }
+
+  get logicTime(): number {
+    return this._logicTime;
   }
 
   // ========== 单位管理 ==========
@@ -165,6 +212,13 @@ export class HexBattleInstance extends GameplayInstance {
   }
 
   /**
+   * 获取所有存活单位
+   */
+  getAliveUnits(): InkMonUnit[] {
+    return this.units.filter((u) => u.isActive);
+  }
+
+  /**
    * 通过 ID 获取单位
    */
   getUnitById(id: string): InkMonUnit | undefined {
@@ -189,11 +243,73 @@ export class HexBattleInstance extends GameplayInstance {
     return this.atbSystem.getATBProgress(this.units);
   }
 
+  // ========== 伤害计算 ==========
+
+  /**
+   * 计算伤害
+   *
+   * 公式: BaseDamage = ((2 × Level / 5 + 2) × Power × Atk / Def) / 50 + 2
+   * FinalDamage = BaseDamage × STAB × TypeMult × Crit × Random
+   */
+  calculateDamage(
+    attacker: InkMonUnit,
+    target: InkMonUnit,
+    power: number,
+    element: Element,
+    category: 'physical' | 'special' = 'physical'
+  ): DamageCalcResult {
+    const level = attacker.level;
+    const atkStat = category === 'physical' ? attacker.atk : attacker.spAtk;
+    const defStat = category === 'physical' ? target.def : target.spDef;
+
+    // 基础伤害
+    const baseDamage = ((2 * level) / 5 + 2) * power * (atkStat / defStat) / 50 + 2;
+
+    // STAB 加成
+    const attackerElements = attacker.getElements();
+    const stabMultiplier = TypeSystem.getSTABMultiplier(attackerElements, element);
+    const isSTAB = stabMultiplier > 1;
+
+    // 类型相克
+    const defenderElements = target.getElements();
+    const typeMultiplier = TypeSystem.calculateMultiplier(element, defenderElements);
+    const effectiveness = getEffectivenessLevel(typeMultiplier);
+
+    // 暴击判定
+    const isCritical = this.deterministicMode ? false : Math.random() < this.critRate;
+    const critMultiplier = isCritical ? 1.5 : 1.0;
+
+    // 随机波动 (0.85 ~ 1.0)
+    const randomMultiplier = this.deterministicMode
+      ? 1.0
+      : 0.85 + Math.random() * 0.15;
+
+    // 最终伤害
+    const finalDamage = Math.max(
+      1,
+      Math.floor(
+        baseDamage * stabMultiplier * typeMultiplier * critMultiplier * randomMultiplier
+      )
+    );
+
+    return {
+      damage: finalDamage,
+      element,
+      effectiveness,
+      typeMultiplier,
+      stabMultiplier,
+      isCritical,
+      isSTAB,
+    };
+  }
+
+  // ========== 行动执行 ==========
+
   /**
    * 执行移动行动
    */
   executeMove(unit: InkMonUnit, to: AxialCoord): ActionResult {
-    const events: BattleEvent[] = [];
+    const events: InkMonBattleEvent[] = [];
 
     // 检查是否是当前行动单位
     if (this.getCurrentUnit()?.id !== unit.id) {
@@ -225,12 +341,19 @@ export class HexBattleInstance extends GameplayInstance {
 
     unit.setPosition(to);
 
+    // 记录日志
+    this.logger.move(unit.displayName, from, to);
+
     // 发出移动事件
-    const moveEvent = this.eventCollector.emit('move', {
-      unitId: unit.id,
+    const moveEvent: MoveEvent = {
+      kind: 'move',
+      logicTime: this._logicTime,
+      unit: unit.toRef(),
+      unitName: unit.displayName,
       from,
       to,
-    }, this.logicTime);
+    };
+    this.eventCollector.emit(moveEvent);
     events.push(moveEvent);
 
     // 结束行动
@@ -241,9 +364,24 @@ export class HexBattleInstance extends GameplayInstance {
 
   /**
    * 执行攻击行动
+   *
+   * @param attacker 攻击者
+   * @param target 目标
+   * @param skillName 技能名称
+   * @param power 技能威力（默认 40）
+   * @param element 技能属性（默认使用攻击者主属性）
+   * @param category 伤害类型（默认物理）
    */
-  executeAttack(attacker: InkMonUnit, target: InkMonUnit): ActionResult {
-    const events: BattleEvent[] = [];
+  executeAttack(
+    attacker: InkMonUnit,
+    target: InkMonUnit,
+    skillName: string = '普通攻击',
+    power: number = 40,
+    element?: Element,
+    category: 'physical' | 'special' = 'physical'
+  ): ActionResult {
+    const events: InkMonBattleEvent[] = [];
+    const attackElement = element ?? attacker.primaryElement;
 
     // 检查是否是当前行动单位
     if (this.getCurrentUnit()?.id !== attacker.id) {
@@ -271,30 +409,85 @@ export class HexBattleInstance extends GameplayInstance {
       return { success: false, events, message: 'Cannot attack ally' };
     }
 
-    // 计算伤害（简单公式）
-    const baseDamage = Math.max(1, attacker.atk - target.def / 2);
-    const actualDamage = target.takeDamage(baseDamage);
+    // 记录攻击日志
+    this.logger.attack(attacker.displayName, target.displayName, skillName, attackElement);
+
+    // 发出攻击事件
+    const attackEvent: AttackEvent = {
+      kind: 'attack',
+      logicTime: this._logicTime,
+      attacker: attacker.toRef(),
+      attackerName: attacker.displayName,
+      target: target.toRef(),
+      targetName: target.displayName,
+      skillName,
+      element: attackElement,
+    };
+    this.eventCollector.emit(attackEvent);
+    events.push(attackEvent);
+
+    // 计算伤害
+    const damageResult = this.calculateDamage(
+      attacker,
+      target,
+      power,
+      attackElement,
+      category
+    );
+
+    // 应用伤害
+    const actualDamage = target.takeDamage(damageResult.damage);
+    const remainingHp = target.hp;
+
+    // 记录伤害日志
+    this.logger.damage(attacker.displayName, target.displayName, actualDamage, {
+      element: damageResult.element,
+      effectiveness: damageResult.effectiveness,
+      isCritical: damageResult.isCritical,
+      isSTAB: damageResult.isSTAB,
+      remainingHp,
+      maxHp: target.maxHp,
+    });
 
     // 发出伤害事件
-    const damageEvent = this.eventCollector.emit('damage', {
-      sourceId: attacker.id,
-      targetId: target.id,
+    const damageEvent: DamageEvent = {
+      kind: 'damage',
+      logicTime: this._logicTime,
+      source: attacker.toRef(),
+      sourceName: attacker.displayName,
+      target: target.toRef(),
+      targetName: target.displayName,
       damage: actualDamage,
-      damageType: 'physical',
-    }, this.logicTime);
+      element: damageResult.element,
+      effectiveness: damageResult.effectiveness,
+      isCritical: damageResult.isCritical,
+      isSTAB: damageResult.isSTAB,
+      remainingHp,
+      maxHp: target.maxHp,
+    };
+    this.eventCollector.emit(damageEvent);
     events.push(damageEvent);
 
     // 检查击杀
     if (!target.isActive) {
+      // 记录死亡日志
+      this.logger.death(target.displayName, attacker.displayName);
+
       // 从网格移除
       if (target.hexPosition) {
         this.gridModel.removeOccupant(target.hexPosition);
       }
 
-      const deathEvent = this.eventCollector.emit('death', {
-        unitId: target.id,
-        killerId: attacker.id,
-      }, this.logicTime);
+      const deathEvent: DeathEvent = {
+        kind: 'death',
+        logicTime: this._logicTime,
+        unit: target.toRef(),
+        unitName: target.displayName,
+        killer: attacker.toRef(),
+        killerName: attacker.displayName,
+        position: target.hexPosition!,
+      };
+      this.eventCollector.emit(deathEvent);
       events.push(deathEvent);
 
       // 检查战斗结束
@@ -311,15 +504,22 @@ export class HexBattleInstance extends GameplayInstance {
    * 跳过行动
    */
   executeSkip(unit: InkMonUnit): ActionResult {
-    const events: BattleEvent[] = [];
+    const events: InkMonBattleEvent[] = [];
 
     if (this.getCurrentUnit()?.id !== unit.id) {
       return { success: false, events, message: 'Not current unit turn' };
     }
 
-    const skipEvent = this.eventCollector.emit('skip', {
-      unitId: unit.id,
-    }, this.logicTime);
+    // 记录跳过日志
+    this.logger.skip(unit.displayName);
+
+    const skipEvent: SkipEvent = {
+      kind: 'skip',
+      logicTime: this._logicTime,
+      unit: unit.toRef(),
+      unitName: unit.displayName,
+    };
+    this.eventCollector.emit(skipEvent);
     events.push(skipEvent);
 
     this.endTurn(unit);
@@ -344,7 +544,7 @@ export class HexBattleInstance extends GameplayInstance {
     // 检查回合上限
     if (this._turnCount >= this.maxTurns) {
       this._result = 'draw';
-      this.end();
+      this.endBattle();
     }
   }
 
@@ -380,11 +580,23 @@ export class HexBattleInstance extends GameplayInstance {
   // ========== 战斗流程 ==========
 
   /**
-   * 推进战斗时间
+   * 推进战斗时间（符合基类签名）
+   *
+   * @returns 产生的事件列表
    */
-  advance(dt: number): BattleEvent[] {
-    if (!this.isOngoing) return [];
-    if (this.state !== 'running') return [];
+  advance(dt: number): GameEventBase[] {
+    this.advanceAndGetCurrentUnit(dt);
+    return this.eventCollector.flush();
+  }
+
+  /**
+   * 推进战斗时间并获取当前单位
+   *
+   * @returns 当前准备行动的单位（如果有）
+   */
+  advanceAndGetCurrentUnit(dt: number): InkMonUnit | null {
+    if (!this.isOngoing) return null;
+    if (this.state !== 'running') return null;
 
     // 更新逻辑时间
     this._logicTime += dt;
@@ -392,7 +604,28 @@ export class HexBattleInstance extends GameplayInstance {
     // 更新 ATB
     this.atbSystem.tick(this.units, dt);
 
-    return this.eventCollector.flush();
+    // 获取当前可行动单位
+    const currentUnit = this.getCurrentUnit();
+    if (currentUnit && !currentUnit.isActing) {
+      currentUnit.isActing = true;
+
+      // 记录回合开始日志
+      this.logger.turnStart(currentUnit.displayName, currentUnit.hp, currentUnit.maxHp);
+
+      // 发出回合开始事件
+      const turnStartEvent: TurnStartEvent = {
+        kind: 'turn_start',
+        logicTime: this._logicTime,
+        turnNumber: this._turnCount + 1,
+        unit: currentUnit.toRef(),
+        unitName: currentUnit.displayName,
+        hp: currentUnit.hp,
+        maxHp: currentUnit.maxHp,
+      };
+      this.eventCollector.emit(turnStartEvent);
+    }
+
+    return currentUnit;
   }
 
   /**
@@ -404,13 +637,13 @@ export class HexBattleInstance extends GameplayInstance {
 
     if (aliveA === 0 && aliveB === 0) {
       this._result = 'draw';
-      this.end();
+      this.endBattle();
     } else if (aliveA === 0) {
       this._result = 'teamB_win';
-      this.end();
+      this.endBattle();
     } else if (aliveB === 0) {
       this._result = 'teamA_win';
-      this.end();
+      this.endBattle();
     }
   }
 
@@ -420,27 +653,70 @@ export class HexBattleInstance extends GameplayInstance {
   start(): void {
     super.start();
 
+    // 记录战斗开始日志
+    const teamA = this.getTeamUnits('A').map((u) => ({
+      name: u.displayName,
+      hp: u.hp,
+      maxHp: u.maxHp,
+    }));
+    const teamB = this.getTeamUnits('B').map((u) => ({
+      name: u.displayName,
+      hp: u.hp,
+      maxHp: u.maxHp,
+    }));
+    this.logger.battleStart(teamA, teamB);
+
     // 发出战斗开始事件
-    this.eventCollector.emit('battle_start', {
-      teamA: this.getTeamUnits('A').map((u) => u.id),
-      teamB: this.getTeamUnits('B').map((u) => u.id),
-    }, this.logicTime);
+    const battleStartEvent: BattleStartEvent = {
+      kind: 'battle_start',
+      logicTime: this._logicTime,
+      teamA: this.getTeamUnits('A').map((u) => u.toRef()),
+      teamB: this.getTeamUnits('B').map((u) => u.toRef()),
+    };
+    this.eventCollector.emit(battleStartEvent);
   }
 
   /**
    * 结束战斗
    */
-  end(): void {
-    super.end();
+  private endBattle(): void {
+    // 记录战斗结束日志
+    const survivors = this.getAliveUnits().map((u) => ({
+      name: u.displayName,
+      hp: u.hp,
+      maxHp: u.maxHp,
+    }));
+    this.logger.battleEnd(this._result as 'teamA_win' | 'teamB_win' | 'draw', this._turnCount, survivors);
 
     // 发出战斗结束事件
-    this.eventCollector.emit('battle_end', {
-      result: this._result,
+    const battleEndEvent: BattleEndEvent = {
+      kind: 'battle_end',
+      logicTime: this._logicTime,
+      result: this._result as 'teamA_win' | 'teamB_win' | 'draw',
       turnCount: this._turnCount,
-    }, this.logicTime);
+      survivors: this.getAliveUnits().map((u) => u.toRef()),
+    };
+    this.eventCollector.emit(battleEndEvent);
+
+    // 调用父类 end
+    this.end();
 
     // 清理
     this.gridModel.destroy();
+  }
+
+  /**
+   * 获取完整战斗日志
+   */
+  getFullLog(): string {
+    return this.logger.getFullLog();
+  }
+
+  /**
+   * 打印战斗日志
+   */
+  printLog(): void {
+    this.logger.print();
   }
 
   // ========== 序列化 ==========

@@ -1,12 +1,13 @@
 /**
- * SimpleAI - 简单 AI 决策
+ * SimpleAI - 简单战斗 AI
  *
- * 策略：攻击距离最近的敌人，如果够不到就向其移动
+ * 基于类型相克的简单决策系统
  */
 
 import { hexDistance, type AxialCoord } from '@lomo/hex-grid';
 import type { HexBattleInstance } from './HexBattleInstance.js';
 import type { InkMonUnit } from './InkMonUnit.js';
+import { TypeSystem } from './systems/TypeSystem.js';
 
 /**
  * AI 决策结果
@@ -24,6 +25,11 @@ export type AIDecision = {
 
 /**
  * 简单 AI
+ *
+ * 策略：
+ * 1. 有可攻击目标时，优先攻击类型相克最有效的目标
+ * 2. 否则向最近的敌人移动
+ * 3. 无法行动则跳过
  */
 export class SimpleAI {
   constructor(private battle: HexBattleInstance) {}
@@ -34,7 +40,7 @@ export class SimpleAI {
   decide(unit: InkMonUnit): AIDecision {
     // 检查单位状态
     if (!unit.hexPosition) {
-      return { action: 'skip', reason: 'No position' };
+      return { action: 'skip', reason: '没有位置' };
     }
 
     // 获取敌方队伍
@@ -42,46 +48,94 @@ export class SimpleAI {
     const enemies = this.battle.getAliveTeamUnits(enemyTeam);
 
     if (enemies.length === 0) {
-      return { action: 'skip', reason: 'No enemies' };
+      return { action: 'skip', reason: '没有敌人' };
     }
 
-    // 找到最近的敌人
-    const nearestEnemy = this.findNearestEnemy(unit, enemies);
-    if (!nearestEnemy || !nearestEnemy.hexPosition) {
-      return { action: 'skip', reason: 'No reachable enemy' };
-    }
+    // 获取可攻击的目标
+    const attackableTargets = this.battle.getAttackableTargets(unit);
 
-    // 检查是否在攻击范围内
-    const distance = hexDistance(unit.hexPosition, nearestEnemy.hexPosition);
-
-    if (distance <= unit.attackRange) {
-      // 在攻击范围内，执行攻击
+    if (attackableTargets.length > 0) {
+      // 选择最佳攻击目标（考虑类型相克）
+      const bestTarget = this.selectBestTarget(unit, attackableTargets);
       return {
         action: 'attack',
-        target: nearestEnemy,
-        reason: `Attack ${nearestEnemy.displayName} at distance ${distance}`,
+        target: bestTarget,
+        reason: `攻击 ${bestTarget.displayName}`,
       };
     }
 
-    // 不在攻击范围内，尝试移动
-    const moveTarget = this.calculateBestMovePosition(unit, nearestEnemy);
+    // 没有可攻击目标，尝试移动
+    const nearestEnemy = this.findNearestEnemy(unit, enemies);
+    if (!nearestEnemy || !nearestEnemy.hexPosition) {
+      return { action: 'skip', reason: '找不到敌人位置' };
+    }
 
-    if (moveTarget) {
+    // 获取可移动位置
+    const movablePositions = this.battle.getMovablePositions(unit);
+    if (movablePositions.length === 0) {
+      return { action: 'skip', reason: '无法移动' };
+    }
+
+    // 选择最佳移动位置（向敌人靠近）
+    const bestPosition = this.calculateBestMovePosition(
+      unit,
+      nearestEnemy
+    );
+
+    if (bestPosition) {
       return {
         action: 'move',
-        destination: moveTarget,
-        reason: `Move towards ${nearestEnemy.displayName}`,
+        destination: bestPosition,
+        reason: `向 ${nearestEnemy.displayName} 移动`,
       };
     }
 
-    // 无法移动，跳过
-    return { action: 'skip', reason: 'Cannot move closer' };
+    return { action: 'skip', reason: '无法靠近敌人' };
+  }
+
+  /**
+   * 选择最佳攻击目标
+   *
+   * 优先级：
+   * 1. 类型相克倍率最高
+   * 2. 剩余 HP 最低（更容易击杀）
+   */
+  private selectBestTarget(
+    attacker: InkMonUnit,
+    targets: InkMonUnit[]
+  ): InkMonUnit {
+    let bestTarget = targets[0];
+    let bestScore = -Infinity;
+
+    const attackerElement = attacker.primaryElement;
+
+    for (const target of targets) {
+      // 计算类型相克倍率
+      const typeMultiplier = TypeSystem.calculateMultiplier(
+        attackerElement,
+        target.getElements()
+      );
+
+      // 分数 = 类型倍率 * 100 - 剩余HP百分比
+      const hpPercent = target.hp / target.maxHp;
+      const score = typeMultiplier * 100 - hpPercent * 50;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTarget = target;
+      }
+    }
+
+    return bestTarget;
   }
 
   /**
    * 找到最近的敌人
    */
-  private findNearestEnemy(unit: InkMonUnit, enemies: InkMonUnit[]): InkMonUnit | undefined {
+  private findNearestEnemy(
+    unit: InkMonUnit,
+    enemies: InkMonUnit[]
+  ): InkMonUnit | undefined {
     if (!unit.hexPosition) return undefined;
 
     let nearestEnemy: InkMonUnit | undefined;
@@ -183,11 +237,10 @@ export class SimpleAI {
     let steps = 0;
 
     while (this.battle.isOngoing && steps < maxSteps) {
-      // 推进 ATB
-      this.battle.advance(100); // 100ms per step
+      // 推进 ATB 并获取当前可行动单位
+      const currentUnit = this.battle.advanceAndGetCurrentUnit(100); // 100ms per step
 
-      // 检查是否有可行动的单位
-      const currentUnit = this.battle.getCurrentUnit();
+      // 如果有可行动的单位，执行决策
       if (currentUnit) {
         this.step();
         steps++;

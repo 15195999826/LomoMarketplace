@@ -37,3 +37,7 @@ export { TargetSelectors } from './selectors/TargetSelectors.js';
 
 // BasicCharacter 导出（可选使用）
 export { Character, createAtkBuff, createTimedBuff, runExample } from './BasicCharacter.js';
+
+// ATB 战斗示例
+// 注意：ATB 战斗示例是独立运行的，不从主包导出
+// 运行方式：npx tsx examples/atb-battle/run-demo.ts
