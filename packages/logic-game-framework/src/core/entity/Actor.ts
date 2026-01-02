@@ -5,7 +5,6 @@
  * 战斗单位的结构相对固定，不需要过度 Component 化
  */
 
-import { generateId } from '../utils/IdGenerator.js';
 import type { ActorRef, Position } from '../types/common.js';
 
 /**
@@ -17,8 +16,11 @@ export type ActorState = 'active' | 'inactive' | 'dead' | 'removed';
  * Actor 基类
  */
 export abstract class Actor {
-  /** 唯一标识符 */
-  readonly id: string;
+  /** 全局 ID 计数器 */
+  private static _nextId: number = 1;
+
+  /** 唯一标识符（构造时自动分配） */
+  readonly id: number;
 
   /** Actor 类型（由子类定义） */
   abstract readonly type: string;
@@ -35,12 +37,16 @@ export abstract class Actor {
   /** 显示名称 */
   protected _displayName?: string;
 
+  constructor() {
+    this.id = Actor._nextId++;
+  }
+
   /**
-   * 构造函数
-   * @param id 可选的 ID，不提供则自动生成
+   * 重置 ID 计数器（仅用于测试）
+   * @internal
    */
-  constructor(id?: string) {
-    this.id = id ?? generateId('actor');
+  static _resetIdCounter(): void {
+    Actor._nextId = 1;
   }
 
   // ========== 属性访问器 ==========
@@ -74,7 +80,7 @@ export abstract class Actor {
   }
 
   get displayName(): string {
-    return this._displayName ?? this.id;
+    return this._displayName ?? `${this.type}_${this.id}`;
   }
 
   set displayName(value: string) {
@@ -95,14 +101,6 @@ export abstract class Actor {
    */
   onDespawn(): void {
     this._state = 'removed';
-  }
-
-  /**
-   * 每帧/每回合更新
-   * @param dt 时间增量（毫秒）
-   */
-  tick(dt: number): void {
-    // 子类可重写
   }
 
   /**

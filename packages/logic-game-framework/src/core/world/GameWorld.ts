@@ -184,10 +184,10 @@ export class GameWorld {
    * 推进所有运行中的实例
    * @param dt 时间增量
    */
-  advanceAll(dt: number): void {
+  tickAll(dt: number): void {
     for (const instance of this.instances.values()) {
       if (instance.isRunning) {
-        instance.advance(dt);
+        instance.tick(dt);
       }
     }
   }

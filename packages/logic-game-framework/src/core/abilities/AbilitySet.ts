@@ -2,7 +2,7 @@
  * AbilitySet - 能力集合
  *
  * 取代 Actor.abilities: Ability[]，统一管理 Actor 的所有能力。
- * 持有 AttributeSet 和 OwnerActor 引用，提供事件分发和 Ability 生命周期管理。
+ * 持有 ModifierTarget 和 OwnerActor 引用，提供事件分发和 Ability 生命周期管理。
  *
  * ## 核心职责
  * - 管理 Ability 的获得 (grant) 和移除 (revoke)
@@ -12,7 +12,7 @@
  */
 
 import type { ActorRef } from '../types/common.js';
-import type { AttributeSet, AttributesConfig, IAttributeModifierTarget } from '../attributes/defineAttributes.js';
+import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js';
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { Ability } from './Ability.js';
 import type { ComponentLifecycleContext } from './AbilityComponent.js';
@@ -28,7 +28,7 @@ export type AbilityRevokeReason = 'expired' | 'dispelled' | 'replaced' | 'manual
 /**
  * Ability 获得回调
  */
-export type AbilityGrantedCallback = (ability: Ability, abilitySet: AbilitySet<AttributesConfig>) => void;
+export type AbilityGrantedCallback = (ability: Ability, abilitySet: AbilitySet) => void;
 
 /**
  * Ability 移除回调
@@ -41,18 +41,18 @@ export type AbilityGrantedCallback = (ability: Ability, abilitySet: AbilitySet<A
 export type AbilityRevokedCallback = (
   ability: Ability,
   reason: AbilityRevokeReason,
-  abilitySet: AbilitySet<AttributesConfig>,
+  abilitySet: AbilitySet,
   expireReason?: string
 ) => void;
 
 /**
  * AbilitySet 配置
  */
-export type AbilitySetConfig<T extends AttributesConfig> = {
+export type AbilitySetConfig = {
   /** 所有者引用 */
   owner: ActorRef;
-  /** 属性集 */
-  attributes: AttributeSet<T>;
+  /** Modifier 写入接口 */
+  modifierTarget: IAttributeModifierTarget;
 };
 
 // ========== AbilitySet 类 ==========
@@ -60,12 +60,9 @@ export type AbilitySetConfig<T extends AttributesConfig> = {
 /**
  * AbilitySet - 能力集合
  */
-export class AbilitySet<T extends AttributesConfig> {
+export class AbilitySet {
   /** 所有者引用 */
   readonly owner: ActorRef;
-
-  /** 属性集 */
-  readonly attributes: AttributeSet<T>;
 
   /** Modifier 写入接口 */
   private readonly modifierTarget: IAttributeModifierTarget;
@@ -79,10 +76,9 @@ export class AbilitySet<T extends AttributesConfig> {
   /** Ability 移除回调 */
   private onRevokedCallbacks: AbilityRevokedCallback[] = [];
 
-  constructor(config: AbilitySetConfig<T>) {
+  constructor(config: AbilitySetConfig) {
     this.owner = config.owner;
-    this.attributes = config.attributes;
-    this.modifierTarget = config.attributes._modifierTarget;
+    this.modifierTarget = config.modifierTarget;
   }
 
   // ========== Ability 管理 ==========
@@ -389,11 +385,11 @@ export class AbilitySet<T extends AttributesConfig> {
 /**
  * 创建 AbilitySet
  */
-export function createAbilitySet<T extends AttributesConfig>(
+export function createAbilitySet(
   owner: ActorRef,
-  attributes: AttributeSet<T>
-): AbilitySet<T> {
-  return new AbilitySet({ owner, attributes });
+  modifierTarget: IAttributeModifierTarget
+): AbilitySet {
+  return new AbilitySet({ owner, modifierTarget });
 }
 
 // ========== 类型守卫 ==========
@@ -401,9 +397,9 @@ export function createAbilitySet<T extends AttributesConfig>(
 /**
  * 检查对象是否有 AbilitySet
  */
-export function hasAbilitySet<T extends AttributesConfig>(
+export function hasAbilitySet(
   obj: unknown
-): obj is { abilitySet: AbilitySet<T> } {
+): obj is { abilitySet: AbilitySet } {
   return (
     typeof obj === 'object' &&
     obj !== null &&

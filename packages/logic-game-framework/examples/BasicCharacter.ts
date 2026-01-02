@@ -30,6 +30,8 @@ import { StatModifierComponent } from '../src/stdlib/components/StatModifierComp
 import { DurationComponent } from '../src/stdlib/components/DurationComponent.js';
 import { ModifierType } from '../src/core/attributes/AttributeModifier.js';
 
+// 注意：AbilitySet 不再需要泛型参数
+
 // ============================================================
 // 第一步：定义属性配置
 // ============================================================
@@ -76,7 +78,7 @@ export class Character extends Actor {
   readonly attributes: AttributeSet<CharacterAttributesConfig>;
 
   /** 能力集合（取代 abilities: Ability[]） */
-  readonly abilitySet: AbilitySet<CharacterAttributesConfig>;
+  readonly abilitySet: AbilitySet;
 
   constructor(name: string, team?: string) {
     super();
@@ -86,8 +88,8 @@ export class Character extends Actor {
     // 创建属性集
     this.attributes = defineAttributes(CharacterAttributes);
 
-    // 创建能力集合
-    this.abilitySet = createAbilitySet(this.toRef(), this.attributes);
+    // 创建能力集合（传入 modifierTarget）
+    this.abilitySet = createAbilitySet(this.toRef(), this.attributes._modifierTarget);
 
     // 注册 Ability 回调
     this.abilitySet.onAbilityGranted((ability) => {
@@ -173,11 +175,8 @@ export class Character extends Actor {
     this.abilitySet.revokeAbilitiesByTag('buff', 'manual');
   }
 
-  tick(dt: number): void {
-    super.tick(dt);
-    // 驱动 AbilitySet 的内部 Hook（如 DurationComponent 计时）
-    this.abilitySet.tick(dt);
-  }
+  // 注意：AbilitySet.tick() 由 StandardAbilitySystem 统一驱动
+  // Actor 不再需要 tick() 方法，所有逻辑由 System 处理
 }
 
 // ============================================================
@@ -292,9 +291,9 @@ export function runExample(): void {
   hero.abilitySet.grantAbility(timedBuff);
   console.log(`DEF: ${hero.def}`); // 40
 
-  // 模拟时间流逝
+  // 模拟时间流逝（在实际战斗中由 StandardAbilitySystem 驱动）
   console.log('\n--- 模拟 3500ms 后 ---');
-  hero.tick(3500);
+  hero.abilitySet.tick(3500);
   console.log(`DEF: ${hero.def}`); // 30（Buff 已过期）
 }
 

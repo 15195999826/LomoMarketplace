@@ -48,8 +48,8 @@ class BattleUnit extends Actor {
 class SimpleBattle extends GameplayInstance {
   readonly type = 'SimpleBattle';
 
-  advance(dt: number): GameEventBase[] {
-    return this.baseAdvance(dt);
+  tick(dt: number): GameEventBase[] {
+    return this.baseTick(dt);
   }
 }
 

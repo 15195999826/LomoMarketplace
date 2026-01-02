@@ -25,6 +25,7 @@ import type { GameEventBase } from '../events/GameEvent.js';
 import { EventCollector } from '../events/EventCollector.js';
 import type { TimelineAsset } from '../timeline/Timeline.js';
 import { getTimelineRegistry } from '../timeline/Timeline.js';
+import type { ActorRef } from '../types/common.js';
 
 // ========== 类型定义 ==========
 
@@ -60,8 +61,8 @@ export type ExecutionInstanceConfig = {
   readonly abilityInfo: {
     readonly id: string;
     readonly configId: string;
-    readonly owner: { readonly id: string };
-    readonly source: { readonly id: string };
+    readonly owner: ActorRef;
+    readonly source: ActorRef;
   };
 };
 

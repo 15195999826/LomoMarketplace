@@ -73,13 +73,13 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
    * @param dt 时间增量（毫秒）
    * @returns 产生的事件列表
    */
-  abstract advance(dt: number): GameEventBase[];
+  abstract tick(dt: number): GameEventBase[];
 
   /**
-   * 基础的 advance 实现
+   * 基础的 tick 实现
    * 子类可调用此方法作为基础实现
    */
-  protected baseAdvance(dt: number): GameEventBase[] {
+  protected baseTick(dt: number): GameEventBase[] {
     if (!this.isRunning) {
       return [];
     }
@@ -87,24 +87,13 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
     // 推进逻辑时间
     this._logicTime += dt;
 
-    // 按优先级执行 System
+    // 按优先级执行 System（System 是唯一的逻辑驱动者）
     for (const system of this.systems) {
       if (system.enabled) {
         try {
           system.tick(this.actors, dt);
         } catch (error) {
           getLogger().error(`System tick error: ${system.type}`, { error });
-        }
-      }
-    }
-
-    // 执行 Actor tick
-    for (const actor of this.actors) {
-      if (actor.isActive) {
-        try {
-          actor.tick(dt);
-        } catch (error) {
-          getLogger().error(`Actor tick error: ${actor.id}`, { error });
         }
       }
     }
@@ -200,14 +189,9 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   // ========== Actor 管理 ==========
 
   /**
-   * 添加 Actor
+   * 添加 Actor（内部使用）
    */
-  addActor(actor: Actor): void {
-    if (this.actors.some((a) => a.id === actor.id)) {
-      getLogger().warn(`Actor already exists: ${actor.id}`);
-      return;
-    }
-
+  private addActor(actor: Actor): void {
     this.actors.push(actor);
     actor.onSpawn();
   }
@@ -239,7 +223,7 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   /**
    * 移除 Actor
    */
-  removeActor(id: string): boolean {
+  removeActor(id: number): boolean {
     const index = this.actors.findIndex((a) => a.id === id);
     if (index === -1) {
       return false;
@@ -254,7 +238,7 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   /**
    * 获取 Actor
    */
-  getActor<T extends Actor>(id: string): T | undefined {
+  getActor<T extends Actor>(id: number): T | undefined {
     return this.actors.find((a) => a.id === id) as T | undefined;
   }
 

@@ -160,11 +160,8 @@ describe('Basic Battle Integration', () => {
     it('should add units to teams', () => {
       const battle = new StandardBattleInstance();
 
-      const unitA = new TestUnit('Unit A', 'A');
-      const unitB = new TestUnit('Unit B', 'B');
-
-      battle.addActor(unitA);
-      battle.addActor(unitB);
+      const unitA = battle.createActor(() => new TestUnit('Unit A', 'A'));
+      const unitB = battle.createActor(() => new TestUnit('Unit B', 'B'));
 
       expect(battle.getTeamA().length).toBe(1);
       expect(battle.getTeamB().length).toBe(1);
@@ -173,11 +170,8 @@ describe('Basic Battle Integration', () => {
     it('should start and end battle', () => {
       const battle = new StandardBattleInstance();
 
-      const unitA = new TestUnit('Unit A', 'A');
-      const unitB = new TestUnit('Unit B', 'B');
-
-      battle.addActor(unitA);
-      battle.addActor(unitB);
+      battle.createActor(() => new TestUnit('Unit A', 'A'));
+      battle.createActor(() => new TestUnit('Unit B', 'B'));
 
       battle.start();
       expect(battle.state).toBe('running');
@@ -190,18 +184,16 @@ describe('Basic Battle Integration', () => {
     it('should detect team A win when team B is eliminated', () => {
       const battle = new StandardBattleInstance();
 
-      const unitA = new TestUnit('Unit A', 'A');
-      const unitB = new TestUnit('Unit B', 'B');
+      battle.createActor(() => new TestUnit('Unit A', 'A'));
+      const unitB = battle.createActor(() => new TestUnit('Unit B', 'B'));
 
-      battle.addActor(unitA);
-      battle.addActor(unitB);
       battle.start();
 
       // 模拟 B 被击杀
       unitB.takeDamage(100);
 
       // 推进战斗以触发检查
-      battle.advance(16);
+      battle.tick(16);
 
       expect(battle.result).toBe('teamA_win');
     });

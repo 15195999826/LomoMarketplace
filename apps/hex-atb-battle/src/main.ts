@@ -7,9 +7,16 @@
  * - F5           (VS Code 调试)
  */
 
+/**
+ *  ts语法笔记
+ * 1. readonly 用于赋值一次后不应再改变的值
+ * 2. 声明成员变量时, !: 中间不要有空格
+ */
+
 import {
   AbilitySet,
   Actor,
+  ActorRef,
   AttributeSet,
   GameWorld,
   GameplayInstance,
@@ -33,8 +40,10 @@ const CharacterAttributeSet = {
 class CharacterActor extends Actor {
   readonly type = 'Character';
 
-  readonly attributeSet: AttributeSet<typeof CharacterAttributeSet>
-  readonly abilitySet: AbilitySet<typeof CharacterAttributeSet>
+  readonly attributeSet: AttributeSet<typeof CharacterAttributeSet>;
+  readonly abilitySet: AbilitySet;
+
+  private _teamID: number = -1;
 
   constructor(name: string) {
     super();
@@ -43,9 +52,22 @@ class CharacterActor extends Actor {
     this.attributeSet = defineAttributes(CharacterAttributeSet);
 
     // 创建能力集（需要传入 ActorRef 和属性集）
-    this.abilitySet = createAbilitySet(this.toRef(), this.attributeSet);
+    this.abilitySet = createAbilitySet(this.toRef(), this.attributeSet._modifierTarget);
+  }
+
+  setTeamID(id: number) {
+    this._teamID = id;
+  }
+
+  get teamID(): number {
+    return this._teamID;
   }
 }
+
+type BattleContext = {
+  leftTeam: CharacterActor[];
+  rightTeam: CharacterActor[];
+};
 
 class HexBattle extends GameplayInstance {
   // 必须定义 type
@@ -53,11 +75,38 @@ class HexBattle extends GameplayInstance {
 
   private tickCount = 0;
 
-  // 必须实现 advance 方法
-  advance(dt: number): GameEventBase[] {
-    // 调用基类实现（更新 logicTime、执行 System、Actor tick）
-    const events = this.baseAdvance(dt);
+  // ! 表示"我保证用之前会赋值
+  private _context!: BattleContext;
 
+  protected override onStart(): void {
+    const leftTeam = [
+      this.createActor(() => new CharacterActor('我方角色0')),
+      this.createActor(() => new CharacterActor('我方角色1')),
+      this.createActor(() => new CharacterActor('我方角色2'))
+    ];
+
+    const rightTeam = [
+      this.createActor(() => new CharacterActor('敌方角色0')),
+      this.createActor(() => new CharacterActor('敌方角色1')),
+      this.createActor(() => new CharacterActor('敌方角色2'))
+    ];
+
+    // 设置队伍ID
+    for (const actor of leftTeam) {
+      actor.setTeamID(0);
+    }
+
+    for (const actor of rightTeam) {
+      actor.setTeamID(1);
+    }
+
+    this._context = { leftTeam, rightTeam };
+    console.log('✅ 战斗开始');
+  }
+
+  override tick(dt: number): GameEventBase[] {
+    this.baseTick(dt);
+    
     this.tickCount++;
     console.log(`[Tick ${this.tickCount}] logicTime: ${this.logicTime}ms`);
 
@@ -72,7 +121,7 @@ class HexBattle extends GameplayInstance {
       this.end();
     }
 
-    return events;
+    return [];
   }
 }
 
@@ -101,8 +150,8 @@ const TICK_INTERVAL = 100; // 每 tick 100ms
 
 console.log('🎮 Game Loop Started\n');
 
-while (battle.isRunning) {
-  battle.advance(TICK_INTERVAL);
+while (world.hasRunningInstances) {
+  world.tickAll(TICK_INTERVAL);
 }
 
 console.log(`\n📊 Final: ${battle.logicTime}ms total`);

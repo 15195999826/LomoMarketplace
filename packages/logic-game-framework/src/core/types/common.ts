@@ -8,7 +8,7 @@
  * 用于在事件和上下文中引用 Actor，避免直接持有对象引用
  */
 export type ActorRef = {
-  readonly id: string;
+  readonly id: number;
 };
 
 /**

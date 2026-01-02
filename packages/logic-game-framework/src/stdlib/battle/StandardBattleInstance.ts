@@ -126,13 +126,13 @@ export class StandardBattleInstance extends GameplayInstance {
   /**
    * 推进逻辑时间（ATB 模式使用）
    */
-  advance(dt: number): GameEventBase[] {
+  tick(dt: number): GameEventBase[] {
     if (!this.isRunning || this._result !== 'ongoing') {
       return [];
     }
 
     // 使用基础实现
-    const events = this.baseAdvance(dt);
+    const events = this.baseTick(dt);
 
     // 检查战斗结束条件
     this.checkBattleEnd();
@@ -316,7 +316,7 @@ export class StandardBattleInstance extends GameplayInstance {
 
   // ========== 生命周期 ==========
 
-  protected onStart(): void {
+  protected override onStart(): void {
     // 广播战斗开始事件到所有 AbilitySet
     const participants = this.actors.map((a) => a.toRef());
     this.broadcastEvent({
