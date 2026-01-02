@@ -223,7 +223,7 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   /**
    * 移除 Actor
    */
-  removeActor(id: number): boolean {
+  removeActor(id: string): boolean {
     const index = this.actors.findIndex((a) => a.id === id);
     if (index === -1) {
       return false;
@@ -238,7 +238,7 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   /**
    * 获取 Actor
    */
-  getActor<T extends Actor>(id: number): T | undefined {
+  getActor<T extends Actor>(id: string): T | undefined {
     return this.actors.find((a) => a.id === id) as T | undefined;
   }
 

@@ -16,11 +16,11 @@ export type ActorState = 'active' | 'inactive' | 'dead' | 'removed';
  * Actor 基类
  */
 export abstract class Actor {
-  /** 全局 ID 计数器 */
-  private static _nextId: number = 1;
+  /** 按类型分开的 ID 计数器 */
+  private static _typeCounters = new Map<string, number>();
 
-  /** 唯一标识符（构造时自动分配） */
-  readonly id: number;
+  /** 内部 ID 存储（延迟初始化） */
+  private _id: string | null = null;
 
   /** Actor 类型（由子类定义） */
   abstract readonly type: string;
@@ -37,8 +37,17 @@ export abstract class Actor {
   /** 显示名称 */
   protected _displayName?: string;
 
-  constructor() {
-    this.id = Actor._nextId++;
+  /**
+   * 唯一标识符（延迟初始化，格式：type_序号）
+   * 首次访问时根据 type 生成
+   */
+  get id(): string {
+    if (this._id === null) {
+      const counter = (Actor._typeCounters.get(this.type) ?? 0) + 1;
+      Actor._typeCounters.set(this.type, counter);
+      this._id = `${this.type}_${counter}`;
+    }
+    return this._id;
   }
 
   /**
@@ -46,7 +55,7 @@ export abstract class Actor {
    * @internal
    */
   static _resetIdCounter(): void {
-    Actor._nextId = 1;
+    Actor._typeCounters.clear();
   }
 
   // ========== 属性访问器 ==========

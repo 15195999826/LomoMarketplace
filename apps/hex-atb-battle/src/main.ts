@@ -25,6 +25,8 @@ import {
   type GameEventBase,
 } from '@lomo/logic-game-framework';
 
+import { HexGridModel, axial, type AxialCoord } from '@lomo/hex-grid';
+
 // ============================================================
 // 1. 创建自定义的 GameplayInstance 子类
 // ============================================================
@@ -65,20 +67,43 @@ class CharacterActor extends Actor {
 }
 
 type BattleContext = {
+  grid: HexGridModel;
   leftTeam: CharacterActor[];
   rightTeam: CharacterActor[];
 };
 
 class HexBattle extends GameplayInstance {
-  // 必须定义 type
   readonly type = 'HexBattle';
 
   private tickCount = 0;
-
-  // ! 表示"我保证用之前会赋值
   private _context!: BattleContext;
 
+  // ========== 地图查询方法（供 System 使用）==========
+
+  /** 根据坐标获取角色 */
+  getActorAt(coord: AxialCoord): CharacterActor | undefined {
+    const ref = this._context.grid.getOccupantAt(coord);
+    if (!ref) return undefined;
+    return this.getActor<CharacterActor>(ref.id);
+  }
+
+  /** 获取角色所在位置 */
+  getActorPosition(actor: CharacterActor): AxialCoord | undefined {
+    return this._context.grid.findOccupantPosition(actor.id);
+  }
+
+  /** 获取地图实例 */
+  get grid(): HexGridModel {
+    return this._context.grid;
+  }
+
+  /** 获取战斗上下文 */
+  get context(): BattleContext {
+    return this._context;
+  }
+
   protected override onStart(): void {
+    // 创建队伍
     const leftTeam = [
       this.createActor(() => new CharacterActor('我方角色0')),
       this.createActor(() => new CharacterActor('我方角色1')),
@@ -91,22 +116,76 @@ class HexBattle extends GameplayInstance {
       this.createActor(() => new CharacterActor('敌方角色2'))
     ];
 
-    // 设置队伍ID
+    // 设置队伍 ID
     for (const actor of leftTeam) {
       actor.setTeamID(0);
     }
-
     for (const actor of rightTeam) {
       actor.setTeamID(1);
     }
 
-    this._context = { leftTeam, rightTeam };
+    // 初始化上下文
+    this._context = {
+      grid: new HexGridModel({ width: 9, height: 9 }),
+      leftTeam,
+      rightTeam,
+    };
+
+    // 随机放置角色
+    this.placeTeamRandomly(leftTeam, { qMin: 0, qMax: 3, rMin: 0, rMax: 3 });
+    this.placeTeamRandomly(rightTeam, { qMin: 5, qMax: 8, rMin: 5, rMax: 8 });
+
     console.log('✅ 战斗开始');
+    this.printMap();
+  }
+
+  /** 在指定范围内随机放置队伍 */
+  private placeTeamRandomly(
+    team: CharacterActor[],
+    range: { qMin: number; qMax: number; rMin: number; rMax: number }
+  ): void {
+    const grid = this._context.grid;
+
+    // 收集范围内所有可用格子
+    const availableCoords: AxialCoord[] = [];
+    for (let q = range.qMin; q <= range.qMax; q++) {
+      for (let r = range.rMin; r <= range.rMax; r++) {
+        const coord = axial(q, r);
+        if (grid.hasTile(coord) && !grid.isOccupied(coord)) {
+          availableCoords.push(coord);
+        }
+      }
+    }
+
+    // 随机打乱
+    for (let i = availableCoords.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [availableCoords[i], availableCoords[j]] = [availableCoords[j], availableCoords[i]];
+    }
+
+    // 放置角色
+    for (let i = 0; i < team.length && i < availableCoords.length; i++) {
+      const coord = availableCoords[i];
+      grid.placeOccupant(coord, { id: team[i].id });
+      console.log(`  📍 ${team[i].displayName} 放置于 (${coord.q}, ${coord.r})`);
+    }
+  }
+
+  /** 打印地图状态 */
+  private printMap(): void {
+    console.log('\n🗺️ 地图状态:');
+    const allActors = [...this._context.leftTeam, ...this._context.rightTeam];
+    for (const actor of allActors) {
+      const pos = this.getActorPosition(actor);
+      if (pos) {
+        console.log(`  [${actor.id}] ${actor.displayName} [队伍${actor.teamID}] @ (${pos.q}, ${pos.r})`);
+      }
+    }
   }
 
   override tick(dt: number): GameEventBase[] {
     this.baseTick(dt);
-    
+
     this.tickCount++;
     console.log(`[Tick ${this.tickCount}] logicTime: ${this.logicTime}ms`);
 

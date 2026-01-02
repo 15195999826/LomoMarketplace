@@ -10,7 +10,8 @@
     "run:built": "node dist/main.js"
   },
   "dependencies": {
-    "@lomo/logic-game-framework": "workspace:*"
+    "@lomo/logic-game-framework": "workspace:*",
+    "@lomo/hex-grid": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

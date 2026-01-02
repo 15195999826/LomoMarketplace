@@ -50,6 +50,9 @@ importers:
 
   apps/hex-atb-battle:
     dependencies:
+      '@lomo/hex-grid':
+        specifier: workspace:*
+        version: link:../../packages/hex-grid
       '@lomo/logic-game-framework':
         specifier: workspace:*
         version: link:../../packages/logic-game-framework

@@ -156,7 +156,7 @@ export class DamageAction extends BaseAction {
       // 判断是否击杀
       let isKill = calcResult.isKill ?? false;
       if (calcResult.isKill === undefined) {
-        const state = ctx.gameplayState as { getActor?: (id: number) => unknown } | null;
+        const state = ctx.gameplayState as { getActor?: (id: string) => unknown } | null;
         const targetActor = state?.getActor?.(target.id);
         if (targetActor && typeof targetActor === 'object') {
           const actor = targetActor as { hp?: number; attributes?: { getCurrentValue?(name: string): number } };

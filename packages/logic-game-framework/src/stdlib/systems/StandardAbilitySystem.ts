@@ -87,7 +87,7 @@ export class StandardAbilitySystem extends System {
   broadcastEventToRelated(
     event: GameEventBase,
     actors: Actor[],
-    relatedActorIds: Set<number>,
+    relatedActorIds: Set<string>,
     gameplayState: unknown
   ): void {
     for (const actor of actors) {
