@@ -1,28 +1,34 @@
 /**
  * HealAction - 治疗 Action
- *
- * 目前只打印日志，验证框架流程。
  */
 
 import {
   BaseAction,
+  type BaseActionParams,
   type ActionResult,
   type ExecutionContext,
+  type ParamResolver,
   createSuccessResult,
   getCurrentEvent,
+  resolveParam,
 } from '@lomo/logic-game-framework';
+
+/**
+ * HealAction 参数
+ */
+export interface HealActionParams extends BaseActionParams {
+  /** 治疗量（必填） */
+  healAmount: ParamResolver<number>;
+}
 
 /**
  * HealAction
  */
-export class HealAction extends BaseAction {
+export class HealAction extends BaseAction<HealActionParams> {
   readonly type = 'heal';
 
-  private healAmount: number = 0;
-
-  setHealAmount(value: number): this {
-    this.healAmount = value;
-    return this;
+  constructor(params: HealActionParams) {
+    super(params);
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
@@ -30,9 +36,12 @@ export class HealAction extends BaseAction {
     const source = ctx.ability?.owner;
     const targets = this.getTargets(ctx);
 
-    // 只打印日志
+    // 解析参数
+    const healAmount = resolveParam(this.params.healAmount, ctx as ExecutionContext);
+
+    // 打印日志
     const targetIds = targets.map(t => t.id).join(', ');
-    console.log(`  [HealAction] ${source?.id} 对 [${targetIds}] 治疗 ${this.healAmount} HP`);
+    console.log(`  [HealAction] ${source?.id} 对 [${targetIds}] 治疗 ${healAmount} HP`);
 
     const allEvents = targets.map(target =>
       ctx.eventCollector.emit({
@@ -40,10 +49,10 @@ export class HealAction extends BaseAction {
         logicTime: currentEvent.logicTime,
         source,
         target,
-        healAmount: this.healAmount,
+        healAmount,
       })
     );
 
-    return createSuccessResult(allEvents, { healAmount: this.healAmount });
+    return createSuccessResult(allEvents, { healAmount });
   }
 }

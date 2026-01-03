@@ -3,6 +3,17 @@
  *
  * Action 是技能效果的执行原语，负责"做什么"
  * 与 Component（负责"何时执行"）配合使用
+ *
+ * ## 参数传递
+ *
+ * Action 使用构造函数参数传递配置，支持延迟求值：
+ * ```typescript
+ * new DamageAction({
+ *   damage: 50,  // 静态值
+ *   damageType: (ctx) => ...,  // 动态值
+ *   targetSelector: TargetSelectors.currentTarget,
+ * })
+ * ```
  */
 
 import type { ActorRef } from '../types/common.js';
@@ -16,7 +27,7 @@ import { getLogger } from '../utils/Logger.js';
  * 默认目标选择器
  * 尝试从当前触发事件中获取 target 或 targets
  */
-const defaultTargetSelector: TargetSelector = (ctx: ExecutionContext): ActorRef[] => {
+export const defaultTargetSelector: TargetSelector = (ctx: ExecutionContext): ActorRef[] => {
   const event = getCurrentEvent(ctx) as { target?: ActorRef; targets?: ActorRef[] };
   if (event.targets) {
     return event.targets;
@@ -42,15 +53,18 @@ export interface IAction {
   execute(ctx: Readonly<ExecutionContext>): ActionResult;
 
   /**
-   * 设置目标选择器
-   */
-  setTargetSelector?(selector: TargetSelector): this;
-
-  /**
    * 获取目标
    */
   getTargets?(ctx: Readonly<ExecutionContext>): ActorRef[];
 
+}
+
+/**
+ * Action 基础参数（所有 Action 共享）
+ */
+export interface BaseActionParams {
+  /** 目标选择器（可选，有默认值） */
+  targetSelector?: TargetSelector;
 }
 
 /**
@@ -65,41 +79,51 @@ export type ActionCallback = {
 
 /**
  * Action 基类
- * 提供通用功能，具体 Action 继承此类实现
+ *
+ * 提供通用功能，具体 Action 继承此类实现。
+ *
+ * ## 使用方式
+ *
+ * ```typescript
+ * interface MyActionParams extends BaseActionParams {
+ *   damage: ParamResolver<number>;
+ * }
+ *
+ * class MyAction extends BaseAction<MyActionParams> {
+ *   constructor(params: MyActionParams) {
+ *     super(params);
+ *   }
+ *
+ *   execute(ctx) {
+ *     const damage = resolveParam(this.params.damage, ctx);
+ *     // ...
+ *   }
+ * }
+ * ```
  */
-export abstract class BaseAction implements IAction {
+export abstract class BaseAction<TParams extends BaseActionParams = BaseActionParams>
+  implements IAction {
+
   abstract readonly type: string;
 
+  /** 构造时传入的参数 */
+  protected readonly params: TParams;
+
   /** 目标选择器 */
-  protected targetSelector: TargetSelector = defaultTargetSelector;
+  protected readonly targetSelector: TargetSelector;
 
   /** 回调列表 */
   protected callbacks: ActionCallback[] = [];
+
+  constructor(params: TParams) {
+    this.params = params;
+    this.targetSelector = params.targetSelector ?? defaultTargetSelector;
+  }
 
   /**
    * 执行 Action（由子类实现）
    */
   abstract execute(ctx: Readonly<ExecutionContext>): ActionResult;
-
-  /**
-   * 设置目标选择器
-   *
-   * @example
-   * ```typescript
-   * // 使用预定义选择器
-   * action.setTargetSelector(TargetSelectors.currentSource);
-   *
-   * // 使用自定义选择器
-   * action.setTargetSelector((ctx) => {
-   *   const event = getCurrentEvent(ctx) as MyEvent;
-   *   return [event.target];
-   * });
-   * ```
-   */
-  setTargetSelector(selector: TargetSelector): this {
-    this.targetSelector = selector;
-    return this;
-  }
 
   /**
    * 获取目标列表
@@ -211,8 +235,12 @@ export abstract class BaseAction implements IAction {
 /**
  * 空 Action（用于占位或测试）
  */
-export class NoopAction extends BaseAction {
+export class NoopAction extends BaseAction<BaseActionParams> {
   readonly type = 'noop';
+
+  constructor(params: BaseActionParams = {}) {
+    super(params);
+  }
 
   execute(_ctx: Readonly<ExecutionContext>): ActionResult {
     return {

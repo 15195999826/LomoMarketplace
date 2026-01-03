@@ -8,7 +8,10 @@
 import {
   type AbilityConfig,
   type GameEventBase,
+  type ActorRef,
+  type ExecutionContext,
   ActivateInstanceComponent,
+  getCurrentEvent,
 } from '@lomo/logic-game-framework';
 
 import type { AxialCoord } from '@lomo/hex-grid';
@@ -18,6 +21,17 @@ import { HealAction } from '../actions/HealAction.js';
 import { MoveAction } from '../actions/MoveAction.js';
 
 import type { SkillType } from '../config/SkillConfig.js';
+
+// ============================================================
+// 目标选择器
+// ============================================================
+
+/**
+ * 从 ability 获取 owner
+ */
+const abilityOwnerSelector = (ctx: ExecutionContext): ActorRef[] => {
+  return ctx.ability ? [ctx.ability.owner] : [];
+};
 
 // ============================================================
 // 行动事件定义
@@ -33,6 +47,14 @@ export const ACTION_USE_EVENT = 'actionUse' as const;
  *
  * ATB 系统决定角色行动后，创建此事件触发 Ability 执行。
  * 移动和技能都通过此事件触发。
+ *
+ * ## 目标选择
+ *
+ * 支持两种目标选择方式：
+ * 1. **直接目标** (`target`) - 选择具体的 Actor，用于单体技能
+ * 2. **坐标目标** (`targetCoord`) - 选择格子坐标，用于移动、范围技能等
+ *
+ * Action 根据技能类型决定使用哪种目标。
  */
 export type ActionUseEvent = GameEventBase & {
   readonly kind: typeof ACTION_USE_EVENT;
@@ -40,9 +62,9 @@ export type ActionUseEvent = GameEventBase & {
   readonly abilityId: string;
   /** 行动者 Actor ID */
   readonly sourceId: string;
-  /** 目标 Actor ID（技能用） */
-  readonly targetId?: string;
-  /** 目标坐标（移动用） */
+  /** 目标 Actor（单体技能用）- 使用 ActorRef 以兼容框架 TargetSelector */
+  readonly target?: ActorRef;
+  /** 目标坐标（移动/范围技能用） */
   readonly targetCoord?: AxialCoord;
 };
 
@@ -53,14 +75,14 @@ export function createActionUseEvent(
   logicTime: number,
   abilityId: string,
   sourceId: string,
-  options?: { targetId?: string; targetCoord?: AxialCoord }
+  options?: { target?: ActorRef; targetCoord?: AxialCoord }
 ): ActionUseEvent {
   return {
     kind: ACTION_USE_EVENT,
     logicTime,
     abilityId,
     sourceId,
-    targetId: options?.targetId,
+    target: options?.target,
     targetCoord: options?.targetCoord,
   };
 }
@@ -85,7 +107,10 @@ export const MOVE_ABILITY: AbilityConfig = {
       }],
       timelineId: 'action_move',
       tagActions: {
-        execute: [new MoveAction()],
+        execute: [new MoveAction({
+          targetSelector: abilityOwnerSelector,
+          targetCoord: (ctx) => (getCurrentEvent(ctx) as ActionUseEvent).targetCoord!,
+        })],
       },
     }),
   ],
@@ -111,7 +136,7 @@ export const SLASH_ABILITY: AbilityConfig = {
       }],
       timelineId: 'skill_slash',
       tagActions: {
-        hit: [new DamageAction().setDamage(50).setPhysical()],
+        hit: [new DamageAction({ damage: 50, damageType: 'physical' })],
       },
     }),
   ],
@@ -133,7 +158,7 @@ export const PRECISE_SHOT_ABILITY: AbilityConfig = {
       }],
       timelineId: 'skill_precise_shot',
       tagActions: {
-        hit: [new DamageAction().setDamage(45).setPhysical()],
+        hit: [new DamageAction({ damage: 45, damageType: 'physical' })],
       },
     }),
   ],
@@ -155,7 +180,7 @@ export const FIREBALL_ABILITY: AbilityConfig = {
       }],
       timelineId: 'skill_fireball',
       tagActions: {
-        hit: [new DamageAction().setDamage(80).setMagical()],
+        hit: [new DamageAction({ damage: 80, damageType: 'magical' })],
       },
     }),
   ],
@@ -177,7 +202,7 @@ export const CRUSHING_BLOW_ABILITY: AbilityConfig = {
       }],
       timelineId: 'skill_crushing_blow',
       tagActions: {
-        hit: [new DamageAction().setDamage(90).setPhysical()],
+        hit: [new DamageAction({ damage: 90, damageType: 'physical' })],
       },
     }),
   ],
@@ -199,9 +224,9 @@ export const SWIFT_STRIKE_ABILITY: AbilityConfig = {
       }],
       timelineId: 'skill_swift_strike',
       tagActions: {
-        hit1: [new DamageAction().setDamage(10).setPhysical()],
-        hit2: [new DamageAction().setDamage(10).setPhysical()],
-        hit3: [new DamageAction().setDamage(10).setPhysical()],
+        hit1: [new DamageAction({ damage: 10, damageType: 'physical' })],
+        hit2: [new DamageAction({ damage: 10, damageType: 'physical' })],
+        hit3: [new DamageAction({ damage: 10, damageType: 'physical' })],
       },
     }),
   ],
@@ -223,7 +248,7 @@ export const HOLY_HEAL_ABILITY: AbilityConfig = {
       }],
       timelineId: 'skill_holy_heal',
       tagActions: {
-        heal: [new HealAction().setHealAmount(40)],
+        heal: [new HealAction({ healAmount: 40 })],
       },
     }),
   ],

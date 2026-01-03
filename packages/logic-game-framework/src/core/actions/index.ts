@@ -18,6 +18,7 @@ export {
 export {
   IAction,
   ActionCallback,
+  BaseActionParams,
   BaseAction,
   NoopAction,
   ActionConfig,
@@ -25,6 +26,13 @@ export {
   ActionFactory,
   getActionFactory,
   setActionFactory,
+  defaultTargetSelector,
 } from './Action.js';
 
 export { TargetSelector } from './TargetSelector.js';
+
+export {
+  ParamResolver,
+  resolveParam,
+  resolveOptionalParam,
+} from './ParamResolver.js';

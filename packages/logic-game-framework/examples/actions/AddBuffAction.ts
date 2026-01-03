@@ -1,17 +1,20 @@
 /**
  * AddBuffAction - 添加 Buff Action 示例
  *
- * 这是一个示例实现，展示如何基于框架创建自定义 Action。
- * 实际项目应根据自己的需求创建类似的 Action。
+ * 展示如何使用构造函数参数 + ParamResolver 模式创建 Action。
  */
 
 import {
   BaseAction,
+  type BaseActionParams,
   type ActionResult,
   type ExecutionContext,
   createSuccessResult,
   createFailureResult,
   getCurrentEvent,
+  type ParamResolver,
+  resolveParam,
+  resolveOptionalParam,
 } from '../../src/core/actions/index.js';
 import type { ActorRef } from '../../src/core/types/common.js';
 
@@ -21,78 +24,74 @@ import type { ActorRef } from '../../src/core/types/common.js';
 export type BuffRefreshPolicy = 'extend' | 'refresh' | 'stack' | 'ignore';
 
 /**
- * AddBuffAction
+ * AddBuffAction 参数
  */
-export class AddBuffAction extends BaseAction {
+export interface AddBuffActionParams extends BaseActionParams {
+  /** Buff 配置 ID（必填） */
+  buffId: ParamResolver<string>;
+  /** Buff 显示名称（可选） */
+  buffName?: ParamResolver<string>;
+  /** 持续时间（毫秒，可选） */
+  duration?: ParamResolver<number>;
+  /** 初始层数（可选，默认 1） */
+  stacks?: ParamResolver<number>;
+  /** 最大层数（可选，默认 1） */
+  maxStacks?: ParamResolver<number>;
+  /** 刷新策略（可选，默认 'refresh'） */
+  refreshPolicy?: ParamResolver<BuffRefreshPolicy>;
+}
+
+/**
+ * AddBuffAction
+ *
+ * @example
+ * ```typescript
+ * // 基础用法
+ * new AddBuffAction({
+ *   buffId: 'buff_burning',
+ *   duration: 5000,
+ * })
+ *
+ * // 可叠加 Buff
+ * new AddBuffAction({
+ *   buffId: 'buff_poison',
+ *   stacks: 1,
+ *   maxStacks: 5,
+ *   refreshPolicy: 'stack',
+ * })
+ * ```
+ */
+export class AddBuffAction extends BaseAction<AddBuffActionParams> {
   readonly type = 'addBuff';
 
-  private buffConfigId: string = '';
-  private buffName?: string;
-  private duration?: number;
-  private stacks: number = 1;
-  private maxStacks: number = 1;
-  private refreshPolicy: BuffRefreshPolicy = 'refresh';
-
-  /**
-   * 设置 Buff 配置 ID
-   */
-  setBuffId(id: string): this {
-    this.buffConfigId = id;
-    return this;
-  }
-
-  /**
-   * 设置 Buff 显示名称
-   */
-  setBuffName(name: string): this {
-    this.buffName = name;
-    return this;
-  }
-
-  /**
-   * 设置持续时间（毫秒）
-   */
-  setDuration(ms: number): this {
-    this.duration = ms;
-    return this;
-  }
-
-  /**
-   * 设置初始层数
-   */
-  setStacks(count: number): this {
-    this.stacks = count;
-    return this;
-  }
-
-  /**
-   * 设置最大层数
-   */
-  setMaxStacks(max: number): this {
-    this.maxStacks = max;
-    return this;
-  }
-
-  /**
-   * 设置刷新策略
-   */
-  setRefreshPolicy(policy: BuffRefreshPolicy): this {
-    this.refreshPolicy = policy;
-    return this;
+  constructor(params: AddBuffActionParams) {
+    super(params);
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
-    // 使用 TargetSelector 获取目标
+    // 获取目标
     const targets = this.getTargets(ctx);
     if (targets.length === 0) {
       return createFailureResult('No targets selected');
     }
 
-    if (!this.buffConfigId) {
+    // 解析参数
+    const buffId = resolveParam(this.params.buffId, ctx as ExecutionContext);
+    const buffName = this.params.buffName
+      ? resolveParam(this.params.buffName, ctx as ExecutionContext)
+      : undefined;
+    const duration = this.params.duration
+      ? resolveParam(this.params.duration, ctx as ExecutionContext)
+      : undefined;
+    const stacks = resolveOptionalParam(this.params.stacks, 1, ctx as ExecutionContext);
+    const _maxStacks = resolveOptionalParam(this.params.maxStacks, 1, ctx as ExecutionContext);
+    const _refreshPolicy = resolveOptionalParam(this.params.refreshPolicy, 'refresh', ctx as ExecutionContext);
+
+    if (!buffId) {
       return createFailureResult('Buff config ID is required');
     }
 
-    // 获取来源（从 ability 或当前触发事件）
+    // 获取来源
     const currentEvent = getCurrentEvent(ctx);
     const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
 
@@ -100,19 +99,17 @@ export class AddBuffAction extends BaseAction {
     const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
 
     for (const target of targets) {
-      // 检查目标是否已有此 Buff（简化实现）
-      const isRefresh = false; // 需要外部判断
+      const isRefresh = false; // 简化实现
 
-      // 发出事件（事件包含完整信息：target, isRefresh, stacks）
       const event = ctx.eventCollector.emit({
         kind: 'buffApplied',
         logicTime: currentEvent.logicTime,
         source,
         target,
-        buffId: this.buffConfigId,
-        buffName: this.buffName,
-        stacks: this.stacks,
-        duration: this.duration,
+        buffId,
+        buffName,
+        stacks,
+        duration,
         isRefresh,
       });
 
@@ -120,9 +117,9 @@ export class AddBuffAction extends BaseAction {
     }
 
     const result = createSuccessResult(allEvents, {
-      buffConfigId: this.buffConfigId,
-      stacks: this.stacks,
-      duration: this.duration,
+      buffId,
+      stacks,
+      duration,
       targetCount: targets.length,
     });
 
@@ -133,10 +130,6 @@ export class AddBuffAction extends BaseAction {
 /**
  * 创建 AddBuffAction 的便捷函数
  */
-export function addBuff(configId?: string): AddBuffAction {
-  const action = new AddBuffAction();
-  if (configId) {
-    action.setBuffId(configId);
-  }
-  return action;
+export function addBuff(params: AddBuffActionParams): AddBuffAction {
+  return new AddBuffAction(params);
 }

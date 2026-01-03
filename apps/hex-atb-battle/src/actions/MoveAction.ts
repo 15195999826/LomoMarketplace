@@ -1,49 +1,75 @@
 /**
  * MoveAction - 移动 Action
  *
- * 目前只打印日志，验证框架流程。
+ * 目标由 targetSelector 决定（谁要移动），
+ * 坐标由 targetCoord 参数决定（移动到哪里）。
  */
 
 import {
   BaseAction,
+  type BaseActionParams,
   type ActionResult,
   type ExecutionContext,
+  type ParamResolver,
   createSuccessResult,
   getCurrentEvent,
+  resolveParam,
 } from '@lomo/logic-game-framework';
 
 import type { AxialCoord } from '@lomo/hex-grid';
 
 /**
- * MoveAction
+ * MoveAction 参数
  */
-export class MoveAction extends BaseAction {
+export interface MoveActionParams extends BaseActionParams {
+  /** 目标坐标（必填，支持延迟求值） */
+  targetCoord: ParamResolver<AxialCoord>;
+}
+
+/**
+ * MoveAction
+ *
+ * @example
+ * ```typescript
+ * // 普通移动（移动自己）
+ * new MoveAction({
+ *   targetSelector: TargetSelectors.abilityOwner,
+ *   targetCoord: (ctx) => (getCurrentEvent(ctx) as ActionUseEvent).targetCoord!,
+ * })
+ *
+ * // 击退（移动敌人）
+ * new MoveAction({
+ *   targetSelector: TargetSelectors.currentTarget,
+ *   targetCoord: (ctx) => calculateKnockbackPosition(ctx),
+ * })
+ * ```
+ */
+export class MoveAction extends BaseAction<MoveActionParams> {
   readonly type = 'move';
 
-  private targetCoord?: AxialCoord;
-
-  /**
-   * 设置目标坐标
-   */
-  setTargetCoord(coord: AxialCoord): this {
-    this.targetCoord = coord;
-    return this;
+  constructor(params: MoveActionParams) {
+    super(params);
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
     const currentEvent = getCurrentEvent(ctx);
-    const source = ctx.ability?.owner;
+    const targets = this.getTargets(ctx);
 
-    // 只打印日志
-    console.log(`  [MoveAction] ${source?.id} 移动到 (${this.targetCoord?.q}, ${this.targetCoord?.r})`);
+    // 解析目标坐标
+    const targetCoord = resolveParam(this.params.targetCoord, ctx as ExecutionContext);
 
-    const event = ctx.eventCollector.emit({
-      kind: 'move',
-      logicTime: currentEvent.logicTime,
-      source,
-      targetCoord: this.targetCoord,
+    // 对每个目标执行移动
+    const allEvents = targets.map(target => {
+      console.log(`  [MoveAction] ${target.id} 移动到 (${targetCoord?.q}, ${targetCoord?.r})`);
+
+      return ctx.eventCollector.emit({
+        kind: 'move',
+        logicTime: currentEvent.logicTime,
+        source: target,
+        targetCoord,
+      });
     });
 
-    return createSuccessResult([event], { targetCoord: this.targetCoord });
+    return createSuccessResult(allEvents, { targetCoord });
   }
 }

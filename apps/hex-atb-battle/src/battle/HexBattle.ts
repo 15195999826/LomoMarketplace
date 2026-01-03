@@ -21,11 +21,15 @@ export type BattleContext = {
   rightTeam: CharacterActor[];
 };
 
+import type { ActorRef } from '@lomo/logic-game-framework';
+
 /** AI 决策结果 */
 type ActionDecision = {
   type: 'move' | 'skill';
   abilityId: string;
-  targetId?: string;
+  /** 目标 Actor（单体技能用） */
+  target?: ActorRef;
+  /** 目标坐标（移动/范围技能用） */
   targetCoord?: AxialCoord;
 };
 
@@ -231,7 +235,7 @@ export class HexBattle extends GameplayInstance {
       this.logicTime,
       decision.abilityId,
       actor.id,
-      { targetId: decision.targetId, targetCoord: decision.targetCoord }
+      { target: decision.target, targetCoord: decision.targetCoord }
     );
 
     // 广播给该角色的 AbilitySet（触发 ActivateInstanceComponent 创建执行实例）
@@ -270,20 +274,20 @@ export class HexBattle extends GameplayInstance {
       const isHeal = skill.tags.includes('ally');
 
       if (isHeal && allies.length > 0) {
-        // 治疗：随机选择友方
-        const target = allies[Math.floor(Math.random() * allies.length)];
+        // 治疗：随机选择友方（使用 ActorRef）
+        const targetActor = allies[Math.floor(Math.random() * allies.length)];
         return {
           type: 'skill',
           abilityId: skill.configId,
-          targetId: target.id,
+          target: { id: targetActor.id },
         };
       } else {
-        // 攻击：随机选择敌方
-        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        // 攻击：随机选择敌方（使用 ActorRef）
+        const targetActor = enemies[Math.floor(Math.random() * enemies.length)];
         return {
           type: 'skill',
           abilityId: skill.configId,
-          targetId: target.id,
+          target: { id: targetActor.id },
         };
       }
     } else {
@@ -306,11 +310,11 @@ export class HexBattle extends GameplayInstance {
 
       // 无法移动时使用技能
       if (enemies.length > 0) {
-        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        const targetActor = enemies[Math.floor(Math.random() * enemies.length)];
         return {
           type: 'skill',
           abilityId: actor.skillAbility.configId,
-          targetId: target.id,
+          target: { id: targetActor.id },
         };
       }
 

@@ -1,17 +1,20 @@
 /**
  * DamageAction - 伤害 Action 示例
  *
- * 这是一个示例实现，展示如何基于框架创建自定义 Action。
- * 实际项目应根据自己的需求创建类似的 Action。
+ * 展示如何使用构造函数参数 + ParamResolver 模式创建 Action。
  */
 
 import {
   BaseAction,
+  type BaseActionParams,
   type ActionResult,
   type ExecutionContext,
   createSuccessResult,
   createFailureResult,
   getCurrentEvent,
+  type ParamResolver,
+  resolveParam,
+  resolveOptionalParam,
 } from '../../src/core/actions/index.js';
 import type { ActorRef } from '../../src/core/types/common.js';
 
@@ -22,7 +25,6 @@ export type DamageType = 'physical' | 'magical' | 'pure' | 'custom';
 
 /**
  * 伤害计算接口
- * 可由外部提供实现
  */
 export interface IDamageCalculator {
   calculate(
@@ -43,7 +45,6 @@ export class SimpleDamageCalculator implements IDamageCalculator {
     _target: ActorRef,
     _ctx: ExecutionContext
   ): { damage: number; isCritical: boolean } {
-    // 简单实现：直接使用基础值
     const isCritical = Math.random() < 0.1; // 10% 暴击率
     const damage = isCritical ? Math.floor(baseValue * 1.5) : baseValue;
     return { damage, isCritical };
@@ -58,112 +59,82 @@ export function setDamageCalculator(calculator: IDamageCalculator): void {
 }
 
 /**
- * DamageAction
+ * DamageAction 参数
  */
-export class DamageAction extends BaseAction {
+export interface DamageActionParams extends BaseActionParams {
+  /** 伤害值（必填，支持延迟求值） */
+  damage: ParamResolver<number>;
+  /** 伤害类型（可选，默认 'physical'） */
+  damageType?: ParamResolver<DamageType>;
+}
+
+/**
+ * DamageAction
+ *
+ * @example
+ * ```typescript
+ * // 静态伤害
+ * new DamageAction({ damage: 50, damageType: 'physical' })
+ *
+ * // 动态伤害（基于属性计算）
+ * new DamageAction({
+ *   damage: (ctx) => {
+ *     const atk = ctx.ability?.owner?.attributes?.get('ATK')?.currentValue ?? 0;
+ *     return atk * 1.5 + 10;
+ *   },
+ *   damageType: 'physical',
+ * })
+ *
+ * // 带回调
+ * new DamageAction({ damage: 100, damageType: 'fire' })
+ *   .onCritical(new HealAction({ healAmount: 20 }))
+ *   .onKill(new AddBuffAction({ buffId: 'victory' }))
+ * ```
+ */
+export class DamageAction extends BaseAction<DamageActionParams> {
   readonly type = 'damage';
 
-  private baseDamage: number = 0;
-  private damageExpression?: string;
-  private damageType: DamageType = 'physical';
-
-  /**
-   * 设置固定伤害值
-   */
-  setDamage(value: number): this {
-    this.baseDamage = value;
-    this.damageExpression = undefined;
-    return this;
-  }
-
-  /**
-   * 设置伤害表达式
-   * 表达式将在执行时由外部解析
-   */
-  setDamageExpression(expr: string): this {
-    this.damageExpression = expr;
-    return this;
-  }
-
-  /**
-   * 设置伤害类型
-   */
-  setDamageType(type: DamageType): this {
-    this.damageType = type;
-    return this;
-  }
-
-  /**
-   * 设置为物理伤害
-   */
-  setPhysical(): this {
-    return this.setDamageType('physical');
-  }
-
-  /**
-   * 设置为魔法伤害
-   */
-  setMagical(): this {
-    return this.setDamageType('magical');
-  }
-
-  /**
-   * 设置为纯粹伤害（无视防御）
-   */
-  setPure(): this {
-    return this.setDamageType('pure');
+  constructor(params: DamageActionParams) {
+    super(params);
   }
 
   execute(ctx: Readonly<ExecutionContext>): ActionResult {
-    // 使用 TargetSelector 获取目标
+    // 获取目标
     const targets = this.getTargets(ctx);
     if (targets.length === 0) {
       return createFailureResult('No targets selected');
     }
 
-    // 获取来源（从 ability 或当前触发事件）
+    // 解析参数（在执行时求值）
+    const damage = resolveParam(this.params.damage, ctx as ExecutionContext);
+    const damageType = resolveOptionalParam(this.params.damageType, 'physical', ctx as ExecutionContext);
+
+    if (damage <= 0) {
+      return createFailureResult('Damage value must be positive');
+    }
+
+    // 获取来源
     const currentEvent = getCurrentEvent(ctx);
     const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
     if (!source) {
       return createFailureResult('No source found');
     }
 
-    // 计算基础伤害
-    let baseValue = this.baseDamage;
-
-    // 如果有表达式，可以在这里解析
-    if (this.damageExpression && baseValue === 0) {
-      const parsed = parseFloat(this.damageExpression);
-      if (!isNaN(parsed)) {
-        baseValue = parsed;
-      } else {
-        baseValue = 10; // 默认值
-      }
-    }
-
-    if (baseValue <= 0) {
-      return createFailureResult('Damage value must be positive');
-    }
-
     // 对每个目标造成伤害
     const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
 
     for (const target of targets) {
-      // 使用伤害计算器
-      const calcResult = damageCalculator.calculate(baseValue, source, target, ctx as ExecutionContext);
-      const { damage, isCritical } = calcResult;
-
-      // 判断是否击杀（简化：不检查实际 HP）
+      const calcResult = damageCalculator.calculate(damage, source, target, ctx as ExecutionContext);
+      const { damage: finalDamage, isCritical } = calcResult;
       const isKill = calcResult.isKill ?? false;
 
-      // 发出事件（事件包含完整信息：target, isCritical, isKill）
       const event = ctx.eventCollector.emit({
         kind: 'damage',
         logicTime: currentEvent.logicTime,
         source,
         target,
-        damage,
-        damageType: this.damageType,
+        damage: finalDamage,
+        damageType,
         isCritical,
         isKill,
       });
@@ -171,9 +142,7 @@ export class DamageAction extends BaseAction {
       allEvents.push(event);
     }
 
-    const result = createSuccessResult(allEvents, { damage: baseValue, targetCount: targets.length });
-
-    // 处理回调
+    const result = createSuccessResult(allEvents, { damage, targetCount: targets.length });
     return this.processCallbacks(result, ctx as ExecutionContext);
   }
 }
@@ -181,10 +150,6 @@ export class DamageAction extends BaseAction {
 /**
  * 创建 DamageAction 的便捷函数
  */
-export function damage(value?: number): DamageAction {
-  const action = new DamageAction();
-  if (value !== undefined) {
-    action.setDamage(value);
-  }
-  return action;
+export function damage(params: DamageActionParams): DamageAction {
+  return new DamageAction(params);
 }
