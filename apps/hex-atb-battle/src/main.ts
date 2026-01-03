@@ -35,11 +35,15 @@ battle.start();
 
 // 游戏主循环
 const TICK_INTERVAL = 100; // 每 tick 100ms
+const SLEEP_MS = 33;      // 每帧间隔
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 console.log('🎮 Game Loop Started\n');
 
 while (world.hasRunningInstances) {
   world.tickAll(TICK_INTERVAL);
+  await sleep(SLEEP_MS);
 }
 
 console.log(`\n📊 Final: ${battle.logicTime}ms total`);

@@ -1,7 +1,8 @@
 /**
- * AddBuffAction - 添加 Buff Action
+ * AddBuffAction - 添加 Buff Action 示例
  *
- * 给目标添加 Buff（能力）
+ * 这是一个示例实现，展示如何基于框架创建自定义 Action。
+ * 实际项目应根据自己的需求创建类似的 Action。
  */
 
 import {
@@ -11,8 +12,8 @@ import {
   createSuccessResult,
   createFailureResult,
   getCurrentEvent,
-} from '../../core/actions/index.js';
-import type { ActorRef } from '../../core/types/common.js';
+} from '../../src/core/actions/index.js';
+import type { ActorRef } from '../../src/core/types/common.js';
 
 /**
  * Buff 刷新策略

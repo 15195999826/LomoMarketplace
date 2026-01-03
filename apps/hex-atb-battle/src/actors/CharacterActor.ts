@@ -18,7 +18,10 @@ import {
   CHARACTER_ATTRIBUTES,
 } from '../config/ClassConfig.js';
 import { CLASS_SKILLS } from '../config/SkillConfig.js';
-import { SKILL_ABILITIES } from '../skills/index.js';
+import { SKILL_ABILITIES, MOVE_ABILITY } from '../skills/index.js';
+
+/** ATB 满值 */
+const ATB_FULL = 100;
 
 export class CharacterActor extends Actor {
   readonly type = 'Character';
@@ -27,10 +30,16 @@ export class CharacterActor extends Actor {
   readonly attributeSet: AttributeSet<typeof CHARACTER_ATTRIBUTES>;
   readonly abilitySet: AbilitySet;
 
+  /** 移动 Ability */
+  private _moveAbility: Ability;
+
   /** 职业技能 Ability */
-  private _skillAbility?: Ability;
+  private _skillAbility: Ability;
 
   private _teamID: number = -1;
+
+  /** ATB 行动条（0-100） */
+  private _atbGauge: number = 0;
 
   constructor(characterClass: CharacterClass) {
     super();
@@ -52,7 +61,11 @@ export class CharacterActor extends Actor {
     // 创建能力集
     this.abilitySet = createAbilitySet(this.toRef(), this.attributeSet._modifierTarget);
 
-    // 装备职业对应的技能（使用 Ability 系统）
+    // 装备移动 Ability（所有角色都有）
+    this._moveAbility = new Ability(MOVE_ABILITY, this.toRef());
+    this.abilitySet.grantAbility(this._moveAbility);
+
+    // 装备职业对应的技能
     const skillType = CLASS_SKILLS[characterClass];
     const skillConfig = SKILL_ABILITIES[skillType];
     this._skillAbility = new Ability(skillConfig, this.toRef());
@@ -67,8 +80,13 @@ export class CharacterActor extends Actor {
     return this._teamID;
   }
 
+  /** 获取移动 Ability */
+  get moveAbility(): Ability {
+    return this._moveAbility;
+  }
+
   /** 获取技能 Ability */
-  get skillAbility(): Ability | undefined {
+  get skillAbility(): Ability {
     return this._skillAbility;
   }
 
@@ -81,5 +99,29 @@ export class CharacterActor extends Actor {
       def: this.attributeSet.def,
       speed: this.attributeSet.speed,
     };
+  }
+
+  // ========== ATB 系统 ==========
+
+  /** 获取 ATB 值 */
+  get atbGauge(): number {
+    return this._atbGauge;
+  }
+
+  /** 累积 ATB（按速度） */
+  accumulateATB(dt: number): void {
+    const speed = this.attributeSet.speed;
+    // 速度 100 时，1000ms 充满
+    this._atbGauge += (speed / 1000) * dt;
+  }
+
+  /** 是否可以行动 */
+  get canAct(): boolean {
+    return this._atbGauge >= ATB_FULL;
+  }
+
+  /** 重置 ATB */
+  resetATB(): void {
+    this._atbGauge = 0;
   }
 }

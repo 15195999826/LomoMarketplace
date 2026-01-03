@@ -89,9 +89,23 @@ export const HOLY_HEAL_TIMELINE: TimelineAsset = {
 };
 
 /**
- * 所有技能 Timeline
+ * 移动 Timeline
+ * - 移动到相邻格子，0.2s 完成
+ */
+export const MOVE_TIMELINE: TimelineAsset = {
+  id: 'action_move',
+  totalDuration: 200,
+  tags: {
+    execute: 100, // 100ms 时执行移动
+    end: 200,
+  },
+};
+
+/**
+ * 所有 Timeline
  */
 export const SKILL_TIMELINES: TimelineAsset[] = [
+  MOVE_TIMELINE,
   SLASH_TIMELINE,
   PRECISE_SHOT_TIMELINE,
   FIREBALL_TIMELINE,

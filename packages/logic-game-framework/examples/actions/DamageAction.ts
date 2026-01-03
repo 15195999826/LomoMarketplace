@@ -1,7 +1,8 @@
 /**
- * DamageAction - 伤害 Action
+ * DamageAction - 伤害 Action 示例
  *
- * 对目标造成伤害
+ * 这是一个示例实现，展示如何基于框架创建自定义 Action。
+ * 实际项目应根据自己的需求创建类似的 Action。
  */
 
 import {
@@ -11,9 +12,8 @@ import {
   createSuccessResult,
   createFailureResult,
   getCurrentEvent,
-} from '../../core/actions/index.js';
-import type { ActorRef } from '../../core/types/common.js';
-import { StandardAttributes } from '../attributes/StandardAttributes.js';
+} from '../../src/core/actions/index.js';
+import type { ActorRef } from '../../src/core/types/common.js';
 
 /**
  * 伤害类型
@@ -153,24 +153,8 @@ export class DamageAction extends BaseAction {
       const calcResult = damageCalculator.calculate(baseValue, source, target, ctx as ExecutionContext);
       const { damage, isCritical } = calcResult;
 
-      // 判断是否击杀
-      let isKill = calcResult.isKill ?? false;
-      if (calcResult.isKill === undefined) {
-        const state = ctx.gameplayState as { getActor?: (id: string) => unknown } | null;
-        const targetActor = state?.getActor?.(target.id);
-        if (targetActor && typeof targetActor === 'object') {
-          const actor = targetActor as { hp?: number; attributes?: { getCurrentValue?(name: string): number } };
-          let targetHp: number | undefined;
-          if (typeof actor.hp === 'number') {
-            targetHp = actor.hp;
-          } else if (actor.attributes?.getCurrentValue) {
-            targetHp = actor.attributes.getCurrentValue(StandardAttributes.HP);
-          }
-          if (targetHp !== undefined) {
-            isKill = targetHp <= damage;
-          }
-        }
-      }
+      // 判断是否击杀（简化：不检查实际 HP）
+      const isKill = calcResult.isKill ?? false;
 
       // 发出事件（事件包含完整信息：target, isCritical, isKill）
       const event = ctx.eventCollector.emit({

@@ -6,6 +6,7 @@
  *
  * ## 目录结构
  *
+ * - `actions/` - Action 示例（DamageAction、HealAction 等）
  * - `events/` - 战斗游戏事件示例（DamageEvent、HealEvent 等）
  * - `abilities/` - 能力标签和组件示例（RPGAbilityTags、ActiveSkillComponent 等）
  *
@@ -25,6 +26,9 @@
  * } from '@lomo/logic-game-framework/examples';
  * ```
  */
+
+// Actions 相关
+export * from './actions/index.js';
 
 // 事件相关
 export * from './events/index.js';

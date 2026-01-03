@@ -14,6 +14,36 @@
  * - DoT：周期触发的持续效果
  * - 脱手技能：多个实例并行执行
  *
+ * ## 事件定义
+ *
+ * 触发器监听的事件必须继承 GameEventBase：
+ *
+ * ```typescript
+ * // 1. 定义事件类型（继承 GameEventBase）
+ * type InputActionEvent = GameEventBase & {
+ *   kind: 'inputAction';
+ *   abilityId: string;
+ *   sourceId: string;
+ *   targetId?: string;
+ * };
+ *
+ * // 2. 创建事件的工厂函数
+ * function createInputActionEvent(
+ *   logicTime: number,
+ *   abilityId: string,
+ *   sourceId: string
+ * ): InputActionEvent {
+ *   return { kind: 'inputAction', logicTime, abilityId, sourceId };
+ * }
+ *
+ * // 3. 战斗系统广播事件
+ * abilitySystem.broadcastEvent(
+ *   createInputActionEvent(logicTime, 'fireball', actor.id),
+ *   actors,
+ *   gameplayState
+ * );
+ * ```
+ *
  * @example
  * ```typescript
  * new ActivateInstanceComponent({

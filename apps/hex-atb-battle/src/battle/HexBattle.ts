@@ -7,10 +7,10 @@ import {
   type GameEventBase,
 } from '@lomo/logic-game-framework';
 
-import { HexGridModel, axial, type AxialCoord } from '@lomo/hex-grid';
+import { HexGridModel, axial, hexNeighbors, type AxialCoord } from '@lomo/hex-grid';
 
 import { CharacterActor } from '../actors/CharacterActor.js';
-import type { CharacterClass } from '../config/ClassConfig.js';
+import { createActionUseEvent } from '../skills/SkillAbilities.js';
 
 /** 战斗上下文 */
 export type BattleContext = {
@@ -19,13 +19,21 @@ export type BattleContext = {
   rightTeam: CharacterActor[];
 };
 
+/** AI 决策结果 */
+type ActionDecision = {
+  type: 'move' | 'skill';
+  abilityId: string;
+  targetId?: string;
+  targetCoord?: AxialCoord;
+};
+
 export class HexBattle extends GameplayInstance {
   readonly type = 'HexBattle';
 
   private tickCount = 0;
   private _context!: BattleContext;
 
-  // ========== 地图查询方法（供 System 使用）==========
+  // ========== 地图查询方法 ==========
 
   /** 根据坐标获取角色 */
   getActorAt(coord: AxialCoord): CharacterActor | undefined {
@@ -49,15 +57,25 @@ export class HexBattle extends GameplayInstance {
     return this._context;
   }
 
+  /** 获取所有角色 */
+  get allActors(): CharacterActor[] {
+    return [...this._context.leftTeam, ...this._context.rightTeam];
+  }
+
+  /** 获取存活角色 */
+  get aliveActors(): CharacterActor[] {
+    return this.allActors.filter(a => a.isActive);
+  }
+
   protected override onStart(): void {
-    // 创建左方队伍（牧师、战士、弓箭手）
+    // 创建左方队伍
     const leftTeam: CharacterActor[] = [
       this.createActor(() => new CharacterActor('Priest')),
       this.createActor(() => new CharacterActor('Warrior')),
       this.createActor(() => new CharacterActor('Archer')),
     ];
 
-    // 创建右方队伍（法师、狂战士、刺客）
+    // 创建右方队伍
     const rightTeam: CharacterActor[] = [
       this.createActor(() => new CharacterActor('Mage')),
       this.createActor(() => new CharacterActor('Berserker')),
@@ -65,12 +83,8 @@ export class HexBattle extends GameplayInstance {
     ];
 
     // 设置队伍 ID
-    for (const actor of leftTeam) {
-      actor.setTeamID(0);
-    }
-    for (const actor of rightTeam) {
-      actor.setTeamID(1);
-    }
+    for (const actor of leftTeam) actor.setTeamID(0);
+    for (const actor of rightTeam) actor.setTeamID(1);
 
     // 初始化上下文
     this._context = {
@@ -93,9 +107,8 @@ export class HexBattle extends GameplayInstance {
     range: { qMin: number; qMax: number; rMin: number; rMax: number }
   ): void {
     const grid = this._context.grid;
-
-    // 收集范围内所有可用格子
     const availableCoords: AxialCoord[] = [];
+
     for (let q = range.qMin; q <= range.qMax; q++) {
       for (let r = range.rMin; r <= range.rMax; r++) {
         const coord = axial(q, r);
@@ -111,10 +124,8 @@ export class HexBattle extends GameplayInstance {
       [availableCoords[i], availableCoords[j]] = [availableCoords[j], availableCoords[i]];
     }
 
-    // 放置角色
     for (let i = 0; i < team.length && i < availableCoords.length; i++) {
-      const coord = availableCoords[i];
-      grid.placeOccupant(coord, { id: team[i].id });
+      grid.placeOccupant(availableCoords[i], { id: team[i].id });
     }
   }
 
@@ -123,11 +134,10 @@ export class HexBattle extends GameplayInstance {
     console.log('\n📋 角色信息:');
     console.log('─'.repeat(70));
 
-    const allActors = [...this._context.leftTeam, ...this._context.rightTeam];
-    for (const actor of allActors) {
+    for (const actor of this.allActors) {
       const pos = this.getActorPosition(actor);
       const stats = actor.getStats();
-      const skillAbility = actor.skillAbility;
+      const skill = actor.skillAbility;
 
       const teamLabel = actor.teamID === 0 ? '左方' : '右方';
       const posStr = pos ? `(${pos.q}, ${pos.r})` : '未放置';
@@ -135,33 +145,132 @@ export class HexBattle extends GameplayInstance {
       console.log(`  [${actor.id}] ${actor.displayName} (${teamLabel})`);
       console.log(`    位置: ${posStr}`);
       console.log(`    属性: HP=${stats.hp}/${stats.maxHp} ATK=${stats.atk} DEF=${stats.def} SPD=${stats.speed}`);
-      if (skillAbility) {
-        const tags = skillAbility.tags.join(', ');
-        console.log(`    技能: ${skillAbility.displayName} [${tags}]`);
-        console.log(`           ${skillAbility.description}`);
-      }
+      console.log(`    技能: ${skill.displayName}`);
       console.log('');
     }
     console.log('─'.repeat(70));
   }
 
+  // ========== 战斗主循环 ==========
+
   override tick(dt: number): GameEventBase[] {
     this.baseTick(dt);
-
     this.tickCount++;
-    console.log(`[Tick ${this.tickCount}] logicTime: ${this.logicTime}ms`);
 
-    // 每 5 tick 输出一次
-    if (this.tickCount % 5 === 0) {
-      console.log(`  -> 每 5 tick 触发一次`);
+    // 1. 累积所有角色的 ATB
+    for (const actor of this.aliveActors) {
+      actor.accumulateATB(dt);
     }
 
-    // 10 tick 后结束
-    if (this.tickCount >= 10) {
-      console.log('\n✅ 战斗结束');
+    // 2. 找到可以行动的角色（ATB 最高且 >= 100）
+    const readyActor = this.getReadyActor();
+    if (readyActor) {
+      console.log(`\n⚡ [Tick ${this.tickCount}] ${readyActor.displayName} 获得行动机会 (ATB: ${readyActor.atbGauge.toFixed(1)})`);
+
+      // 3. AI 决策
+      const decision = this.decideAction(readyActor);
+      console.log(`  🤖 决策: ${decision.type === 'move' ? '移动' : '使用技能'}`);
+
+      // 4. 创建事件并广播
+      const event = createActionUseEvent(
+        this.logicTime,
+        decision.abilityId,
+        readyActor.id,
+        { targetId: decision.targetId, targetCoord: decision.targetCoord }
+      );
+
+      // 广播给该角色的 AbilitySet
+      readyActor.abilitySet.receiveEvent(event, this);
+
+      // 5. 推进 Ability 执行（tick abilitySet）
+      readyActor.abilitySet.tick(dt);
+
+      // 6. 重置 ATB
+      readyActor.resetATB();
+    }
+
+    // 检查战斗是否结束（简化：10 次行动后结束）
+    if (this.tickCount >= 100) {
+      console.log('\n✅ 战斗结束（达到最大回合数）');
       this.end();
     }
 
     return [];
+  }
+
+  /** 获取可以行动的角色 */
+  private getReadyActor(): CharacterActor | undefined {
+    const readyActors = this.aliveActors.filter(a => a.canAct);
+    if (readyActors.length === 0) return undefined;
+
+    // 返回 ATB 最高的
+    return readyActors.reduce((a, b) => a.atbGauge > b.atbGauge ? a : b);
+  }
+
+  /** AI 决策（简化版：随机选择移动或攻击） */
+  private decideAction(actor: CharacterActor): ActionDecision {
+    const myPos = this.getActorPosition(actor);
+    const enemies = this.aliveActors.filter(a => a.teamID !== actor.teamID);
+    const allies = this.aliveActors.filter(a => a.teamID === actor.teamID && a.id !== actor.id);
+
+    // 简化决策：50% 移动，50% 使用技能
+    const useSkill = Math.random() > 0.5;
+
+    if (useSkill && enemies.length > 0) {
+      const skill = actor.skillAbility;
+      const isHeal = skill.tags.includes('ally');
+
+      if (isHeal && allies.length > 0) {
+        // 治疗：随机选择友方
+        const target = allies[Math.floor(Math.random() * allies.length)];
+        return {
+          type: 'skill',
+          abilityId: skill.configId,
+          targetId: target.id,
+        };
+      } else {
+        // 攻击：随机选择敌方
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        return {
+          type: 'skill',
+          abilityId: skill.configId,
+          targetId: target.id,
+        };
+      }
+    } else {
+      // 移动：随机选择相邻格子
+      if (myPos) {
+        const neighbors = hexNeighbors(myPos);
+        const validNeighbors = neighbors.filter((n: AxialCoord) =>
+          this._context.grid.hasTile(n) && !this._context.grid.isOccupied(n)
+        );
+
+        if (validNeighbors.length > 0) {
+          const targetCoord = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
+          return {
+            type: 'move',
+            abilityId: 'action_move',
+            targetCoord,
+          };
+        }
+      }
+
+      // 无法移动时使用技能
+      if (enemies.length > 0) {
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        return {
+          type: 'skill',
+          abilityId: actor.skillAbility.configId,
+          targetId: target.id,
+        };
+      }
+
+      // 兜底：移动到原地
+      return {
+        type: 'move',
+        abilityId: 'action_move',
+        targetCoord: myPos,
+      };
+    }
   }
 }
