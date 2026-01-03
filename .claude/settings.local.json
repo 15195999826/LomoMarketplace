@@ -53,7 +53,8 @@
       "Bash(powershell -Command \"cd 'E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\inkmon-battle'; npx tsx examples/full-battle-3v3.ts 2>&1\":*)",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build && node dist/examples/atb-battle/run-demo.js\")",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; node dist/examples/atb-battle/run-demo.js\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(cd:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -8,9 +8,18 @@ import {
   type AbilitySet,
   type IAbilitySetProvider,
   setDebugLogHandler,
+  ProjectileActor,
+  EventCollector,
+  isProjectileHitEvent,
+  isProjectileMissEvent,
 } from '@lomo/logic-game-framework';
 
-import { HexGridModel, axial, hexNeighbors, type AxialCoord } from '@lomo/hex-grid';
+import {
+  ProjectileSystem,
+  DistanceCollisionDetector,
+} from '@lomo/logic-game-framework/stdlib';
+
+import { HexGridModel, axial, hexNeighbors, hexDistance, type AxialCoord } from '@lomo/hex-grid';
 
 import { CharacterActor } from '../actors/CharacterActor.js';
 import { createActionUseEvent } from '../skills/SkillAbilities.js';
@@ -42,6 +51,15 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
   private tickCount = 0;
   private _context!: BattleContext;
   private _logger!: BattleLogger;
+
+  /** 投射物系统 */
+  private _projectileSystem!: ProjectileSystem;
+
+  /** 活跃的投射物列表 */
+  private _projectiles: ProjectileActor[] = [];
+
+  /** 投射物事件收集器 */
+  private _projectileEventCollector!: EventCollector;
 
   // ========== IAbilitySetProvider 实现 ==========
 
@@ -89,11 +107,32 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     return this.allActors.filter(a => a.isActive);
   }
 
+  // ========== 投射物管理 ==========
+
+  /** 添加投射物到战斗 */
+  addProjectile(projectile: ProjectileActor): void {
+    this._projectiles.push(projectile);
+    this._logger.log(`  🚀 投射物发射: ${projectile.id} (${projectile.config.projectileType})`);
+  }
+
+  /** 获取活跃投射物数量 */
+  get activeProjectileCount(): number {
+    return this._projectiles.filter(p => p.isFlying).length;
+  }
+
   protected override onStart(): void {
     // 初始化日志系统
     this._logger = new BattleLogger(this.id);
     setDebugLogHandler((category, message, context) => {
       this._logger.handleFrameworkLog(category, message, context);
+    });
+
+    // 初始化投射物系统
+    this._projectileEventCollector = new EventCollector();
+    this._projectileSystem = new ProjectileSystem({
+      // 使用距离碰撞检测，hex 坐标系中相邻格子距离约为 1，使用 1.2 作为碰撞阈值
+      collisionDetector: new DistanceCollisionDetector(1.2),
+      eventCollector: this._projectileEventCollector,
     });
 
     // 创建左方队伍
@@ -191,6 +230,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     this.tickCount++;
 
     this._logger.tick(this.tickCount, this.logicTime);
+
+    // 更新投射物系统
+    this.tickProjectiles(dt);
 
     for (const actor of this.aliveActors) {
       // 检查该角色是否正在执行行动
@@ -340,5 +382,77 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
         targetCoord: myPos,
       };
     }
+  }
+
+  // ========== 投射物更新 ==========
+
+  /** 更新投射物系统 */
+  private tickProjectiles(dt: number): void {
+    if (this._projectiles.length === 0) {
+      return;
+    }
+
+    // 获取所有可被命中的 Actor（包括投射物和角色）
+    const allActors = [...this._projectiles, ...this.allActors];
+
+    // 更新投射物系统
+    this._projectileSystem.tick(allActors, dt);
+
+    // 处理投射物事件
+    const events = this._projectileEventCollector.flush();
+    for (const event of events) {
+      if (isProjectileHitEvent(event)) {
+        this.onProjectileHit(event);
+      } else if (isProjectileMissEvent(event)) {
+        this.onProjectileMiss(event);
+      }
+    }
+
+    // 清理已完成的投射物
+    this._projectiles = this._projectiles.filter(p => p.isFlying);
+  }
+
+  /** 处理投射物命中 */
+  private onProjectileHit(event: ReturnType<typeof isProjectileHitEvent extends (e: any) => e is infer R ? () => R : never>): void {
+    // 找到命中的目标
+    const hitEvent = event as any;
+    const targetActor = this.getActor<CharacterActor>(hitEvent.target.id);
+
+    if (!targetActor) {
+      return;
+    }
+
+    // 投射物携带的伤害
+    const damage = hitEvent.damage ?? 0;
+    const damageType = hitEvent.damageType ?? 'physical';
+
+    // 记录日志
+    const sourceName = this.getActor(hitEvent.source.id)?.displayName ?? hitEvent.source.id;
+    const targetName = targetActor.displayName;
+
+    this._logger.log(`  💥 投射物命中! ${sourceName} → ${targetName} | 伤害: ${damage} ${damageType}`);
+    this._logger.log(`    飞行时间: ${hitEvent.flyTime}ms, 飞行距离: ${hitEvent.flyDistance.toFixed(2)}`);
+
+    // 应用伤害（简化：直接扣血）
+    // 实际项目中应该通过 DamageAction 或事件系统处理
+    if (damage > 0 && targetActor.attributeSet) {
+      const currentHp = targetActor.attributeSet.hp;
+      const actualDamage = Math.min(damage, currentHp);
+      targetActor.attributeSet.modifyBase('hp', -actualDamage);
+
+      this._logger.log(`    ${targetName} 受到 ${actualDamage} 点伤害, 剩余 HP: ${targetActor.attributeSet.hp}`);
+
+      // 检查死亡
+      if (targetActor.attributeSet.hp <= 0) {
+        targetActor.onDeath();
+        this._logger.log(`    ☠️ ${targetName} 被击杀!`);
+      }
+    }
+  }
+
+  /** 处理投射物未命中 */
+  private onProjectileMiss(event: any): void {
+    const sourceName = this.getActor(event.source.id)?.displayName ?? event.source.id;
+    this._logger.log(`  ❌ 投射物未命中: ${event.projectileId} | 原因: ${event.reason}`);
   }
 }

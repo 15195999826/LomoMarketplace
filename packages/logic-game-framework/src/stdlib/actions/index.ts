@@ -10,5 +10,13 @@
  * 如需参考实现，请查看 examples/actions/ 目录。
  */
 
-// 目前没有通用的标准 Action
-// 项目应根据自己的需求实现 Action
+// 投射物 Action
+export {
+  LaunchProjectileAction,
+  type LaunchProjectileActionParams,
+  type PositionResolver,
+  createActorPositionResolver,
+  createFixedPositionResolver,
+  sourcePositionResolver,
+  targetPositionResolver,
+} from './LaunchProjectileAction.js';
