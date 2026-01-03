@@ -5,12 +5,14 @@
 import {
   GameplayInstance,
   type GameEventBase,
+  setDebugLogHandler,
 } from '@lomo/logic-game-framework';
 
 import { HexGridModel, axial, hexNeighbors, type AxialCoord } from '@lomo/hex-grid';
 
 import { CharacterActor } from '../actors/CharacterActor.js';
 import { createActionUseEvent } from '../skills/SkillAbilities.js';
+import { BattleLogger } from '../logger/BattleLogger.js';
 
 /** 战斗上下文 */
 export type BattleContext = {
@@ -32,6 +34,7 @@ export class HexBattle extends GameplayInstance {
 
   private tickCount = 0;
   private _context!: BattleContext;
+  private _logger!: BattleLogger;
 
   // ========== 地图查询方法 ==========
 
@@ -68,6 +71,12 @@ export class HexBattle extends GameplayInstance {
   }
 
   protected override onStart(): void {
+    // 初始化日志系统
+    this._logger = new BattleLogger(this.id);
+    setDebugLogHandler((category, message, context) => {
+      this._logger.handleFrameworkLog(category, message, context);
+    });
+
     // 创建左方队伍
     const leftTeam: CharacterActor[] = [
       this.createActor(() => new CharacterActor('Priest')),
@@ -86,6 +95,11 @@ export class HexBattle extends GameplayInstance {
     for (const actor of leftTeam) actor.setTeamID(0);
     for (const actor of rightTeam) actor.setTeamID(1);
 
+    // 注册角色到日志系统
+    for (const actor of [...leftTeam, ...rightTeam]) {
+      this._logger.registerActor(actor.id, actor.displayName);
+    }
+
     // 初始化上下文
     this._context = {
       grid: new HexGridModel({ width: 9, height: 9 }),
@@ -97,7 +111,7 @@ export class HexBattle extends GameplayInstance {
     this.placeTeamRandomly(leftTeam, { qMin: 0, qMax: 3, rMin: 0, rMax: 3 });
     this.placeTeamRandomly(rightTeam, { qMin: 5, qMax: 8, rMin: 5, rMax: 8 });
 
-    console.log('✅ 战斗开始');
+    this._logger.log('✅ 战斗开始');
     this.printBattleInfo();
   }
 
@@ -157,54 +171,89 @@ export class HexBattle extends GameplayInstance {
     this.baseTick(dt);
     this.tickCount++;
 
-    // 1. 累积所有角色的 ATB
+    this._logger.tick(this.tickCount, this.logicTime);
+
     for (const actor of this.aliveActors) {
-      actor.accumulateATB(dt);
+      // 检查该角色是否正在执行行动
+      if (this.isActorExecuting(actor)) {
+        // 正在执行：驱动执行实例，不累积 ATB
+        actor.abilitySet.tickExecutions(dt);
+      } else {
+        // 空闲：累积 ATB
+        actor.accumulateATB(dt);
+
+        // 检查是否可以行动
+        if (actor.canAct) {
+          this.startActorAction(actor);
+        }
+      }
     }
 
-    // 2. 找到可以行动的角色（ATB 最高且 >= 100）
-    const readyActor = this.getReadyActor();
-    if (readyActor) {
-      console.log(`\n⚡ [Tick ${this.tickCount}] ${readyActor.displayName} 获得行动机会 (ATB: ${readyActor.atbGauge.toFixed(1)})`);
-
-      // 3. AI 决策
-      const decision = this.decideAction(readyActor);
-      console.log(`  🤖 决策: ${decision.type === 'move' ? '移动' : '使用技能'}`);
-
-      // 4. 创建事件并广播
-      const event = createActionUseEvent(
-        this.logicTime,
-        decision.abilityId,
-        readyActor.id,
-        { targetId: decision.targetId, targetCoord: decision.targetCoord }
-      );
-
-      // 广播给该角色的 AbilitySet
-      readyActor.abilitySet.receiveEvent(event, this);
-
-      // 5. 推进 Ability 执行（tick abilitySet）
-      readyActor.abilitySet.tick(dt);
-
-      // 6. 重置 ATB
-      readyActor.resetATB();
-    }
-
-    // 检查战斗是否结束（简化：10 次行动后结束）
+    // 检查战斗是否结束（简化：100 tick 后结束）
     if (this.tickCount >= 100) {
-      console.log('\n✅ 战斗结束（达到最大回合数）');
+      this._logger.log('\n✅ 战斗结束（达到最大回合数）');
+      this._logger.save();
       this.end();
     }
 
     return [];
   }
 
-  /** 获取可以行动的角色 */
-  private getReadyActor(): CharacterActor | undefined {
-    const readyActors = this.aliveActors.filter(a => a.canAct);
-    if (readyActors.length === 0) return undefined;
+  /** 检查角色是否正在执行行动 */
+  private isActorExecuting(actor: CharacterActor): boolean {
+    for (const ability of actor.abilitySet.getAbilities()) {
+      if (ability.getExecutingInstances().length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
 
-    // 返回 ATB 最高的
-    return readyActors.reduce((a, b) => a.atbGauge > b.atbGauge ? a : b);
+  /** 开始角色行动 */
+  private startActorAction(actor: CharacterActor): void {
+    this._logger.actorReady(actor.id, actor.displayName, actor.atbGauge);
+
+    // AI 决策
+    const decision = this.decideAction(actor);
+    const decisionText = decision.type === 'move' ? '移动' : '使用技能';
+    this._logger.aiDecision(actor.id, actor.displayName, decisionText);
+
+    // 记录执行前的实例数量
+    const beforeInstances = new Set<string>();
+    for (const ability of actor.abilitySet.getAbilities()) {
+      for (const inst of ability.getExecutingInstances()) {
+        beforeInstances.add(inst.id);
+      }
+    }
+
+    // 创建事件并广播
+    const event = createActionUseEvent(
+      this.logicTime,
+      decision.abilityId,
+      actor.id,
+      { targetId: decision.targetId, targetCoord: decision.targetCoord }
+    );
+
+    // 广播给该角色的 AbilitySet（触发 ActivateInstanceComponent 创建执行实例）
+    actor.abilitySet.receiveEvent(event, this);
+
+    // 找出新创建的执行实例，记录到日志
+    for (const ability of actor.abilitySet.getAbilities()) {
+      for (const inst of ability.getExecutingInstances()) {
+        if (!beforeInstances.has(inst.id)) {
+          this._logger.executionStart(
+            inst.id,
+            actor.id,
+            actor.displayName,
+            ability.displayName ?? ability.configId,
+            ability.configId
+          );
+        }
+      }
+    }
+
+    // 重置 ATB
+    actor.resetATB();
   }
 
   /** AI 决策（简化版：随机选择移动或攻击） */

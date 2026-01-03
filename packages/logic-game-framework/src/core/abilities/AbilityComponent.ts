@@ -54,6 +54,7 @@ export interface IAbilityExecutionInstance {
 export interface IAbilityForComponent {
   readonly id: string;
   readonly configId: string;
+  readonly displayName?: string;
 
   /**
    * 标记 Ability 过期 - Component 可调用此方法主动触发过期

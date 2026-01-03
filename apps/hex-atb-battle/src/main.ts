@@ -7,7 +7,10 @@
  * - F5           (VS Code 调试)
  */
 
-import { GameWorld, getTimelineRegistry } from '@lomo/logic-game-framework';
+import { GameWorld, getTimelineRegistry, configureDebugLog } from '@lomo/logic-game-framework';
+
+// 开启调试日志（日志通过 BattleLogger 处理，需要启用框架日志）
+configureDebugLog({ enabled: true, categories: [] });
 import { HexBattle } from './battle/HexBattle.js';
 import { SKILL_TIMELINES } from './skills/index.js';
 

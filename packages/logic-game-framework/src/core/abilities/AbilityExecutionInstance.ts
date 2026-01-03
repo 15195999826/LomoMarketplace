@@ -17,7 +17,7 @@
  */
 
 import { generateId } from '../utils/IdGenerator.js';
-import { getLogger } from '../utils/Logger.js';
+import { getLogger, debugLog } from '../utils/Logger.js';
 import type { IAction } from '../actions/Action.js';
 import type { ExecutionContext } from '../actions/ExecutionContext.js';
 import { createExecutionContext } from '../actions/ExecutionContext.js';
@@ -196,12 +196,25 @@ export class AbilityExecutionInstance {
 
     // 执行 Action
     for (const event of triggeredThisTick) {
-      this.executeActionsForTag(event.tagName);
+      const actions = this.resolveActionsForTag(event.tagName);
+      debugLog('timeline', `触发 ${event.tagName}`, {
+        executionId: this.id,
+        configId: this.abilityInfo.configId,
+        tagName: event.tagName,
+        tagTime: event.tagTime,
+        actions: actions.map(a => a.type),
+      });
+      this.executeActionsForTagInternal(event.tagName, actions);
     }
 
     // 检查是否结束
     if (this._elapsed >= this.timeline.totalDuration) {
       this._state = 'completed';
+      debugLog('execution', `执行完成`, {
+        executionId: this.id,
+        configId: this.abilityInfo.configId,
+        elapsed: this._elapsed,
+      });
     }
 
     return triggeredThisTick.map((e) => e.tagName);
@@ -213,6 +226,11 @@ export class AbilityExecutionInstance {
   cancel(): void {
     if (this._state === 'executing') {
       this._state = 'cancelled';
+      debugLog('execution', `执行取消`, {
+        executionId: this.id,
+        configId: this.abilityInfo.configId,
+        elapsed: this._elapsed,
+      });
     }
   }
 
@@ -256,11 +274,9 @@ export class AbilityExecutionInstance {
   // ========== 内部方法 ==========
 
   /**
-   * 执行指定 Tag 的 Action 列表
+   * 执行指定 Tag 的 Action 列表（内部方法，actions 已解析）
    */
-  private executeActionsForTag(tagName: string): void {
-    const actions = this.resolveActionsForTag(tagName);
-
+  private executeActionsForTagInternal(tagName: string, actions: IAction[]): void {
     if (actions.length === 0) {
       return;
     }

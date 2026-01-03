@@ -64,7 +64,7 @@ import {
 } from './AbilityComponent.js';
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAction } from '../actions/Action.js';
-import { getLogger } from '../utils/Logger.js';
+import { getLogger, debugLog } from '../utils/Logger.js';
 // 复用 GameEventComponent 的类型定义
 import type { EventTrigger, TriggerMode } from './GameEventComponent.js';
 import { createEventTrigger } from './GameEventComponent.js';
@@ -182,10 +182,10 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
         gameplayState,
       });
 
-      getLogger().debug(`ExecutionInstance activated: ${instance.id}`, {
-        abilityId: ability.id,
-        timelineId: this.timelineId,
-        eventKind: event.kind,
+      debugLog('execution', `开始执行`, {
+        executionId: instance.id,
+        abilityName: ability.displayName ?? ability.configId,
+        configId: ability.configId,
       });
     } catch (error) {
       getLogger().error(`Failed to activate ExecutionInstance`, {

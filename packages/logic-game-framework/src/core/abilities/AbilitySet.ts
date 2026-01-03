@@ -16,7 +16,7 @@ import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { Ability } from './Ability.js';
 import type { ComponentLifecycleContext } from './AbilityComponent.js';
-import { getLogger } from '../utils/Logger.js';
+import { getLogger, debugLog } from '../utils/Logger.js';
 
 // ========== 类型定义 ==========
 
@@ -102,6 +102,12 @@ export class AbilitySet {
     const lifecycleContext = this.createLifecycleContext(ability);
     ability.applyEffects(lifecycleContext);
 
+    debugLog('ability', `获得能力`, {
+      actorId: this.owner.id,
+      abilityName: ability.displayName ?? ability.configId,
+      configId: ability.configId,
+    });
+
     // 触发回调
     this.notifyGranted(ability);
   }
@@ -132,6 +138,13 @@ export class AbilitySet {
 
     // 从列表移除
     this.abilities.splice(index, 1);
+
+    const reasonText = expireReason ?? ability.expireReason ?? reason;
+    debugLog('ability', `失去能力 (${reasonText})`, {
+      actorId: this.owner.id,
+      abilityName: ability.displayName ?? ability.configId,
+      configId: ability.configId,
+    });
 
     // 触发回调（传入具体的过期原因）
     this.notifyRevoked(ability, reason, expireReason ?? ability.expireReason);

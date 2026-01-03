@@ -6,6 +6,7 @@
  */
 
 import type { ActorRef, Position } from '../types/common.js';
+import { generateId } from '../utils/IdGenerator.js';
 
 /**
  * Actor 状态
@@ -16,9 +17,6 @@ export type ActorState = 'active' | 'inactive' | 'dead' | 'removed';
  * Actor 基类
  */
 export abstract class Actor {
-  /** 按类型分开的 ID 计数器 */
-  private static _typeCounters = new Map<string, number>();
-
   /** 内部 ID 存储（延迟初始化） */
   private _id: string | null = null;
 
@@ -38,24 +36,14 @@ export abstract class Actor {
   protected _displayName?: string;
 
   /**
-   * 唯一标识符（延迟初始化，格式：type_序号）
-   * 首次访问时根据 type 生成
+   * 唯一标识符（延迟初始化）
+   * 首次访问时通过 IdGenerator 生成，格式：type_N
    */
   get id(): string {
     if (this._id === null) {
-      const counter = (Actor._typeCounters.get(this.type) ?? 0) + 1;
-      Actor._typeCounters.set(this.type, counter);
-      this._id = `${this.type}_${counter}`;
+      this._id = generateId(this.type);
     }
     return this._id;
-  }
-
-  /**
-   * 重置 ID 计数器（仅用于测试）
-   * @internal
-   */
-  static _resetIdCounter(): void {
-    Actor._typeCounters.clear();
   }
 
   // ========== 属性访问器 ==========
