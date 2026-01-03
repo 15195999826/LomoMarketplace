@@ -51,18 +51,18 @@ export class MoveAction extends BaseAction<MoveActionParams> {
     super(params);
   }
 
-  execute(ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(ctx: ExecutionContext): ActionResult {
     const currentEvent = getCurrentEvent(ctx);
     const targets = this.getTargets(ctx);
 
     // 解析目标坐标
-    const targetCoord = resolveParam(this.params.targetCoord, ctx as ExecutionContext);
+    const targetCoord = resolveParam(this.params.targetCoord, ctx);
 
     // 对每个目标执行移动
     const allEvents = targets.map(target => {
       console.log(`  [MoveAction] ${target.id} 移动到 (${targetCoord?.q}, ${targetCoord?.r})`);
 
-      return ctx.eventCollector.emit({
+      return ctx.eventCollector.push({
         kind: 'move',
         logicTime: currentEvent.logicTime,
         source: target,

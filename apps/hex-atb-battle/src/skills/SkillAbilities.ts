@@ -141,7 +141,6 @@ export const SLASH_ABILITY: AbilityConfig = {
     }),
   ],
 };
-
 /**
  * 精准射击 - 远程物理攻击
  */

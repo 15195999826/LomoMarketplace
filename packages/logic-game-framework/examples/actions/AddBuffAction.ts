@@ -68,7 +68,7 @@ export class AddBuffAction extends BaseAction<AddBuffActionParams> {
     super(params);
   }
 
-  execute(ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(ctx: ExecutionContext): ActionResult {
     // 获取目标
     const targets = this.getTargets(ctx);
     if (targets.length === 0) {
@@ -76,16 +76,16 @@ export class AddBuffAction extends BaseAction<AddBuffActionParams> {
     }
 
     // 解析参数
-    const buffId = resolveParam(this.params.buffId, ctx as ExecutionContext);
+    const buffId = resolveParam(this.params.buffId, ctx);
     const buffName = this.params.buffName
-      ? resolveParam(this.params.buffName, ctx as ExecutionContext)
+      ? resolveParam(this.params.buffName, ctx)
       : undefined;
     const duration = this.params.duration
-      ? resolveParam(this.params.duration, ctx as ExecutionContext)
+      ? resolveParam(this.params.duration, ctx)
       : undefined;
-    const stacks = resolveOptionalParam(this.params.stacks, 1, ctx as ExecutionContext);
-    const _maxStacks = resolveOptionalParam(this.params.maxStacks, 1, ctx as ExecutionContext);
-    const _refreshPolicy = resolveOptionalParam(this.params.refreshPolicy, 'refresh', ctx as ExecutionContext);
+    const stacks = resolveOptionalParam(this.params.stacks, 1, ctx);
+    const _maxStacks = resolveOptionalParam(this.params.maxStacks, 1, ctx);
+    const _refreshPolicy = resolveOptionalParam(this.params.refreshPolicy, 'refresh', ctx);
 
     if (!buffId) {
       return createFailureResult('Buff config ID is required');
@@ -96,12 +96,12 @@ export class AddBuffAction extends BaseAction<AddBuffActionParams> {
     const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
 
     // 对每个目标添加 Buff
-    const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
+    const allEvents: ReturnType<typeof ctx.eventCollector.push>[] = [];
 
     for (const target of targets) {
       const isRefresh = false; // 简化实现
 
-      const event = ctx.eventCollector.emit({
+      const event = ctx.eventCollector.push({
         kind: 'buffApplied',
         logicTime: currentEvent.logicTime,
         source,
@@ -123,7 +123,7 @@ export class AddBuffAction extends BaseAction<AddBuffActionParams> {
       targetCount: targets.length,
     });
 
-    return this.processCallbacks(result, ctx as ExecutionContext);
+    return this.processCallbacks(result, ctx);
   }
 }
 

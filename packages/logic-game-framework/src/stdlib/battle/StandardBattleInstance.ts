@@ -181,7 +181,7 @@ export class StandardBattleInstance extends GameplayInstance {
       // 这里不再需要分发 hook
     } catch (error) {
       getLogger().error('Action execution failed', { error });
-      this.eventCollector.emit({
+      this.eventCollector.push({
         kind: 'error',
         logicTime: this._logicTime,
         errorType: 'action_failed',
@@ -215,7 +215,7 @@ export class StandardBattleInstance extends GameplayInstance {
     }
 
     // 发出回合开始事件（给表演层）
-    this.eventCollector.emit({
+    this.eventCollector.push({
       kind: 'turnStart',
       logicTime: this._logicTime,
       roundNumber: this.currentRound,
@@ -303,7 +303,7 @@ export class StandardBattleInstance extends GameplayInstance {
       ...this.getAliveTeamB().map((u) => u.toRef()),
     ];
 
-    this.eventCollector.emit({
+    this.eventCollector.push({
       kind: 'battleEnd',
       logicTime: this._logicTime,
       battleId: this.id,
@@ -327,7 +327,7 @@ export class StandardBattleInstance extends GameplayInstance {
     });
 
     // 发出战斗开始事件（给表演层）
-    this.eventCollector.emit({
+    this.eventCollector.push({
       kind: 'battleStart',
       logicTime: this._logicTime,
       battleId: this.id,

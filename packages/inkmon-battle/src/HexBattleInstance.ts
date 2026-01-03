@@ -353,7 +353,7 @@ export class HexBattleInstance extends GameplayInstance {
       from,
       to,
     };
-    this.eventCollector.emit(moveEvent);
+    this.eventCollector.push(moveEvent);
     events.push(moveEvent);
 
     // 结束行动
@@ -423,7 +423,7 @@ export class HexBattleInstance extends GameplayInstance {
       skillName,
       element: attackElement,
     };
-    this.eventCollector.emit(attackEvent);
+    this.eventCollector.push(attackEvent);
     events.push(attackEvent);
 
     // 计算伤害
@@ -465,7 +465,7 @@ export class HexBattleInstance extends GameplayInstance {
       remainingHp,
       maxHp: target.maxHp,
     };
-    this.eventCollector.emit(damageEvent);
+    this.eventCollector.push(damageEvent);
     events.push(damageEvent);
 
     // 检查击杀
@@ -487,7 +487,7 @@ export class HexBattleInstance extends GameplayInstance {
         killerName: attacker.displayName,
         position: target.hexPosition!,
       };
-      this.eventCollector.emit(deathEvent);
+      this.eventCollector.push(deathEvent);
       events.push(deathEvent);
 
       // 检查战斗结束
@@ -519,7 +519,7 @@ export class HexBattleInstance extends GameplayInstance {
       unit: unit.toRef(),
       unitName: unit.displayName,
     };
-    this.eventCollector.emit(skipEvent);
+    this.eventCollector.push(skipEvent);
     events.push(skipEvent);
 
     this.endTurn(unit);
@@ -622,7 +622,7 @@ export class HexBattleInstance extends GameplayInstance {
         hp: currentUnit.hp,
         maxHp: currentUnit.maxHp,
       };
-      this.eventCollector.emit(turnStartEvent);
+      this.eventCollector.push(turnStartEvent);
     }
 
     return currentUnit;
@@ -673,7 +673,7 @@ export class HexBattleInstance extends GameplayInstance {
       teamA: this.getTeamUnits('A').map((u) => u.toRef()),
       teamB: this.getTeamUnits('B').map((u) => u.toRef()),
     };
-    this.eventCollector.emit(battleStartEvent);
+    this.eventCollector.push(battleStartEvent);
   }
 
   /**
@@ -696,7 +696,7 @@ export class HexBattleInstance extends GameplayInstance {
       turnCount: this._turnCount,
       survivors: this.getAliveUnits().map((u) => u.toRef()),
     };
-    this.eventCollector.emit(battleEndEvent);
+    this.eventCollector.push(battleEndEvent);
 
     // 调用父类 end
     this.end();

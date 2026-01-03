@@ -98,7 +98,7 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     super(params);
   }
 
-  execute(ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(ctx: ExecutionContext): ActionResult {
     // 获取目标
     const targets = this.getTargets(ctx);
     if (targets.length === 0) {
@@ -106,8 +106,8 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     }
 
     // 解析参数（在执行时求值）
-    const damage = resolveParam(this.params.damage, ctx as ExecutionContext);
-    const damageType = resolveOptionalParam(this.params.damageType, 'physical', ctx as ExecutionContext);
+    const damage = resolveParam(this.params.damage, ctx);
+    const damageType = resolveOptionalParam(this.params.damageType, 'physical', ctx);
 
     if (damage <= 0) {
       return createFailureResult('Damage value must be positive');
@@ -121,14 +121,14 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     }
 
     // 对每个目标造成伤害
-    const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
+    const allEvents: ReturnType<typeof ctx.eventCollector.push>[] = [];
 
     for (const target of targets) {
-      const calcResult = damageCalculator.calculate(damage, source, target, ctx as ExecutionContext);
+      const calcResult = damageCalculator.calculate(damage, source, target, ctx);
       const { damage: finalDamage, isCritical } = calcResult;
       const isKill = calcResult.isKill ?? false;
 
-      const event = ctx.eventCollector.emit({
+      const event = ctx.eventCollector.push({
         kind: 'damage',
         logicTime: currentEvent.logicTime,
         source,
@@ -143,7 +143,7 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     }
 
     const result = createSuccessResult(allEvents, { damage, targetCount: targets.length });
-    return this.processCallbacks(result, ctx as ExecutionContext);
+    return this.processCallbacks(result, ctx);
   }
 }
 

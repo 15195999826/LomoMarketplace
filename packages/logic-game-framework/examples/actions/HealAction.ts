@@ -53,7 +53,7 @@ export class HealAction extends BaseAction<HealActionParams> {
     super(params);
   }
 
-  execute(ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(ctx: ExecutionContext): ActionResult {
     // 获取目标
     const targets = this.getTargets(ctx);
     if (targets.length === 0) {
@@ -61,8 +61,8 @@ export class HealAction extends BaseAction<HealActionParams> {
     }
 
     // 解析参数
-    const healAmount = resolveParam(this.params.healAmount, ctx as ExecutionContext);
-    const _canOverheal = resolveOptionalParam(this.params.canOverheal, false, ctx as ExecutionContext);
+    const healAmount = resolveParam(this.params.healAmount, ctx);
+    const _canOverheal = resolveOptionalParam(this.params.canOverheal, false, ctx);
 
     if (healAmount <= 0) {
       return createFailureResult('Heal amount must be positive');
@@ -73,14 +73,14 @@ export class HealAction extends BaseAction<HealActionParams> {
     const source = ctx.ability?.owner ?? (currentEvent as { source?: ActorRef }).source;
 
     // 对每个目标进行治疗
-    const allEvents: ReturnType<typeof ctx.eventCollector.emit>[] = [];
+    const allEvents: ReturnType<typeof ctx.eventCollector.push>[] = [];
 
     for (const target of targets) {
       // 简化实现：不检查目标当前 HP
       const actualHeal = healAmount;
       const overheal = 0;
 
-      const event = ctx.eventCollector.emit({
+      const event = ctx.eventCollector.push({
         kind: 'heal',
         logicTime: currentEvent.logicTime,
         source,
@@ -93,7 +93,7 @@ export class HealAction extends BaseAction<HealActionParams> {
     }
 
     const result = createSuccessResult(allEvents, { healAmount, targetCount: targets.length });
-    return this.processCallbacks(result, ctx as ExecutionContext);
+    return this.processCallbacks(result, ctx);
   }
 }
 

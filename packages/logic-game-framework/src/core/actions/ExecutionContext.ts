@@ -116,7 +116,7 @@ export type ExecutionContext = {
   /**
    * 事件收集器
    *
-   * Action 通过 eventCollector.emit() 产生新的 GameEvent。
+   * Action 通过 eventCollector.push() 产生新的 GameEvent。
    * 整个技能执行（包括回调）共享同一个 eventCollector。
    */
   readonly eventCollector: EventCollector;

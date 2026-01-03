@@ -39,21 +39,21 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     super(params);
   }
 
-  execute(ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(ctx: ExecutionContext): ActionResult {
     const currentEvent = getCurrentEvent(ctx);
     const source = ctx.ability?.owner;
     const targets = this.getTargets(ctx);
 
     // 解析参数
-    const damage = resolveParam(this.params.damage, ctx as ExecutionContext);
-    const damageType = resolveOptionalParam(this.params.damageType, 'physical', ctx as ExecutionContext);
+    const damage = resolveParam(this.params.damage, ctx);
+    const damageType = resolveOptionalParam(this.params.damageType, 'physical', ctx);
 
     // 打印日志
     const targetIds = targets.map(t => t.id).join(', ');
     console.log(`  [DamageAction] ${source?.id} 对 [${targetIds}] 造成 ${damage} ${damageType} 伤害`);
 
     const allEvents = targets.map(target =>
-      ctx.eventCollector.emit({
+      ctx.eventCollector.push({
         kind: 'damage',
         logicTime: currentEvent.logicTime,
         source,

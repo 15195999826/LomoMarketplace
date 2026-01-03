@@ -33,7 +33,7 @@
  *   target,
  *   damage: 50,
  * };
- * ctx.eventCollector.emit(event);
+ * ctx.eventCollector.push(event);
  * ```
  */
 
@@ -48,11 +48,11 @@ export class EventCollector {
   private events: GameEventBase[] = [];
 
   /**
-   * 发出事件
+   * 推入事件
    *
    * @returns 返回传入的事件（方便链式调用）
    */
-  emit<T extends GameEventBase>(event: T): T {
+  push<T extends GameEventBase>(event: T): T {
     this.events.push(event);
     return event;
   }

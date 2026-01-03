@@ -288,7 +288,7 @@ export class AbilityExecutionInstance {
         const result = action.execute(execContext);
         // 收集事件
         for (const event of result.events) {
-          this.eventCollector.emit(event);
+          this.eventCollector.push(event);
         }
       } catch (error) {
         getLogger().error(`ExecutionInstance action error: ${action.type}`, {

@@ -50,12 +50,12 @@ export interface IAction {
    * @param ctx 执行上下文
    * @returns 执行结果
    */
-  execute(ctx: Readonly<ExecutionContext>): ActionResult;
+  execute(ctx: ExecutionContext): ActionResult;
 
   /**
    * 获取目标
    */
-  getTargets?(ctx: Readonly<ExecutionContext>): ActorRef[];
+  getTargets?(ctx: ExecutionContext): ActorRef[];
 
 }
 
@@ -123,13 +123,13 @@ export abstract class BaseAction<TParams extends BaseActionParams = BaseActionPa
   /**
    * 执行 Action（由子类实现）
    */
-  abstract execute(ctx: Readonly<ExecutionContext>): ActionResult;
+  abstract execute(ctx: ExecutionContext): ActionResult;
 
   /**
    * 获取目标列表
    * 调用 targetSelector 解析目标
    */
-  getTargets(ctx: Readonly<ExecutionContext>): ActorRef[] {
+  getTargets(ctx: ExecutionContext): ActorRef[] {
     return this.targetSelector(ctx);
   }
 
@@ -242,7 +242,7 @@ export class NoopAction extends BaseAction<BaseActionParams> {
     super(params);
   }
 
-  execute(_ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(_ctx: ExecutionContext): ActionResult {
     return {
       success: true,
       events: [],

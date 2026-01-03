@@ -31,20 +31,20 @@ export class HealAction extends BaseAction<HealActionParams> {
     super(params);
   }
 
-  execute(ctx: Readonly<ExecutionContext>): ActionResult {
+  execute(ctx: ExecutionContext): ActionResult {
     const currentEvent = getCurrentEvent(ctx);
     const source = ctx.ability?.owner;
     const targets = this.getTargets(ctx);
 
     // 解析参数
-    const healAmount = resolveParam(this.params.healAmount, ctx as ExecutionContext);
+    const healAmount = resolveParam(this.params.healAmount, ctx);
 
     // 打印日志
     const targetIds = targets.map(t => t.id).join(', ');
     console.log(`  [HealAction] ${source?.id} 对 [${targetIds}] 治疗 ${healAmount} HP`);
 
     const allEvents = targets.map(target =>
-      ctx.eventCollector.emit({
+      ctx.eventCollector.push({
         kind: 'heal',
         logicTime: currentEvent.logicTime,
         source,

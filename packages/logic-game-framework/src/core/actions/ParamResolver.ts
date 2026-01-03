@@ -12,7 +12,7 @@ import type { ExecutionContext } from './ExecutionContext.js';
  *
  * 支持两种形式：
  * 1. 直接值 T
- * 2. 函数 (ctx: ExecutionContext) => T
+ * 2. 函数 (ctx: Readonly<ExecutionContext>) => T
  *
  * @example
  * ```typescript
@@ -21,7 +21,7 @@ import type { ExecutionContext } from './ExecutionContext.js';
  * }
  * ```
  */
-export type ParamResolver<T> = T | ((ctx: ExecutionContext) => T);
+export type ParamResolver<T> = T | ((ctx: Readonly<ExecutionContext>) => T);
 
 /**
  * 解析参数值
@@ -35,9 +35,9 @@ export type ParamResolver<T> = T | ((ctx: ExecutionContext) => T);
  * const damage = resolveParam(this.params.damage, ctx);
  * ```
  */
-export function resolveParam<T>(resolver: ParamResolver<T>, ctx: ExecutionContext): T {
+export function resolveParam<T>(resolver: ParamResolver<T>, ctx: Readonly<ExecutionContext>): T {
   if (typeof resolver === 'function') {
-    return (resolver as (ctx: ExecutionContext) => T)(ctx);
+    return (resolver as (ctx: Readonly<ExecutionContext>) => T)(ctx);
   }
   return resolver;
 }
@@ -53,7 +53,7 @@ export function resolveParam<T>(resolver: ParamResolver<T>, ctx: ExecutionContex
 export function resolveOptionalParam<T>(
   resolver: ParamResolver<T> | undefined,
   defaultValue: T,
-  ctx: ExecutionContext
+  ctx: Readonly<ExecutionContext>
 ): T {
   if (resolver === undefined) {
     return defaultValue;
