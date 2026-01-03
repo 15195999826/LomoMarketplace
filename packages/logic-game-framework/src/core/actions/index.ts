@@ -36,3 +36,12 @@ export {
   resolveParam,
   resolveOptionalParam,
 } from './ParamResolver.js';
+
+export {
+  ApplyTagAction,
+  ApplyTagActionParams,
+  RemoveTagAction,
+  RemoveTagActionParams,
+  HasTagAction,
+  HasTagActionParams,
+} from './TagAction.js';

@@ -65,9 +65,9 @@ import {
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAction } from '../actions/Action.js';
 import { getLogger, debugLog } from '../utils/Logger.js';
-// 复用 GameEventComponent 的类型定义
-import type { EventTrigger, TriggerMode } from './GameEventComponent.js';
-import { createEventTrigger } from './GameEventComponent.js';
+// 复用 NoInstanceComponent 的类型定义
+import type { EventTrigger, TriggerMode } from './NoInstanceComponent.js';
+import { createEventTrigger } from './NoInstanceComponent.js';
 
 // 重新导出以保持 API 兼容
 export type { EventTrigger, TriggerMode };

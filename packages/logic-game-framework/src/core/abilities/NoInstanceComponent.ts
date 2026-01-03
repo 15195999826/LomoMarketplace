@@ -1,50 +1,30 @@
 /**
- * GameEventComponent - 事件驱动的 Action 执行组件
+ * NoInstanceComponent - 无实例触发器组件
  *
- * 根据 GameEvent 执行 Action 链的能力组件。
- * 适用于**瞬发被动技能**，如反伤、触发治疗等。
+ * 根据 GameEvent 直接执行 Action 链，不创建 ExecutionInstance。
+ * 适用于**瞬发效果**，如反伤、触发治疗等。
  *
- * ## 核心设计思想：统一事件模型
+ * ## 与 ActivateInstanceComponent 的区别
  *
- * 在本框架中，**所有 Action 执行都是事件驱动的**：
- *
- * ```
- * ┌─────────────────────────────────────────────────────────────┐
- * │                    GameEvent（统一入口）                     │
- * ├─────────────────────────────────────────────────────────────┤
- * │  主动技能：InputActionEvent（继承 GameEventBase）           │
- * │    - 玩家选择技能和目标                                     │
- * │    - 战斗系统创建 { kind: 'inputAction', abilityId, ... }   │
- * │    - 广播事件，技能的 GameEventComponent 匹配并执行         │
- * ├─────────────────────────────────────────────────────────────┤
- * │  被动技能：DamageEvent / DeathEvent / TurnStartEvent ...    │
- * │    - 游戏逻辑产生事件                                       │
- * │    - 广播事件，被动技能的 GameEventComponent 匹配并执行     │
- * └─────────────────────────────────────────────────────────────┘
- *                              ↓
- *                    GameEventComponent
- *                              ↓
- *                      执行 Action 链
- * ```
+ * | 特性 | NoInstanceComponent | ActivateInstanceComponent |
+ * |------|---------------------|---------------------------|
+ * | ExecutionInstance | ❌ 不创建 | ✅ 创建 |
+ * | Timeline 驱动 | ❌ | ✅ |
+ * | 事件收集 | ❌ 丢弃 | ✅ 可 flush |
+ * | 适用场景 | 瞬发效果 | 有时间轴的技能 |
  *
  * ## ⚠️ 事件收集说明
  *
- * **重要**：GameEventComponent 执行 Action 后**不收集产生的事件**。
+ * **重要**：NoInstanceComponent 执行 Action 后**不收集产生的事件**。
  * 每次执行都会创建临时的 EventCollector，执行完后丢弃。
  *
- * 适用场景：
- * - 瞬发被动（反伤、触发治疗）：Action 直接修改游戏状态
- * - Action 内部自行处理事件通知
- *
- * 如需收集事件（用于表演层展示），请使用 **ActivateInstanceComponent**：
- * - 基于 Timeline 驱动
- * - 通过 AbilityExecutionInstance.flushEvents() 获取事件
+ * 如需收集事件（用于表演层展示），请使用 **ActivateInstanceComponent**。
  *
  * ## 使用示例
  *
  * ```typescript
  * // 被动技能：受到伤害时反伤（瞬发，不需要事件收集）
- * new GameEventComponent({
+ * new NoInstanceComponent({
  *   triggers: [
  *     { eventKind: 'damage', filter: (e, ctx) => e.target.id === ctx.owner.id },
  *   ],
@@ -52,7 +32,7 @@
  * });
  *
  * // 多触发条件（任意一个满足）
- * new GameEventComponent({
+ * new NoInstanceComponent({
  *   triggers: [
  *     { eventKind: 'turnStart' },
  *     { eventKind: 'onHit' },
@@ -97,9 +77,9 @@ export type EventTrigger<TEvent extends GameEventBase = GameEventBase> = {
 export type TriggerMode = 'any' | 'all';
 
 /**
- * GameEventComponent 配置
+ * NoInstanceComponent 配置
  */
-export type GameEventComponentConfig = {
+export type NoInstanceComponentConfig = {
   /** 触发器列表 */
   readonly triggers: EventTrigger[];
   /** 触发模式，默认 'any' */
@@ -108,22 +88,21 @@ export type GameEventComponentConfig = {
   readonly actions: IAction[];
 };
 
-// ========== GameEventComponent ==========
+// ========== NoInstanceComponent ==========
 
 /**
- * GameEventComponent - 事件驱动的 Action 执行器
+ * NoInstanceComponent - 无实例触发器组件
  *
- * 监听 GameEvent，匹配条件后执行 Action 链。
- * 是框架中唯一触发 Action 执行的组件。
+ * 监听 GameEvent，匹配条件后直接执行 Action 链，不创建 ExecutionInstance。
  */
-export class GameEventComponent extends BaseAbilityComponent {
+export class NoInstanceComponent extends BaseAbilityComponent {
   readonly type = ComponentTypes.TRIGGER;
 
   private readonly triggers: EventTrigger[];
   private readonly triggerMode: TriggerMode;
   private readonly actions: IAction[];
 
-  constructor(config: GameEventComponentConfig) {
+  constructor(config: NoInstanceComponentConfig) {
     super();
     this.triggers = config.triggers;
     this.triggerMode = config.triggerMode ?? 'any';
@@ -195,7 +174,7 @@ export class GameEventComponent extends BaseAbilityComponent {
       try {
         action.execute(execContext);
       } catch (error) {
-        getLogger().error(`GameEventComponent action error: ${action.type}`, {
+        getLogger().error(`NoInstanceComponent action error: ${action.type}`, {
           error,
           event: event.kind,
         });

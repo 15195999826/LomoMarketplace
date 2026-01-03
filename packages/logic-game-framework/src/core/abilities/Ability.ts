@@ -25,6 +25,7 @@ import type {
   ComponentLifecycleContext,
 } from './AbilityComponent.js';
 import { AbilityExecutionInstance } from './AbilityExecutionInstance.js';
+import type { ActiveUseComponent } from './ActiveUseComponent.js';
 
 /**
  * Component 构造函数类型
@@ -42,12 +43,38 @@ export type AbilityState = 'pending' | 'granted' | 'expired';
 
 /**
  * Ability 配置
+ *
+ * ## 结构说明
+ *
+ * - `activeUseComponents`: 主动使用入口，包含条件/消耗检查
+ * - `components`: 效果组件，自由组合
+ *
+ * ## 示例
+ *
+ * ```typescript
+ * // 主动技能
+ * const fireball: AbilityConfig = {
+ *   configId: 'skill_fireball',
+ *   activeUseComponents: [new ActiveUseComponent({ ... })],
+ * };
+ *
+ * // Buff（无主动激活）
+ * const buff: AbilityConfig = {
+ *   configId: 'buff_poison',
+ *   components: [
+ *     new DurationComponent({ time: 10000 }),
+ *     new StatModifierComponent({ ... }),
+ *   ],
+ * };
+ * ```
  */
 export type AbilityConfig = {
   /** 配置表 ID */
   configId: string;
-  /** Component 列表 - 在构造时注入，不可运行时修改 */
-  components: IAbilityComponent[];
+  /** 主动使用组件列表（可选） - 包含条件/消耗检查 */
+  activeUseComponents?: ActiveUseComponent[];
+  /** 效果组件列表（可选） - 在构造时注入，不可运行时修改 */
+  components?: IAbilityComponent[];
   /** 显示名称 */
   displayName?: string;
   /** 描述 */
@@ -118,8 +145,14 @@ export class Ability implements IAbilityForComponent {
     this.icon = config.icon;
     this.tags = Object.freeze(config.tags ?? []);
 
+    // 合并 activeUseComponents 和 components
+    const allComponents: IAbilityComponent[] = [
+      ...(config.activeUseComponents ?? []),
+      ...(config.components ?? []),
+    ];
+
     // Component 在构造时注入，之后不可修改
-    this.components = Object.freeze([...config.components]);
+    this.components = Object.freeze(allComponents);
 
     // 初始化所有 Component（仅设置引用，不应用效果）
     for (const component of this.components) {

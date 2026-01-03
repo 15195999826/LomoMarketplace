@@ -12,6 +12,7 @@ import {
   type ExecutionContext,
   ActivateInstanceComponent,
   getCurrentEvent,
+  defaultTargetSelector,
 } from '@lomo/logic-game-framework';
 
 import type { AxialCoord } from '@lomo/hex-grid';
@@ -58,8 +59,8 @@ export const ACTION_USE_EVENT = 'actionUse' as const;
  */
 export type ActionUseEvent = GameEventBase & {
   readonly kind: typeof ACTION_USE_EVENT;
-  /** 使用的 Ability ID */
-  readonly abilityId: string;
+  /** 要激活的 Ability 实例 ID（不是 configId） */
+  readonly abilityInstanceId: string;
   /** 行动者 Actor ID */
   readonly sourceId: string;
   /** 目标 Actor（单体技能用）- 使用 ActorRef 以兼容框架 TargetSelector */
@@ -73,14 +74,14 @@ export type ActionUseEvent = GameEventBase & {
  */
 export function createActionUseEvent(
   logicTime: number,
-  abilityId: string,
+  abilityInstanceId: string,
   sourceId: string,
   options?: { target?: ActorRef; targetCoord?: AxialCoord }
 ): ActionUseEvent {
   return {
     kind: ACTION_USE_EVENT,
     logicTime,
-    abilityId,
+    abilityInstanceId,
     sourceId,
     target: options?.target,
     targetCoord: options?.targetCoord,
@@ -103,7 +104,7 @@ export const MOVE_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'action_move',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'action_move',
       tagActions: {
@@ -132,11 +133,11 @@ export const SLASH_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'skill_slash',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'skill_slash',
       tagActions: {
-        hit: [new DamageAction({ damage: 50, damageType: 'physical' })],
+        hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 50, damageType: 'physical' })],
       },
     }),
   ],
@@ -153,11 +154,11 @@ export const PRECISE_SHOT_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'skill_precise_shot',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'skill_precise_shot',
       tagActions: {
-        hit: [new DamageAction({ damage: 45, damageType: 'physical' })],
+        hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 45, damageType: 'physical' })],
       },
     }),
   ],
@@ -175,11 +176,11 @@ export const FIREBALL_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'skill_fireball',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'skill_fireball',
       tagActions: {
-        hit: [new DamageAction({ damage: 80, damageType: 'magical' })],
+        hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 80, damageType: 'magical' })],
       },
     }),
   ],
@@ -197,11 +198,11 @@ export const CRUSHING_BLOW_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'skill_crushing_blow',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'skill_crushing_blow',
       tagActions: {
-        hit: [new DamageAction({ damage: 90, damageType: 'physical' })],
+        hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 90, damageType: 'physical' })],
       },
     }),
   ],
@@ -219,13 +220,13 @@ export const SWIFT_STRIKE_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'skill_swift_strike',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'skill_swift_strike',
       tagActions: {
-        hit1: [new DamageAction({ damage: 10, damageType: 'physical' })],
-        hit2: [new DamageAction({ damage: 10, damageType: 'physical' })],
-        hit3: [new DamageAction({ damage: 10, damageType: 'physical' })],
+        hit1: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 10, damageType: 'physical' })],
+        hit2: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 10, damageType: 'physical' })],
+        hit3: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 10, damageType: 'physical' })],
       },
     }),
   ],
@@ -243,11 +244,11 @@ export const HOLY_HEAL_ABILITY: AbilityConfig = {
     new ActivateInstanceComponent({
       triggers: [{
         eventKind: ACTION_USE_EVENT,
-        filter: (e) => (e as ActionUseEvent).abilityId === 'skill_holy_heal',
+        filter: (event, abilityCtx) => (event as ActionUseEvent).abilityInstanceId === abilityCtx.ability.id,
       }],
       timelineId: 'skill_holy_heal',
       tagActions: {
-        heal: [new HealAction({ healAmount: 40 })],
+        heal: [new HealAction({ targetSelector: defaultTargetSelector, healAmount: 40 })],
       },
     }),
   ],

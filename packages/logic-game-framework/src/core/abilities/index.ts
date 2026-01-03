@@ -25,15 +25,16 @@ export {
   AbilityRevokedCallback,
   createAbilitySet,
   hasAbilitySet,
+  DurationTagEntry,
 } from './AbilitySet.js';
 
 export {
-  GameEventComponent,
-  GameEventComponentConfig,
+  NoInstanceComponent,
+  NoInstanceComponentConfig,
   EventTrigger,
   TriggerMode,
   createEventTrigger,
-} from './GameEventComponent.js';
+} from './NoInstanceComponent.js';
 
 export {
   AbilityExecutionInstance,
@@ -46,5 +47,36 @@ export {
   ActivateInstanceComponent,
   ActivateInstanceComponentConfig,
   TagActionsConfig,
-  // EventTrigger, TriggerMode, createEventTrigger 已从 GameEventComponent 统一导出
+  // EventTrigger, TriggerMode, createEventTrigger 已从 NoInstanceComponent 统一导出
 } from './ActivateInstanceComponent.js';
+
+export {
+  Condition,
+  ConditionContext,
+  HasTagCondition,
+  NoTagCondition,
+  TagStacksCondition,
+  CooldownReadyCondition,
+  AllConditions,
+  AnyCondition,
+} from './Condition.js';
+
+export {
+  Cost,
+  CostContext,
+  CooldownCost,
+  ConsumeTagCost,
+  RemoveTagCost,
+  AddTagCost,
+} from './Cost.js';
+
+export {
+  ActiveUseComponent,
+  ActiveUseComponentConfig,
+  ActiveUseContext,
+} from './ActiveUseComponent.js';
+
+export {
+  TagComponent,
+  TagComponentConfig,
+} from './TagComponent.js';

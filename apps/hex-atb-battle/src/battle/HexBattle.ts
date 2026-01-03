@@ -26,7 +26,8 @@ import type { ActorRef } from '@lomo/logic-game-framework';
 /** AI 决策结果 */
 type ActionDecision = {
   type: 'move' | 'skill';
-  abilityId: string;
+  /** 要激活的 Ability 实例 ID */
+  abilityInstanceId: string;
   /** 目标 Actor（单体技能用） */
   target?: ActorRef;
   /** 目标坐标（移动/范围技能用） */
@@ -233,7 +234,7 @@ export class HexBattle extends GameplayInstance {
     // 创建事件并广播
     const event = createActionUseEvent(
       this.logicTime,
-      decision.abilityId,
+      decision.abilityInstanceId,
       actor.id,
       { target: decision.target, targetCoord: decision.targetCoord }
     );
@@ -278,7 +279,7 @@ export class HexBattle extends GameplayInstance {
         const targetActor = allies[Math.floor(Math.random() * allies.length)];
         return {
           type: 'skill',
-          abilityId: skill.configId,
+          abilityInstanceId: skill.id,
           target: { id: targetActor.id },
         };
       } else {
@@ -286,7 +287,7 @@ export class HexBattle extends GameplayInstance {
         const targetActor = enemies[Math.floor(Math.random() * enemies.length)];
         return {
           type: 'skill',
-          abilityId: skill.configId,
+          abilityInstanceId: skill.id,
           target: { id: targetActor.id },
         };
       }
@@ -302,7 +303,7 @@ export class HexBattle extends GameplayInstance {
           const targetCoord = validNeighbors[Math.floor(Math.random() * validNeighbors.length)];
           return {
             type: 'move',
-            abilityId: 'action_move',
+            abilityInstanceId: actor.moveAbility.id,
             targetCoord,
           };
         }
@@ -313,7 +314,7 @@ export class HexBattle extends GameplayInstance {
         const targetActor = enemies[Math.floor(Math.random() * enemies.length)];
         return {
           type: 'skill',
-          abilityId: actor.skillAbility.configId,
+          abilityInstanceId: actor.skillAbility.id,
           target: { id: targetActor.id },
         };
       }
@@ -321,7 +322,7 @@ export class HexBattle extends GameplayInstance {
       // 兜底：移动到原地
       return {
         type: 'move',
-        abilityId: 'action_move',
+        abilityInstanceId: actor.moveAbility.id,
         targetCoord: myPos,
       };
     }

@@ -63,8 +63,8 @@ export interface IAction {
  * Action 基础参数（所有 Action 共享）
  */
 export interface BaseActionParams {
-  /** 目标选择器（可选，有默认值） */
-  targetSelector?: TargetSelector;
+  /** 目标选择器（必填，显式指定目标选择逻辑） */
+  targetSelector: TargetSelector;
 }
 
 /**
@@ -117,7 +117,7 @@ export abstract class BaseAction<TParams extends BaseActionParams = BaseActionPa
 
   constructor(params: TParams) {
     this.params = params;
-    this.targetSelector = params.targetSelector ?? defaultTargetSelector;
+    this.targetSelector = params.targetSelector;
   }
 
   /**
@@ -238,7 +238,7 @@ export abstract class BaseAction<TParams extends BaseActionParams = BaseActionPa
 export class NoopAction extends BaseAction<BaseActionParams> {
   readonly type = 'noop';
 
-  constructor(params: BaseActionParams = {}) {
+  constructor(params: BaseActionParams) {
     super(params);
   }
 
@@ -295,7 +295,7 @@ export class ActionFactory implements IActionFactory {
     const creator = this.creators.get(config.type);
     if (!creator) {
       getLogger().error(`Unknown action type: ${config.type}`);
-      return new NoopAction();
+      return new NoopAction({ targetSelector: defaultTargetSelector });
     }
 
     return creator(config.params ?? {});

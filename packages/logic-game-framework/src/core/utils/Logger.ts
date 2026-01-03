@@ -125,11 +125,19 @@ export type DebugLogContext = {
   actorId?: string;
   actorName?: string;
   abilityName?: string;
+  abilityId?: string;
   configId?: string;
   tagName?: string;
   tagTime?: number;
   elapsed?: number;
   actions?: string[];
+  // Tag 系统相关
+  stacks?: number;
+  totalStacks?: number;
+  remainingStacks?: number;
+  duration?: number;
+  expiresAt?: number;
+  removedLayers?: number;
 };
 
 /** 自定义日志处理器 */

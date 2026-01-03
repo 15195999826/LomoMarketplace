@@ -21,6 +21,16 @@ import { getLogger, debugLog } from '../utils/Logger.js';
 // ========== 类型定义 ==========
 
 /**
+ * 带持续时间的 Tag 条目（每层独立计时）
+ */
+export type DurationTagEntry = {
+  /** Tag 名称 */
+  tag: string;
+  /** 过期时间（logicTime） */
+  expiresAt: number;
+};
+
+/**
  * Ability 移除原因
  */
 export type AbilityRevokeReason = 'expired' | 'dispelled' | 'replaced' | 'manual';
@@ -70,6 +80,29 @@ export class AbilitySet {
   /** 能力列表 */
   private abilities: Ability[] = [];
 
+  // ========== Tag 存储（3种来源分离）==========
+
+  /**
+   * Loose Tags - 手动管理，只能通过 removeLooseTag 移除
+   * Map<tag, stacks>
+   */
+  private looseTags: Map<string, number> = new Map();
+
+  /**
+   * Auto Duration Tags - 每层独立计时，tick 时自动清理
+   * 数组存储，每层一条
+   */
+  private autoDurationTags: DurationTagEntry[] = [];
+
+  /**
+   * Component Tags - 由 TagComponent 管理，随 Ability 生命周期
+   * Map<abilityId, tags[]>
+   */
+  private componentTags: Map<string, string[]> = new Map();
+
+  /** 当前逻辑时间（由外部 tick 时更新） */
+  private currentLogicTime: number = 0;
+
   /** Ability 获得回调 */
   private onGrantedCallbacks: AbilityGrantedCallback[] = [];
 
@@ -79,6 +112,243 @@ export class AbilitySet {
   constructor(config: AbilitySetConfig) {
     this.owner = config.owner;
     this.modifierTarget = config.modifierTarget;
+  }
+
+  // ========== Loose Tag 管理 ==========
+
+  /**
+   * 添加 Loose Tag
+   *
+   * Loose Tag 只能通过 removeLooseTag 移除，不会自动过期。
+   *
+   * @param tag Tag 名称
+   * @param stacks 层数，默认 1
+   */
+  addLooseTag(tag: string, stacks: number = 1): void {
+    const current = this.looseTags.get(tag) ?? 0;
+    this.looseTags.set(tag, current + stacks);
+
+    debugLog('ability', `添加 LooseTag: ${tag}`, {
+      actorId: this.owner.id,
+      stacks: current + stacks,
+    });
+  }
+
+  /**
+   * 移除 Loose Tag
+   *
+   * @param tag Tag 名称
+   * @param stacks 移除的层数，不传则全部移除
+   * @returns 是否成功移除
+   */
+  removeLooseTag(tag: string, stacks?: number): boolean {
+    const current = this.looseTags.get(tag);
+    if (current === undefined || current <= 0) {
+      return false;
+    }
+
+    if (stacks === undefined || stacks >= current) {
+      // 全部移除
+      this.looseTags.delete(tag);
+      debugLog('ability', `移除 LooseTag: ${tag}`, { actorId: this.owner.id });
+    } else {
+      // 减少层数
+      this.looseTags.set(tag, current - stacks);
+      debugLog('ability', `减少 LooseTag 层数: ${tag}`, {
+        actorId: this.owner.id,
+        remainingStacks: current - stacks,
+      });
+    }
+
+    return true;
+  }
+
+  // ========== Auto Duration Tag 管理 ==========
+
+  /**
+   * 添加 Auto Duration Tag
+   *
+   * 每次调用都会添加新的一层，每层独立计时。
+   * tick 时自动清理过期的层。
+   *
+   * @param tag Tag 名称
+   * @param duration 持续时间（毫秒）
+   */
+  addAutoDurationTag(tag: string, duration: number): void {
+    const expiresAt = this.currentLogicTime + duration;
+    this.autoDurationTags.push({ tag, expiresAt });
+
+    debugLog('ability', `添加 AutoDurationTag: ${tag}`, {
+      actorId: this.owner.id,
+      duration,
+      expiresAt,
+      totalStacks: this.getAutoDurationTagStacks(tag),
+    });
+  }
+
+  /**
+   * 获取指定 AutoDurationTag 的层数
+   */
+  private getAutoDurationTagStacks(tag: string): number {
+    return this.autoDurationTags.filter((e) => e.tag === tag).length;
+  }
+
+  /**
+   * 清理过期的 Auto Duration Tags
+   */
+  private cleanupExpiredAutoDurationTags(): void {
+    const beforeCount = this.autoDurationTags.length;
+    const expiredTags = new Set<string>();
+
+    // 记录哪些 tag 有过期的层
+    for (const entry of this.autoDurationTags) {
+      if (entry.expiresAt <= this.currentLogicTime) {
+        expiredTags.add(entry.tag);
+      }
+    }
+
+    // 过滤掉过期的
+    this.autoDurationTags = this.autoDurationTags.filter(
+      (e) => e.expiresAt > this.currentLogicTime
+    );
+
+    // 记录日志
+    for (const tag of expiredTags) {
+      const remaining = this.getAutoDurationTagStacks(tag);
+      debugLog('ability', `AutoDurationTag 层过期: ${tag}`, {
+        actorId: this.owner.id,
+        removedLayers: beforeCount - this.autoDurationTags.length,
+        remainingStacks: remaining,
+      });
+    }
+  }
+
+  // ========== Component Tag 管理（内部 API）==========
+
+  /**
+   * 添加 Component Tags（由 TagComponent 调用）
+   *
+   * @param abilityId Ability 实例 ID
+   * @param tags 要添加的 Tag 列表
+   * @internal
+   */
+  _addComponentTags(abilityId: string, tags: string[]): void {
+    if (tags.length === 0) return;
+
+    const existing = this.componentTags.get(abilityId) ?? [];
+    this.componentTags.set(abilityId, [...existing, ...tags]);
+
+    debugLog('ability', `添加 ComponentTags: ${tags.join(', ')}`, {
+      actorId: this.owner.id,
+      abilityId,
+    });
+  }
+
+  /**
+   * 移除 Component Tags（由 TagComponent 调用）
+   *
+   * @param abilityId Ability 实例 ID
+   * @internal
+   */
+  _removeComponentTags(abilityId: string): void {
+    const tags = this.componentTags.get(abilityId);
+    if (!tags || tags.length === 0) return;
+
+    this.componentTags.delete(abilityId);
+
+    debugLog('ability', `移除 ComponentTags: ${tags.join(', ')}`, {
+      actorId: this.owner.id,
+      abilityId,
+    });
+  }
+
+  // ========== Tag 联合查询 ==========
+
+  /**
+   * 检查是否有 Tag（联合查询所有来源）
+   */
+  hasTag(tag: string): boolean {
+    // Loose Tags
+    if (this.looseTags.has(tag)) return true;
+
+    // Auto Duration Tags
+    if (this.autoDurationTags.some((e) => e.tag === tag)) return true;
+
+    // Component Tags
+    for (const tags of this.componentTags.values()) {
+      if (tags.includes(tag)) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 获取 Tag 总层数（累加所有来源）
+   */
+  getTagStacks(tag: string): number {
+    let stacks = 0;
+
+    // Loose Tags
+    stacks += this.looseTags.get(tag) ?? 0;
+
+    // Auto Duration Tags（每条 entry 算一层）
+    stacks += this.autoDurationTags.filter((e) => e.tag === tag).length;
+
+    // Component Tags（每个出现算一层）
+    for (const tags of this.componentTags.values()) {
+      stacks += tags.filter((t) => t === tag).length;
+    }
+
+    return stacks;
+  }
+
+  /**
+   * 获取所有 Tag 及其层数（联合查询）
+   */
+  getAllTags(): Map<string, number> {
+    const result = new Map<string, number>();
+
+    // Loose Tags
+    for (const [tag, stacks] of this.looseTags) {
+      result.set(tag, (result.get(tag) ?? 0) + stacks);
+    }
+
+    // Auto Duration Tags
+    for (const entry of this.autoDurationTags) {
+      result.set(entry.tag, (result.get(entry.tag) ?? 0) + 1);
+    }
+
+    // Component Tags
+    for (const tags of this.componentTags.values()) {
+      for (const tag of tags) {
+        result.set(tag, (result.get(tag) ?? 0) + 1);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * 获取当前逻辑时间
+   */
+  getLogicTime(): number {
+    return this.currentLogicTime;
+  }
+
+  // ========== Loose Tag 专用查询 ==========
+
+  /**
+   * 检查是否有 Loose Tag
+   */
+  hasLooseTag(tag: string): boolean {
+    return (this.looseTags.get(tag) ?? 0) > 0;
+  }
+
+  /**
+   * 获取 Loose Tag 层数
+   */
+  getLooseTagStacks(tag: string): number {
+    return this.looseTags.get(tag) ?? 0;
   }
 
   // ========== Ability 管理 ==========
@@ -179,8 +449,22 @@ export class AbilitySet {
   /**
    * Tick 更新
    * 分发到所有 Ability，驱动 TimeDurationComponent 等
+   *
+   * @param dt 时间增量（毫秒）
+   * @param logicTime 当前逻辑时间（可选，用于 Tag 过期计算）
    */
-  tick(dt: number): void {
+  tick(dt: number, logicTime?: number): void {
+    // 更新逻辑时间
+    if (logicTime !== undefined) {
+      this.currentLogicTime = logicTime;
+    } else {
+      this.currentLogicTime += dt;
+    }
+
+    // 清理过期的 Auto Duration Tags
+    this.cleanupExpiredAutoDurationTags();
+
+    // 处理 Ability
     this.processAbilities((ability) => {
       try {
         ability.tick(dt);
@@ -351,6 +635,7 @@ export class AbilitySet {
       owner: this.owner,
       attributes: this.modifierTarget,
       ability: ability,
+      abilitySet: this,
     };
   }
 

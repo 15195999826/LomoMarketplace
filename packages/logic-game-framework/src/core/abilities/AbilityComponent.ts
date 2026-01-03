@@ -80,6 +80,9 @@ export interface IAbilityForComponent {
   getExecutingInstances(): readonly IAbilityExecutionInstance[];
 }
 
+// 前向声明 AbilitySet 类型（避免循环依赖）
+import type { AbilitySet } from './AbilitySet.js';
+
 /**
  * Component 生命周期上下文
  * 在 onApply/onRemove/onEvent 时传递
@@ -91,6 +94,8 @@ export type ComponentLifecycleContext = {
   readonly attributes: IAttributeModifierTarget;
   /** 所属 Ability */
   readonly ability: IAbilityForComponent;
+  /** AbilitySet 引用（可选，用于 TagComponent 等） */
+  readonly abilitySet?: AbilitySet;
 };
 
 /**
