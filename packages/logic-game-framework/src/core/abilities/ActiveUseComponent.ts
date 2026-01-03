@@ -46,7 +46,7 @@ import type { ComponentLifecycleContext } from './AbilityComponent.js';
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { Condition, ConditionContext } from './Condition.js';
 import type { Cost, CostContext } from './Cost.js';
-import type { AbilitySet } from './AbilitySet.js';
+import { isAbilitySetProvider, type AbilitySet } from './AbilitySet.js';
 import { debugLog } from '../utils/Logger.js';
 
 /**
@@ -180,30 +180,16 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
   /**
    * 从上下文获取 AbilitySet
    *
-   * 默认实现：尝试从 gameplayState 中获取
+   * 默认实现：尝试从 gameplayState 获取（需实现 IAbilitySetProvider 接口）
    * 子类可以重写此方法以适应不同的项目结构
    */
   protected getAbilitySet(
     context: ComponentLifecycleContext,
     gameplayState: unknown
   ): AbilitySet | undefined {
-    // 尝试从 gameplayState 中获取
-    if (
-      gameplayState &&
-      typeof gameplayState === 'object' &&
-      'getAbilitySetForActor' in gameplayState
-    ) {
-      const getter = gameplayState as { getAbilitySetForActor: (id: string) => AbilitySet | undefined };
-      return getter.getAbilitySetForActor(context.owner.id);
-    }
-
-    // 尝试其他常见模式
-    if (
-      gameplayState &&
-      typeof gameplayState === 'object' &&
-      'abilitySet' in gameplayState
-    ) {
-      return (gameplayState as { abilitySet: AbilitySet }).abilitySet;
+    // 使用 IAbilitySetProvider 接口
+    if (isAbilitySetProvider(gameplayState)) {
+      return gameplayState.getAbilitySetForActor(context.owner.id);
     }
 
     return undefined;

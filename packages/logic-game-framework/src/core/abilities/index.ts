@@ -26,6 +26,9 @@ export {
   createAbilitySet,
   hasAbilitySet,
   DurationTagEntry,
+  // Provider 接口
+  IAbilitySetProvider,
+  isAbilitySetProvider,
 } from './AbilitySet.js';
 
 export {

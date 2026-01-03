@@ -11,11 +11,11 @@
  * ## 使用示例
  *
  * ```typescript
- * // Buff 带有 Tag
+ * // Buff 带有 Tag（支持层数）
  * const poisonBuff: AbilityConfig = {
  *   configId: 'buff_poison',
  *   components: [
- *     new TagComponent({ tags: ['debuff', 'poison', 'dot'] }),
+ *     new TagComponent({ tags: { debuff: 1, poison: 3, dot: 1 } }),
  *     new DurationComponent({ time: 10000 }),
  *   ],
  * };
@@ -24,7 +24,7 @@
  * const chargeSkill: AbilityConfig = {
  *   configId: 'skill_charge',
  *   components: [
- *     new TagComponent({ tags: ['charging'] }),
+ *     new TagComponent({ tags: { charging: 1 } }),
  *   ],
  * };
  * ```
@@ -39,8 +39,8 @@ import {
  * TagComponent 配置
  */
 export type TagComponentConfig = {
-  /** 要添加的 Tag 列表 */
-  readonly tags: string[];
+  /** Tag 及其层数 */
+  readonly tags: Record<string, number>;
 };
 
 /**
@@ -51,11 +51,11 @@ export type TagComponentConfig = {
 export class TagComponent extends BaseAbilityComponent {
   readonly type = 'tag';
 
-  private readonly tags: string[];
+  private readonly tags: Record<string, number>;
 
   constructor(config: TagComponentConfig) {
     super();
-    this.tags = [...config.tags];
+    this.tags = { ...config.tags };
   }
 
   /**

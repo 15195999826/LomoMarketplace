@@ -49,13 +49,13 @@ import type { ExecutionContext } from './ExecutionContext.js';
 import type { ActionResult } from './ActionResult.js';
 import type { BaseActionParams } from './Action.js';
 import { BaseAction } from './Action.js';
-import type { AbilitySet } from '../abilities/AbilitySet.js';
+import { isAbilitySetProvider, type AbilitySet } from '../abilities/AbilitySet.js';
 import { debugLog } from '../utils/Logger.js';
 
 /**
  * 从 ExecutionContext 获取目标的 AbilitySet
  *
- * 需要 gameplayState 提供 getAbilitySetForActor 方法
+ * 需要 gameplayState 实现 IAbilitySetProvider 接口
  */
 function getAbilitySetForTarget(
   ctx: ExecutionContext,
@@ -63,18 +63,10 @@ function getAbilitySetForTarget(
 ): AbilitySet | undefined {
   const state = ctx.gameplayState;
 
-  // 模式 1: gameplayState.getAbilitySetForActor(id)
-  if (
-    state &&
-    typeof state === 'object' &&
-    'getAbilitySetForActor' in state
-  ) {
-    const getter = state as { getAbilitySetForActor: (id: string) => AbilitySet | undefined };
-    return getter.getAbilitySetForActor(target.id);
+  // 使用 IAbilitySetProvider 接口
+  if (isAbilitySetProvider(state)) {
+    return state.getAbilitySetForActor(target.id);
   }
-
-  // 模式 2: 如果目标就是 ability owner，从 ability 获取
-  // 这需要项目层实现
 
   return undefined;
 }
@@ -222,6 +214,13 @@ export class HasTagAction extends BaseAction<HasTagActionParams> {
   }
 
   execute(ctx: ExecutionContext): ActionResult {
+    // TODO: 当前实现有问题 - 对每个 target 都执行全部 then/else actions
+    // 预期行为应该是：满足条件的 target 执行 then，不满足的执行 else
+    // 而非当前的：每个 target 独立判断后各自执行一遍 then/else
+    // 等真正需要使用此 Action 时再修复
+    debugLog('ability', `⚠️ HasTagAction 实现有问题，多 target 时行为可能非预期，请检查`, {
+      tagName: this.params.tag,
+    });
     const targets = this.getTargets(ctx);
     const allEvents: import('../events/GameEvent.js').GameEventBase[] = [];
 

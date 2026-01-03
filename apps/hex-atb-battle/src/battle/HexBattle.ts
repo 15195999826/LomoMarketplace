@@ -5,6 +5,8 @@
 import {
   GameplayInstance,
   type GameEventBase,
+  type AbilitySet,
+  type IAbilitySetProvider,
   setDebugLogHandler,
 } from '@lomo/logic-game-framework';
 
@@ -34,12 +36,24 @@ type ActionDecision = {
   targetCoord?: AxialCoord;
 };
 
-export class HexBattle extends GameplayInstance {
+export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
   readonly type = 'HexBattle';
 
   private tickCount = 0;
   private _context!: BattleContext;
   private _logger!: BattleLogger;
+
+  // ========== IAbilitySetProvider 实现 ==========
+
+  /**
+   * 根据 Actor ID 获取其 AbilitySet
+   *
+   * 用于 TagAction、ActiveUseComponent 等需要访问 AbilitySet 的场景
+   */
+  getAbilitySetForActor(actorId: string): AbilitySet | undefined {
+    const actor = this.getActor<CharacterActor>(actorId);
+    return actor?.abilitySet;
+  }
 
   // ========== 地图查询方法 ==========
 

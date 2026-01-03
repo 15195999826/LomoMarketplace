@@ -96,9 +96,9 @@ export class AbilitySet {
 
   /**
    * Component Tags - 由 TagComponent 管理，随 Ability 生命周期
-   * Map<abilityId, tags[]>
+   * Map<abilityId, Record<tag, stacks>>
    */
-  private componentTags: Map<string, string[]> = new Map();
+  private componentTags: Map<string, Record<string, number>> = new Map();
 
   /** 当前逻辑时间（由外部 tick 时更新） */
   private currentLogicTime: number = 0;
@@ -187,10 +187,12 @@ export class AbilitySet {
   }
 
   /**
-   * 获取指定 AutoDurationTag 的层数
+   * 获取指定 AutoDurationTag 的层数（过滤已过期）
    */
   private getAutoDurationTagStacks(tag: string): number {
-    return this.autoDurationTags.filter((e) => e.tag === tag).length;
+    return this.autoDurationTags.filter(
+      (e) => e.tag === tag && e.expiresAt > this.currentLogicTime
+    ).length;
   }
 
   /**
@@ -229,16 +231,22 @@ export class AbilitySet {
    * 添加 Component Tags（由 TagComponent 调用）
    *
    * @param abilityId Ability 实例 ID
-   * @param tags 要添加的 Tag 列表
+   * @param tags Tag 及其层数
    * @internal
    */
-  _addComponentTags(abilityId: string, tags: string[]): void {
-    if (tags.length === 0) return;
+  _addComponentTags(abilityId: string, tags: Record<string, number>): void {
+    if (Object.keys(tags).length === 0) return;
 
-    const existing = this.componentTags.get(abilityId) ?? [];
-    this.componentTags.set(abilityId, [...existing, ...tags]);
+    // 合并到已有的 tags（同一 Ability 可能有多个 TagComponent）
+    const existing = this.componentTags.get(abilityId) ?? {};
+    const merged = { ...existing };
+    for (const [tag, stacks] of Object.entries(tags)) {
+      merged[tag] = (merged[tag] ?? 0) + stacks;
+    }
+    this.componentTags.set(abilityId, merged);
 
-    debugLog('ability', `添加 ComponentTags: ${tags.join(', ')}`, {
+    const tagList = Object.entries(tags).map(([t, s]) => `${t}:${s}`).join(', ');
+    debugLog('ability', `添加 ComponentTags: ${tagList}`, {
       actorId: this.owner.id,
       abilityId,
     });
@@ -252,11 +260,12 @@ export class AbilitySet {
    */
   _removeComponentTags(abilityId: string): void {
     const tags = this.componentTags.get(abilityId);
-    if (!tags || tags.length === 0) return;
+    if (!tags || Object.keys(tags).length === 0) return;
 
     this.componentTags.delete(abilityId);
 
-    debugLog('ability', `移除 ComponentTags: ${tags.join(', ')}`, {
+    const tagList = Object.entries(tags).map(([t, s]) => `${t}:${s}`).join(', ');
+    debugLog('ability', `移除 ComponentTags: ${tagList}`, {
       actorId: this.owner.id,
       abilityId,
     });
@@ -266,17 +275,21 @@ export class AbilitySet {
 
   /**
    * 检查是否有 Tag（联合查询所有来源）
+   *
+   * 注意：AutoDurationTags 会实时过滤已过期的条目
    */
   hasTag(tag: string): boolean {
     // Loose Tags
     if (this.looseTags.has(tag)) return true;
 
-    // Auto Duration Tags
-    if (this.autoDurationTags.some((e) => e.tag === tag)) return true;
+    // Auto Duration Tags（过滤已过期）
+    if (this.autoDurationTags.some(
+      (e) => e.tag === tag && e.expiresAt > this.currentLogicTime
+    )) return true;
 
     // Component Tags
     for (const tags of this.componentTags.values()) {
-      if (tags.includes(tag)) return true;
+      if (tag in tags && tags[tag] > 0) return true;
     }
 
     return false;
@@ -284,6 +297,8 @@ export class AbilitySet {
 
   /**
    * 获取 Tag 总层数（累加所有来源）
+   *
+   * 注意：AutoDurationTags 会实时过滤已过期的条目
    */
   getTagStacks(tag: string): number {
     let stacks = 0;
@@ -291,12 +306,14 @@ export class AbilitySet {
     // Loose Tags
     stacks += this.looseTags.get(tag) ?? 0;
 
-    // Auto Duration Tags（每条 entry 算一层）
-    stacks += this.autoDurationTags.filter((e) => e.tag === tag).length;
+    // Auto Duration Tags（每条未过期 entry 算一层）
+    stacks += this.autoDurationTags.filter(
+      (e) => e.tag === tag && e.expiresAt > this.currentLogicTime
+    ).length;
 
-    // Component Tags（每个出现算一层）
+    // Component Tags（累加层数）
     for (const tags of this.componentTags.values()) {
-      stacks += tags.filter((t) => t === tag).length;
+      stacks += tags[tag] ?? 0;
     }
 
     return stacks;
@@ -304,6 +321,8 @@ export class AbilitySet {
 
   /**
    * 获取所有 Tag 及其层数（联合查询）
+   *
+   * 注意：AutoDurationTags 会实时过滤已过期的条目
    */
   getAllTags(): Map<string, number> {
     const result = new Map<string, number>();
@@ -313,15 +332,17 @@ export class AbilitySet {
       result.set(tag, (result.get(tag) ?? 0) + stacks);
     }
 
-    // Auto Duration Tags
+    // Auto Duration Tags（过滤已过期）
     for (const entry of this.autoDurationTags) {
-      result.set(entry.tag, (result.get(entry.tag) ?? 0) + 1);
+      if (entry.expiresAt > this.currentLogicTime) {
+        result.set(entry.tag, (result.get(entry.tag) ?? 0) + 1);
+      }
     }
 
-    // Component Tags
+    // Component Tags（累加层数）
     for (const tags of this.componentTags.values()) {
-      for (const tag of tags) {
-        result.set(tag, (result.get(tag) ?? 0) + 1);
+      for (const [tag, stacks] of Object.entries(tags)) {
+        result.set(tag, (result.get(tag) ?? 0) + stacks);
       }
     }
 
@@ -688,6 +709,47 @@ export function createAbilitySet(
   modifierTarget: IAttributeModifierTarget
 ): AbilitySet {
   return new AbilitySet({ owner, modifierTarget });
+}
+
+// ========== Provider 接口 ==========
+
+/**
+ * AbilitySet Provider 接口
+ *
+ * 项目层应实现此接口，提供获取 AbilitySet 的方法。
+ * 用于 TagAction、ActiveUseComponent 等需要访问 AbilitySet 的场景。
+ *
+ * @example
+ * ```typescript
+ * class BattleState implements IAbilitySetProvider {
+ *   private units: Map<string, BattleUnit> = new Map();
+ *
+ *   getAbilitySetForActor(actorId: string): AbilitySet | undefined {
+ *     return this.units.get(actorId)?.abilitySet;
+ *   }
+ * }
+ * ```
+ */
+export interface IAbilitySetProvider {
+  /**
+   * 根据 Actor ID 获取其 AbilitySet
+   *
+   * @param actorId Actor 的唯一标识
+   * @returns AbilitySet 实例，如果 Actor 不存在则返回 undefined
+   */
+  getAbilitySetForActor(actorId: string): AbilitySet | undefined;
+}
+
+/**
+ * 检查对象是否实现了 IAbilitySetProvider 接口
+ */
+export function isAbilitySetProvider(obj: unknown): obj is IAbilitySetProvider {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'getAbilitySetForActor' in obj &&
+    typeof (obj as IAbilitySetProvider).getAbilitySetForActor === 'function'
+  );
 }
 
 // ========== 类型守卫 ==========
