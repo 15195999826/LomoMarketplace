@@ -79,3 +79,74 @@ export type ExtractEvent<
   TEvents extends GameEventBase,
   TKind extends string,
 > = TEvents extends { kind: TKind } ? TEvents : never;
+
+// ========== 标准事件类型 ==========
+
+/**
+ * 标准 Ability 激活事件类型常量
+ */
+export const ABILITY_ACTIVATE_EVENT = 'abilityActivate' as const;
+
+/**
+ * 标准 Ability 激活事件
+ *
+ * ActiveUseComponent 默认监听此事件类型。
+ * 项目可以扩展此接口添加额外字段（如目标、坐标等）。
+ *
+ * ## 设计说明
+ *
+ * - `abilityInstanceId`: 要激活的 Ability 实例 ID（不是 configId）
+ * - `sourceId`: 发起激活的 Actor ID
+ * - 项目可通过交叉类型扩展：`AbilityActivateEvent & { target: ActorRef }`
+ *
+ * @example
+ * ```typescript
+ * // 基础使用
+ * const event: AbilityActivateEvent = {
+ *   kind: 'abilityActivate',
+ *   logicTime: 1000,
+ *   abilityInstanceId: 'ability_123',
+ *   sourceId: 'actor_1',
+ * };
+ *
+ * // 项目扩展（添加目标）
+ * type MyActivateEvent = AbilityActivateEvent & {
+ *   target?: ActorRef;
+ *   targetCoord?: { q: number; r: number };
+ * };
+ * ```
+ */
+export interface AbilityActivateEvent extends GameEventBase {
+  readonly kind: typeof ABILITY_ACTIVATE_EVENT;
+  /** 要激活的 Ability 实例 ID */
+  readonly abilityInstanceId: string;
+  /** 发起激活的 Actor ID */
+  readonly sourceId: string;
+}
+
+/**
+ * 创建标准 Ability 激活事件
+ */
+export function createAbilityActivateEvent(
+  logicTime: number,
+  abilityInstanceId: string,
+  sourceId: string
+): AbilityActivateEvent {
+  return {
+    kind: ABILITY_ACTIVATE_EVENT,
+    logicTime,
+    abilityInstanceId,
+    sourceId,
+  };
+}
+
+/**
+ * 检查事件是否为 AbilityActivateEvent
+ */
+export function isAbilityActivateEvent(event: GameEventBase): event is AbilityActivateEvent {
+  return (
+    event.kind === ABILITY_ACTIVATE_EVENT &&
+    typeof (event as AbilityActivateEvent).abilityInstanceId === 'string' &&
+    typeof (event as AbilityActivateEvent).sourceId === 'string'
+  );
+}
