@@ -30,11 +30,11 @@ export class CharacterActor extends Actor {
   readonly attributeSet: AttributeSet<typeof CHARACTER_ATTRIBUTES>;
   readonly abilitySet: AbilitySet;
 
-  /** 移动 Ability */
-  private _moveAbility: Ability;
+  /** 移动 Ability ID */
+  private _moveAbilityId: string;
 
-  /** 职业技能 Ability */
-  private _skillAbility: Ability;
+  /** 职业技能 Ability ID */
+  private _skillAbilityId: string;
 
   private _teamID: number = -1;
 
@@ -62,14 +62,16 @@ export class CharacterActor extends Actor {
     this.abilitySet = createAbilitySet(this.toRef(), this.attributeSet._modifierTarget);
 
     // 装备移动 Ability（所有角色都有）
-    this._moveAbility = new Ability(MOVE_ABILITY, this.toRef());
-    this.abilitySet.grantAbility(this._moveAbility);
+    const moveAbility = new Ability(MOVE_ABILITY, this.toRef());
+    this.abilitySet.grantAbility(moveAbility);
+    this._moveAbilityId = moveAbility.id;
 
     // 装备职业对应的技能
     const skillType = CLASS_SKILLS[characterClass];
     const skillConfig = SKILL_ABILITIES[skillType];
-    this._skillAbility = new Ability(skillConfig, this.toRef());
-    this.abilitySet.grantAbility(this._skillAbility);
+    const skillAbility = new Ability(skillConfig, this.toRef());
+    this.abilitySet.grantAbility(skillAbility);
+    this._skillAbilityId = skillAbility.id;
   }
 
   setTeamID(id: number) {
@@ -82,12 +84,12 @@ export class CharacterActor extends Actor {
 
   /** 获取移动 Ability */
   get moveAbility(): Ability {
-    return this._moveAbility;
+    return this.abilitySet.findAbilityById(this._moveAbilityId)!;
   }
 
   /** 获取技能 Ability */
   get skillAbility(): Ability {
-    return this._skillAbility;
+    return this.abilitySet.findAbilityById(this._skillAbilityId)!;
   }
 
   /** 获取当前属性值 */

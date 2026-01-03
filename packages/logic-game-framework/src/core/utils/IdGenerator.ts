@@ -7,15 +7,11 @@ let counter = 0;
 
 /**
  * 生成唯一 ID
- * @param prefix 可选前缀，便于调试时识别类型
- * @returns 唯一 ID 字符串
+ * @param prefix 前缀，用于标识类型
+ * @returns 唯一 ID 字符串，格式: prefix_N
  */
-export function generateId(prefix: string = ''): string {
-  const timestamp = Date.now().toString(36);
-  const count = (counter++).toString(36);
-  const random = Math.random().toString(36).substring(2, 6);
-
-  return prefix ? `${prefix}_${timestamp}${count}${random}` : `${timestamp}${count}${random}`;
+export function generateId(prefix: string): string {
+  return `${prefix}_${counter++}`;
 }
 
 /**
