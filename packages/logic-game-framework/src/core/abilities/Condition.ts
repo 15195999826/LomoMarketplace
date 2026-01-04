@@ -122,24 +122,6 @@ export class TagStacksCondition implements Condition {
 }
 
 /**
- * CooldownReady 条件 - 冷却就绪（无冷却 Tag）
- *
- * 冷却通过 Tag 实现：`cooldown:{configId}`
- */
-export class CooldownReadyCondition implements Condition {
-  readonly type = 'cooldownReady';
-
-  check(ctx: ConditionContext): boolean {
-    const cooldownTag = `cooldown:${ctx.ability.configId}`;
-    return !ctx.abilitySet.hasTag(cooldownTag);
-  }
-
-  getFailReason(): string {
-    return '技能冷却中';
-  }
-}
-
-/**
  * 组合条件 - 所有条件都满足
  */
 export class AllConditions implements Condition {

@@ -281,11 +281,14 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     const enemies = this.aliveActors.filter(a => a.teamID !== actor.teamID);
     const allies = this.aliveActors.filter(a => a.teamID === actor.teamID && a.id !== actor.id);
 
-    // 简化决策：50% 移动，50% 使用技能
-    const useSkill = Math.random() > 0.5;
+    // 检查技能是否在冷却中（使用 BattleAbilitySet 的便捷方法）
+    const skill = actor.skillAbility;
+    const skillReady = !actor.abilitySet.isOnCooldown(skill.id);
+
+    // 如果技能可用，50% 使用技能；否则只能移动
+    const useSkill = skillReady && Math.random() > 0.5;
 
     if (useSkill && enemies.length > 0) {
-      const skill = actor.skillAbility;
       const isHeal = skill.tags.includes('ally');
 
       if (isHeal && allies.length > 0) {
@@ -323,12 +326,12 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
         }
       }
 
-      // 无法移动时使用技能
-      if (enemies.length > 0) {
+      // 无法移动时，如果技能可用则使用技能
+      if (skillReady && enemies.length > 0) {
         const targetActor = enemies[Math.floor(Math.random() * enemies.length)];
         return {
           type: 'skill',
-          abilityInstanceId: actor.skillAbility.id,
+          abilityInstanceId: skill.id,
           target: { id: targetActor.id },
         };
       }

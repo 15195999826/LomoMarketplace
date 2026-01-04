@@ -27,7 +27,7 @@ import { defineAttributes, type AttributeSet } from '../src/core/attributes/inde
 import { Ability } from '../src/core/abilities/Ability.js';
 import { createAbilitySet, type AbilitySet } from '../src/core/abilities/AbilitySet.js';
 import { StatModifierComponent } from '../src/stdlib/components/StatModifierComponent.js';
-import { DurationComponent } from '../src/stdlib/components/DurationComponent.js';
+import { TimeDurationComponent } from '../src/stdlib/components/TimeDurationComponent.js';
 import { ModifierType } from '../src/core/attributes/AttributeModifier.js';
 
 // 注意：AbilitySet 不再需要泛型参数
@@ -231,7 +231,7 @@ export function createTimedBuff(
       displayName: '临时强化',
       tags: ['buff'],
       components: [
-        new DurationComponent(durationMs, 'time'),
+        new TimeDurationComponent(durationMs),
         new StatModifierComponent([
           {
             attributeName: attrName,

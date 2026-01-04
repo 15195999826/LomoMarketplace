@@ -78,27 +78,6 @@ export interface Cost {
 // ========== 常用消耗实现 ==========
 
 /**
- * 冷却消耗 - 添加 AutoDuration 冷却 Tag
- *
- * 冷却通过 AutoDurationTag 实现：`cooldown:{configId}`
- * Tag 会在 duration 后自动过期。
- */
-export class CooldownCost implements Cost {
-  readonly type = 'cooldown';
-
-  constructor(private readonly duration: number) {}
-
-  canPay(): boolean {
-    return true; // 冷却总是可以添加
-  }
-
-  pay(ctx: CostContext): void {
-    const cooldownTag = `cooldown:${ctx.ability.configId}`;
-    ctx.abilitySet.addAutoDurationTag(cooldownTag, this.duration);
-  }
-}
-
-/**
  * 消耗 LooseTag 层数
  *
  * 只能消耗 LooseTag，不能消耗 ComponentTag 或 AutoDurationTag。
