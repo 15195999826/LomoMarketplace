@@ -22,11 +22,11 @@ import {
   ABILITY_ACTIVATE_EVENT,
   ActivateInstanceComponent,
   ActiveUseComponent,
-  CooldownReadyCondition,
-  CooldownCost,
   getCurrentEvent,
   defaultTargetSelector,
 } from '@lomo/logic-game-framework';
+
+import { CooldownReadyCondition, CooldownCost } from '../abilities/index.js';
 
 import type { AxialCoord } from '@lomo/hex-grid';
 

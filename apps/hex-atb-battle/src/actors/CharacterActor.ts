@@ -6,10 +6,10 @@ import {
   Actor,
   Ability,
   type AttributeSet,
-  type AbilitySet,
-  createAbilitySet,
   defineAttributes,
 } from '@lomo/logic-game-framework';
+
+import { BattleAbilitySet, createBattleAbilitySet } from '../abilities/index.js';
 
 import {
   type CharacterClass,
@@ -28,7 +28,7 @@ export class CharacterActor extends Actor {
   readonly characterClass: CharacterClass;
 
   readonly attributeSet: AttributeSet<typeof CHARACTER_ATTRIBUTES>;
-  readonly abilitySet: AbilitySet;
+  readonly abilitySet: BattleAbilitySet;
 
   /** 移动 Ability ID */
   private _moveAbilityId: string;
@@ -58,8 +58,8 @@ export class CharacterActor extends Actor {
     this.attributeSet.setDefBase(stats.def);
     this.attributeSet.setSpeedBase(stats.speed);
 
-    // 创建能力集
-    this.abilitySet = createAbilitySet(this.toRef(), this.attributeSet._modifierTarget);
+    // 创建能力集（使用项目层的 BattleAbilitySet）
+    this.abilitySet = createBattleAbilitySet(this.toRef(), this.attributeSet._modifierTarget);
 
     // 装备移动 Ability（所有角色都有）
     const moveAbility = new Ability(MOVE_ABILITY, this.toRef());

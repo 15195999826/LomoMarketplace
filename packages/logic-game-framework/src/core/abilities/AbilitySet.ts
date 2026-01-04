@@ -9,6 +9,57 @@
  * - 分发事件到所有 Ability 的 Component
  * - 驱动内部 Hook (tick)
  * - 提供回调机制
+ *
+ * ## 项目扩展（可选继承）
+ *
+ * AbilitySet 可以直接使用，也可以通过继承添加项目特定的便捷方法。
+ * 这类似于 UE 中继承 AbilitySystemComponent 的模式。
+ *
+ * ### 使用场景
+ *
+ * - **简单项目**：直接使用 AbilitySet，通过工具函数扩展功能
+ * - **复杂项目**：继承 AbilitySet，将项目特定逻辑集中在子类中
+ *
+ * ### 继承示例
+ *
+ * ```typescript
+ * // 项目层：继承 AbilitySet 添加项目特定方法
+ * export class BattleAbilitySet extends AbilitySet {
+ *   // 冷却 Tag 前缀（项目约定）
+ *   static readonly COOLDOWN_PREFIX = 'cooldown:';
+ *
+ *   // 便捷方法：检查技能是否在冷却中
+ *   isOnCooldown(abilityId: string): boolean {
+ *     return this.hasTag(`${BattleAbilitySet.COOLDOWN_PREFIX}${abilityId}`);
+ *   }
+ *
+ *   // 回合制：获取冷却剩余回合数
+ *   getCooldownTurns(abilityId: string): number {
+ *     return this.getLooseTagStacks(`${BattleAbilitySet.COOLDOWN_PREFIX}${abilityId}`);
+ *   }
+ *
+ *   // 回合制：回合结束时减少所有冷却
+ *   tickCooldowns(): void {
+ *     const allTags = this.getAllTags();
+ *     for (const [tag, stacks] of allTags) {
+ *       if (tag.startsWith(BattleAbilitySet.COOLDOWN_PREFIX) && stacks > 0) {
+ *         this.removeLooseTag(tag, 1);
+ *       }
+ *     }
+ *   }
+ * }
+ * ```
+ *
+ * ### 工具函数示例（不继承）
+ *
+ * ```typescript
+ * // 项目层：使用独立工具函数
+ * export const COOLDOWN_PREFIX = 'cooldown:';
+ *
+ * export function isOnCooldown(abilitySet: AbilitySet, abilityId: string): boolean {
+ *   return abilitySet.hasTag(`${COOLDOWN_PREFIX}${abilityId}`);
+ * }
+ * ```
  */
 
 import type { ActorRef } from '../types/common.js';
