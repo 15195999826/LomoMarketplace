@@ -54,6 +54,7 @@ import type { ExecutionContext } from '../actions/ExecutionContext.js';
 import { createExecutionContext } from '../actions/ExecutionContext.js';
 import { EventCollector } from '../events/EventCollector.js';
 import { getLogger } from '../utils/Logger.js';
+import type { MutableEvent, PreEventIntent, PreEventHandlerContext } from '../events/EventPhase.js';
 
 // ========== 类型定义 ==========
 
@@ -77,6 +78,20 @@ export type EventTrigger<TEvent extends GameEventBase = GameEventBase> = {
 export type TriggerMode = 'any' | 'all';
 
 /**
+ * Pre 阶段处理器类型
+ *
+ * 用于 Pre 阶段事件（如 pre_damage），可以修改或取消事件。
+ *
+ * @param event 可变事件（可以读取当前值，但通过返回 Intent 来修改）
+ * @param context 组件生命周期上下文
+ * @returns 处理意图（pass/cancel/modify）
+ */
+export type PreEventHandlerFn = (
+  event: MutableEvent,
+  context: ComponentLifecycleContext
+) => PreEventIntent;
+
+/**
  * NoInstanceComponent 配置
  */
 export type NoInstanceComponentConfig = {
@@ -84,8 +99,36 @@ export type NoInstanceComponentConfig = {
   readonly triggers: EventTrigger[];
   /** 触发模式，默认 'any' */
   readonly triggerMode?: TriggerMode;
-  /** 要执行的 Action 链 */
+  /** 要执行的 Action 链（Post 阶段使用） */
   readonly actions: IAction[];
+
+  /**
+   * Pre 阶段处理器（可选）
+   *
+   * 用于处理 Pre 阶段事件（如 pre_damage），可以：
+   * - 返回 { type: 'pass' } - 不做任何操作
+   * - 返回 { type: 'cancel', reason, handlerId } - 取消事件
+   * - 返回 { type: 'modify', modifications, handlerId } - 修改事件字段
+   *
+   * 如果配置了 preHandler，actions 将在 Post 阶段执行。
+   * 如果没有配置 preHandler，actions 将在事件触发时直接执行（向后兼容）。
+   *
+   * @example
+   * ```typescript
+   * // 50% 概率免疫伤害
+   * new NoInstanceComponent({
+   *   triggers: [{ eventKind: 'pre_damage', filter: (e, ctx) => e.target.id === ctx.owner.id }],
+   *   actions: [],
+   *   preHandler: (event, ctx) => {
+   *     if (Math.random() < 0.5) {
+   *       return { type: 'cancel', reason: '免疫', handlerId: ctx.ability.id };
+   *     }
+   *     return { type: 'pass' };
+   *   },
+   * });
+   * ```
+   */
+  readonly preHandler?: PreEventHandlerFn;
 };
 
 // ========== NoInstanceComponent ==========
@@ -101,12 +144,44 @@ export class NoInstanceComponent extends BaseAbilityComponent {
   private readonly triggers: EventTrigger[];
   private readonly triggerMode: TriggerMode;
   private readonly actions: IAction[];
+  private readonly _preHandler?: PreEventHandlerFn;
 
   constructor(config: NoInstanceComponentConfig) {
     super();
     this.triggers = config.triggers;
     this.triggerMode = config.triggerMode ?? 'any';
     this.actions = config.actions;
+    this._preHandler = config.preHandler;
+  }
+
+  /**
+   * 获取 Pre 阶段处理器
+   *
+   * 如果配置了 preHandler，可供 EventProcessor 使用。
+   */
+  get preHandler(): PreEventHandlerFn | undefined {
+    return this._preHandler;
+  }
+
+  /**
+   * 是否有 Pre 阶段处理器
+   */
+  get hasPreHandler(): boolean {
+    return this._preHandler !== undefined;
+  }
+
+  /**
+   * 获取触发器列表
+   */
+  getTriggers(): readonly EventTrigger[] {
+    return this.triggers;
+  }
+
+  /**
+   * 检查事件是否匹配触发器（供外部使用）
+   */
+  matchesEvent(event: GameEventBase, context: ComponentLifecycleContext): boolean {
+    return this.checkTriggers(event, context);
   }
 
   /**

@@ -14,6 +14,36 @@ export {
 // 事件收集器
 export { EventCollector } from './EventCollector.js';
 
+// 事件阶段与追踪（Pre/Post 双阶段处理）
+export {
+  type EventPhase,
+  type EventModification,
+  type PreEventIntent,
+  type TraceLevel,
+  type IntentRecord,
+  type FieldModificationRecord,
+  type EventProcessingTrace,
+  type MutableEvent,
+  type PreEventHandler,
+  type PreEventHandlerContext,
+  // 工厂函数
+  passIntent,
+  cancelIntent,
+  modifyIntent,
+  createTraceId,
+} from './EventPhase.js';
+
+// 可变事件
+export { MutableEventImpl, createMutableEvent } from './MutableEvent.js';
+
+// 事件处理器
+export {
+  EventProcessor,
+  createEventProcessor,
+  type EventProcessorConfig,
+  type PreHandlerRegistration,
+} from './EventProcessor.js';
+
 // 投射物事件
 export {
   PROJECTILE_LAUNCHED_EVENT,

@@ -36,6 +36,7 @@ export {
   NoInstanceComponentConfig,
   EventTrigger,
   TriggerMode,
+  PreEventHandlerFn,
   createEventTrigger,
 } from './NoInstanceComponent.js';
 
