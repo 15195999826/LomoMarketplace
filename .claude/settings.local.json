@@ -54,7 +54,12 @@
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build && node dist/examples/atb-battle/run-demo.js\")",
       "Bash(powershell -Command \"cd ''E:\\\\talk\\\\LomoMarketplace\\\\packages\\\\logic-game-framework''; pnpm build; node dist/examples/atb-battle/run-demo.js\")",
       "Bash(powershell -Command:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(grep:*)",
+      "Bash(pnpm --filter @lomo/core build:*)",
+      "Bash(pnpm --filter @lomo/core test:run:*)",
+      "Bash(pnpm --filter hex-atb-battle build:*)",
+      "Bash(node dist/main.js:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
