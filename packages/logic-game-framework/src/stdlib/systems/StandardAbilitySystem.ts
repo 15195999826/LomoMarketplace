@@ -152,26 +152,40 @@ export class StandardAbilitySystem extends System {
   /**
    * 处理 Pre 阶段事件
    *
-   * 遍历所有注册的处理器，收集意图并应用修改。
-   * 如果任何处理器返回 cancel，事件将被取消。
+   * 执行两步操作：
+   * 1. 广播事件到所有 Actor（触发 NoInstanceComponent 等响应）
+   * 2. 收集 PreEventComponent 的 Intent，应用修改或取消
+   *
+   * 这样设计允许：
+   * - Pre 阶段触发的被动（如叠盾）可以影响本次事件
+   * - PreEventComponent 可以基于最新状态返回 Intent
    *
    * @param event 原始事件（如 pre_damage）
+   * @param actors Actor 列表
    * @param gameplayState 游戏状态
    * @returns 可变事件（可能被修改或取消）
    *
    * @example
    * ```typescript
-   * const mutable = abilitySystem.processPreEvent(preDamageEvent, gameplayState);
+   * const mutable = abilitySystem.processPreEvent(preDamageEvent, actors, gameplayState);
    * if (!mutable.cancelled) {
    *   const finalDamage = mutable.getCurrentValue('damage') as number;
    *   target.hp -= finalDamage;
+   *
+   *   // Post 阶段
+   *   abilitySystem.processPostEvent(postDamageEvent, actors, gameplayState);
    * }
    * ```
    */
   processPreEvent<T extends GameEventBase>(
     event: T,
+    actors: Actor[],
     gameplayState: unknown
   ): MutableEvent<T> {
+    // 1. 广播事件到所有 Actor（触发 NoInstanceComponent 等响应）
+    this.broadcastEvent(event, actors, gameplayState);
+
+    // 2. 收集 PreEventComponent 的 Intent，应用修改或取消
     return this.eventProcessor.processPreEvent(event, gameplayState);
   }
 

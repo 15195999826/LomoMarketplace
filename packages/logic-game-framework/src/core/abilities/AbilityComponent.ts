@@ -82,6 +82,7 @@ export interface IAbilityForComponent {
 
 // 前向声明 AbilitySet 类型（避免循环依赖）
 import type { AbilitySet } from './AbilitySet.js';
+import type { EventProcessor } from '../events/EventProcessor.js';
 
 /**
  * Component 生命周期上下文
@@ -96,6 +97,8 @@ export type ComponentLifecycleContext = {
   readonly ability: IAbilityForComponent;
   /** AbilitySet 引用（可选，用于 TagComponent 等） */
   readonly abilitySet?: AbilitySet;
+  /** EventProcessor 引用（可选，用于 PreEventComponent 注册 Pre 阶段处理器） */
+  readonly eventProcessor?: EventProcessor;
 };
 
 /**
@@ -231,6 +234,8 @@ export const ComponentTypes = {
   EFFECT: 'effect',
   /** Timeline 执行实例激活器 */
   TIMELINE_EXECUTION: 'timelineExecution',
+  /** Pre 阶段事件处理器 */
+  PRE_EVENT_HANDLER: 'preEventHandler',
 } as const;
 
 export type ComponentType = (typeof ComponentTypes)[keyof typeof ComponentTypes];

@@ -36,9 +36,15 @@ export {
   NoInstanceComponentConfig,
   EventTrigger,
   TriggerMode,
-  PreEventHandlerFn,
   createEventTrigger,
 } from './NoInstanceComponent.js';
+
+export {
+  PreEventComponent,
+  PreEventComponentConfig,
+  PreEventHandlerFn,
+  PreEventFilterFn,
+} from './PreEventComponent.js';
 
 export {
   AbilityExecutionInstance,
