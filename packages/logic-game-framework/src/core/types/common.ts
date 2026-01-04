@@ -3,6 +3,9 @@
  * 包含框架核心的引用类型
  */
 
+// 重新导出 Vector3（从 @lomo/core）
+export { Vector3 } from '@lomo/core';
+
 /**
  * Actor 引用
  * 用于在事件和上下文中引用 Actor，避免直接持有对象引用
@@ -48,7 +51,9 @@ export function createActivationError(code: string, message: string): Activation
 }
 
 /**
- * 位置信息（可选，用于支持战术战斗）
+ * 位置信息（2D，用于向后兼容）
+ *
+ * @deprecated 推荐使用 Vector3 作为位置类型
  */
 export type Position = {
   readonly x: number;

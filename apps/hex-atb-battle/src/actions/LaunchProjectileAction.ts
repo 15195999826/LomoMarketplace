@@ -45,33 +45,59 @@ export interface LaunchProjectileActionParams extends BaseActionParams {
 }
 
 /**
+ * 投射物速度常量（单位：世界单位/秒）
+ *
+ * hexSize=100 时，相邻格子中心距离约为 173 (100 * sqrt(3))
+ * - FAST: 约每秒 7 格
+ * - NORMAL: 约每秒 4-5 格
+ * - SLOW: 约每秒 3 格
+ */
+const PROJECTILE_SPEED = {
+  /** 快速投射物（魔法弹） */
+  FAST: 1200,
+  /** 普通速度（箭矢） */
+  NORMAL: 800,
+  /** 较慢速度（火球） */
+  SLOW: 500,
+  /** 瞬时命中（神圣之光） */
+  INSTANT: 0,
+} as const;
+
+/**
+ * 投射物生命周期常量（单位：毫秒）
+ */
+const PROJECTILE_LIFETIME = {
+  SHORT: 2000,
+  NORMAL: 3000,
+  LONG: 5000,
+  INSTANT: 100,
+} as const;
+
+/**
  * 投射物预设配置
  *
- * 速度单位：世界单位/秒 (m/s)
- * hexSize=100 时，相邻格子中心距离约为 173 (100 * sqrt(3))                                                      
- * 所以速度 800 表示约每秒飞过 4-5 个格子     
  * Character 以圆形碰撞体积表示，坐标为格子中心的世界坐标
  */
 const PROJECTILE_PRESETS: Record<ProjectileVariant, Partial<ProjectileConfig>> = {
   arrow: {
     projectileType: 'bullet',
-    speed: 800,       // 800 m/s
-    maxLifetime: 3000,
+    speed: PROJECTILE_SPEED.NORMAL,
+    maxLifetime: PROJECTILE_LIFETIME.NORMAL,
   },
   fireball: {
     projectileType: 'bullet',
-    speed: 500,       // 500 m/s，较慢但威力大
-    maxLifetime: 5000,
+    speed: PROJECTILE_SPEED.SLOW,
+    maxLifetime: PROJECTILE_LIFETIME.LONG,
   },
   magic_bolt: {
     projectileType: 'bullet',
-    speed: 1200,      // 1200 m/s，快速魔法弹
-    maxLifetime: 2000,
+    speed: PROJECTILE_SPEED.FAST,
+    maxLifetime: PROJECTILE_LIFETIME.SHORT,
   },
   holy_light: {
-    projectileType: 'hitscan', // 瞬时命中
-    speed: 0,
-    maxLifetime: 100,
+    projectileType: 'hitscan',
+    speed: PROJECTILE_SPEED.INSTANT,
+    maxLifetime: PROJECTILE_LIFETIME.INSTANT,
   },
 };
 

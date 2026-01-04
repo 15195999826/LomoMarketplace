@@ -7,6 +7,8 @@
  * 参考: https://www.redblobgames.com/grids/hexagons/
  */
 
+import { Vector3 } from '@lomo/core';
+
 /**
  * Axial 坐标（主要使用）
  * q: 列方向
@@ -271,6 +273,25 @@ export function hexToWorld(coord: AxialCoord, config: WorldCoordConfig): PixelCo
     x: x + mapCenter.x,
     y: y + mapCenter.y,
   };
+}
+
+/**
+ * 六边形坐标转世界坐标（返回 Vector3）
+ *
+ * 与 hexToWorld 相同，但返回 Vector3 类型，z 轴为 0
+ *
+ * @param coord Axial 坐标
+ * @param config 转换配置
+ * @returns 世界坐标 Vector3（z = 0）
+ */
+export function hexToWorldV3(coord: AxialCoord, config: WorldCoordConfig): Vector3 {
+  const { hexSize, mapCenter = { x: 0, y: 0 }, orientation = 'flat' } = config;
+  const matrix = getOrientationMatrix(orientation);
+
+  const x = hexSize * (matrix.f0 * coord.q + matrix.f1 * coord.r);
+  const y = hexSize * (matrix.f2 * coord.q + matrix.f3 * coord.r);
+
+  return new Vector3(x + mapCenter.x, y + mapCenter.y, 0);
 }
 
 /**

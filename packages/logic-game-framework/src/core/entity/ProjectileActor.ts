@@ -17,6 +17,7 @@
  * - 通过 EventCollector 输出事件给表演层
  */
 
+import { Vector3 } from '@lomo/core';
 import type { ActorRef, Position } from '../types/common.js';
 import { Actor } from './Actor.js';
 
@@ -162,7 +163,7 @@ export class ProjectileActor extends Actor {
     }
 
     this._launchParams = params;
-    this._position = { ...params.startPosition };
+    this._position = Vector3.from(params.startPosition);
     this._projectileState = 'flying';
     this._flyTime = 0;
     this._flyDistance = 0;
@@ -171,7 +172,7 @@ export class ProjectileActor extends Actor {
     if (this.config.projectileType === 'hitscan') {
       // HitScan 的位置直接设为目标位置
       if (params.targetPosition) {
-        this._position = { ...params.targetPosition };
+        this._position = Vector3.from(params.targetPosition);
       }
     }
   }
@@ -219,35 +220,33 @@ export class ProjectileActor extends Actor {
     this._flyDistance += moveDistance;
 
     // 计算移动方向
-    let dx = 0;
-    let dy = 0;
+    let movement: Vector3;
 
     if (this._launchParams.direction !== undefined) {
       // 使用指定方向
-      dx = Math.cos(this._launchParams.direction) * moveDistance;
-      dy = Math.sin(this._launchParams.direction) * moveDistance;
+      movement = new Vector3(
+        Math.cos(this._launchParams.direction) * moveDistance,
+        Math.sin(this._launchParams.direction) * moveDistance,
+        0
+      );
     } else if (this._launchParams.targetPosition) {
       // 朝向目标位置
-      const targetX = this._launchParams.targetPosition.x;
-      const targetY = this._launchParams.targetPosition.y;
-      const currentX = this._position.x;
-      const currentY = this._position.y;
-
-      const distanceToTarget = Math.sqrt(
-        (targetX - currentX) ** 2 + (targetY - currentY) ** 2
-      );
+      const target = Vector3.from(this._launchParams.targetPosition);
+      const direction = target.sub(this._position);
+      const distanceToTarget = direction.length();
 
       if (distanceToTarget > 0) {
-        const ratio = Math.min(moveDistance / distanceToTarget, 1);
-        dx = (targetX - currentX) * ratio;
-        dy = (targetY - currentY) * ratio;
+        const actualMove = Math.min(moveDistance, distanceToTarget);
+        movement = direction.normalize().scale(actualMove);
+      } else {
+        movement = Vector3.zero();
       }
+    } else {
+      movement = Vector3.zero();
     }
 
-    this._position = {
-      x: this._position.x + dx,
-      y: this._position.y + dy,
-    };
+    // 使用 addSelf 原地修改（性能优化）
+    this._position.addSelf(movement);
   }
 
   /**
@@ -258,9 +257,8 @@ export class ProjectileActor extends Actor {
       return Infinity;
     }
 
-    const dx = this._launchParams.targetPosition.x - this._position.x;
-    const dy = this._launchParams.targetPosition.y - this._position.y;
-    return Math.sqrt(dx * dx + dy * dy);
+    const target = Vector3.from(this._launchParams.targetPosition);
+    return this._position.distanceTo(target);
   }
 
   /**

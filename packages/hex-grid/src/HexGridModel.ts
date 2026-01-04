@@ -7,6 +7,7 @@
  * - Model 不知道 Renderer 的存在（单向依赖）
  */
 
+import { Vector3 } from '@lomo/core';
 import {
   type AxialCoord,
   type PixelCoord,
@@ -15,6 +16,7 @@ import {
   hexKey,
   hexEquals,
   hexToWorld,
+  hexToWorldV3,
   worldToHex,
   getAdjacentHexDistance,
   axial,
@@ -302,12 +304,12 @@ export class HexGridModel<T = unknown> {
           // Flat-top: odd-q offset to axial
           // q = col, r = row - (col - (col & 1)) / 2
           const q = col;
-          const r = row - Math.floor((col - (col & 1 ? 1 : 0)) / 2);
+          const r = row - Math.floor((col - (col & 1)) / 2);
           coord = { q, r };
         } else {
           // Pointy-top: odd-r offset to axial
           // q = col - (row - (row & 1)) / 2, r = row
-          const q = col - Math.floor((row - (row & 1 ? 1 : 0)) / 2);
+          const q = col - Math.floor((row - (row & 1)) / 2);
           const r = row;
           coord = { q, r };
         }
@@ -586,10 +588,10 @@ export class HexGridModel<T = unknown> {
 
     if (orientation === 'flat') {
       const q = col;
-      const r = row - Math.floor((col - (col & 1 ? 1 : 0)) / 2);
+      const r = row - Math.floor((col - (col & 1)) / 2);
       coord = { q, r };
     } else {
-      const q = col - Math.floor((row - (row & 1 ? 1 : 0)) / 2);
+      const q = col - Math.floor((row - (row & 1)) / 2);
       const r = row;
       coord = { q, r };
     }
@@ -615,6 +617,15 @@ export class HexGridModel<T = unknown> {
    */
   coordToWorld(coord: AxialCoord): PixelCoord {
     return hexToWorld(coord, this.getWorldCoordConfig());
+  }
+
+  /**
+   * 六边形坐标转世界坐标（返回 Vector3）
+   *
+   * z 轴始终为 0
+   */
+  coordToWorldV3(coord: AxialCoord): Vector3 {
+    return hexToWorldV3(coord, this.getWorldCoordConfig());
   }
 
   /**

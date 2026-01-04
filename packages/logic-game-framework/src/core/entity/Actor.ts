@@ -5,6 +5,7 @@
  * 战斗单位的结构相对固定，不需要过度 Component 化
  */
 
+import { Vector3 } from '@lomo/core';
 import type { ActorRef, Position } from '../types/common.js';
 import { generateId } from '../utils/IdGenerator.js';
 
@@ -26,8 +27,8 @@ export abstract class Actor {
   /** 当前状态 */
   protected _state: ActorState = 'active';
 
-  /** 位置（可选） */
-  protected _position?: Position;
+  /** 位置（可选，使用 Vector3） */
+  protected _position?: Vector3;
 
   /** 所属阵营/队伍 */
   protected _team?: string;
@@ -60,12 +61,23 @@ export abstract class Actor {
     return this._state === 'dead';
   }
 
-  get position(): Position | undefined {
+  get position(): Vector3 | undefined {
     return this._position;
   }
 
-  set position(pos: Position | undefined) {
-    this._position = pos;
+  /**
+   * 设置位置
+   * 支持 Vector3 或简单的 { x, y } 对象（向后兼容）
+   */
+  set position(pos: Vector3 | Position | undefined) {
+    if (!pos) {
+      this._position = undefined;
+    } else if (pos instanceof Vector3) {
+      this._position = pos;
+    } else {
+      // 兼容 { x, y } 格式，z 默认为 0
+      this._position = new Vector3(pos.x, pos.y, 0);
+    }
   }
 
   get team(): string | undefined {
@@ -171,7 +183,8 @@ export abstract class Actor {
    */
   protected deserializeBase(data: Record<string, unknown>): void {
     this._state = (data.state as ActorState) ?? 'active';
-    this._position = data.position as Position | undefined;
+    const posData = data.position as { x: number; y: number; z?: number } | undefined;
+    this._position = posData ? new Vector3(posData.x, posData.y, posData.z ?? 0) : undefined;
     this._team = data.team as string | undefined;
     this._displayName = data.displayName as string | undefined;
   }

@@ -5,6 +5,9 @@
  * 渲染层订阅事件更新视图
  */
 
+// 重新导出 Vector3（从 @lomo/core）
+export { Vector3 } from '@lomo/core';
+
 // 坐标系统
 export {
   type AxialCoord,
@@ -21,6 +24,7 @@ export {
   hexToPixel,
   pixelToHex,
   hexToWorld,
+  hexToWorldV3,
   worldToHex,
   getAdjacentHexDistance,
   getOrientationMatrix,

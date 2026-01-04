@@ -25,6 +25,15 @@ import { CharacterActor } from '../actors/CharacterActor.js';
 import { createActionUseEvent } from '../skills/SkillAbilities.js';
 import { BattleLogger } from '../logger/BattleLogger.js';
 
+// ========== 战斗常量 ==========
+
+/**
+ * 碰撞检测阈值倍数
+ * 相邻 hex 中心距离 * 此倍数 = 碰撞检测半径
+ * 1.2 表示比相邻距离稍大，确保能检测到边界情况
+ */
+const COLLISION_THRESHOLD_MULTIPLIER = 1.2;
+
 /** 战斗上下文 */
 export type BattleContext = {
   grid: HexGridModel;
@@ -60,6 +69,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
 
   /** 投射物事件收集器 */
   private _projectileEventCollector!: EventCollector;
+
+  /** 角色位置缓存（用于检测移动，优化世界坐标计算） */
+  private _actorHexPositionCache: Map<string, string> = new Map();
 
   // ========== IAbilitySetProvider 实现 ==========
 
@@ -181,8 +193,8 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     };
 
     // 初始化投射物系统
-    // 碰撞阈值使用世界距离（相邻 hex 中心距离 * 1.2）
-    const collisionThreshold = grid.getAdjacentWorldDistance() * 1.2;
+    // 碰撞阈值使用世界距离（相邻 hex 中心距离 * 碰撞倍数）
+    const collisionThreshold = grid.getAdjacentWorldDistance() * COLLISION_THRESHOLD_MULTIPLIER;
     this._projectileSystem = new ProjectileSystem({
       collisionDetector: new DistanceCollisionDetector(collisionThreshold),
       eventCollector: this._projectileEventCollector,
@@ -422,12 +434,19 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     }
 
     // 同步角色位置到 Actor.position（使用世界坐标，碰撞检测需要）
+    // 优化：仅在位置变化时重新计算世界坐标
     for (const actor of this.allActors) {
       const hexPos = this.getActorPosition(actor);
       if (hexPos) {
-        // 使用 coordToWorld 转换为世界坐标
-        const worldPos = this._context.grid.coordToWorld(hexPos);
-        actor.position = worldPos;
+        const hexKey = `${hexPos.q},${hexPos.r}`;
+        const cachedKey = this._actorHexPositionCache.get(actor.id);
+
+        // 仅当位置变化时更新世界坐标
+        if (cachedKey !== hexKey) {
+          const worldPos = this._context.grid.coordToWorld(hexPos);
+          actor.position = worldPos;
+          this._actorHexPositionCache.set(actor.id, hexKey);
+        }
       }
     }
 

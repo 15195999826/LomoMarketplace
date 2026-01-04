@@ -91,7 +91,10 @@ describe('Projectile System Integration', () => {
 
       expect(projectile.projectileState).toBe('flying');
       expect(projectile.isFlying).toBe(true);
-      expect(projectile.position).toEqual({ x: 0, y: 0 });
+      // position 现在是 Vector3，包含 z 分量
+      expect(projectile.position?.x).toBe(0);
+      expect(projectile.position?.y).toBe(0);
+      expect(projectile.position?.z).toBe(0);
       expect(projectile.source).toEqual({ id: 'source_1' });
     });
 

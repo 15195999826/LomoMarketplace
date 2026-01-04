@@ -16,6 +16,9 @@
     "dev": "tsc --watch",
     "clean": "rimraf dist"
   },
+  "dependencies": {
+    "@lomo/core": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.8.3"
   },

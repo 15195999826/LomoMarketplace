@@ -421,7 +421,8 @@ export class BattleLogger {
   }
 
   private writeActorLog(actorId: string, actorName: string, line: string): void {
-    const key = `${actorId}_${actorName}`;
+    // 使用 | 作为分隔符，避免与 actorId 中可能包含的下划线混淆
+    const key = `${actorId}|${actorName}`;
     if (!this.actorLogs.has(key)) {
       this.actorLogs.set(key, [`=== ${actorName} (${actorId}) 战斗日志 ===\n`]);
     }
@@ -446,10 +447,8 @@ export class BattleLogger {
 
     // 保存角色日志
     for (const [key, logs] of this.actorLogs) {
-      // key 格式: "actorId_actorName"，但 actorId 可能包含下划线
-      // 使用最后一个下划线分割
-      const lastUnderscoreIndex = key.lastIndexOf('_');
-      const actorName = lastUnderscoreIndex >= 0 ? key.slice(lastUnderscoreIndex + 1) : key;
+      // key 格式: "actorId|actorName"，使用 | 分隔符
+      const [, actorName] = key.split('|');
       const fileName = `${actorName}.log`;
       fs.writeFileSync(
         path.join(this.battleDir, 'actors', fileName),
