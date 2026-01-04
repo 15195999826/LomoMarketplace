@@ -110,9 +110,21 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
   // ========== 投射物管理 ==========
 
   /** 添加投射物到战斗 */
-  addProjectile(projectile: ProjectileActor): void {
+  addProjectile(projectile: ProjectileActor, variant?: string): void {
     this._projectiles.push(projectile);
-    this._logger.log(`  🚀 投射物发射: ${projectile.id} (${projectile.config.projectileType})`);
+
+    // 使用强化日志
+    const sourceId = projectile.source?.id ?? 'unknown';
+    const targetId = projectile.target?.id ?? 'unknown';
+    this._logger.projectileLaunched(
+      projectile.id,
+      sourceId,
+      targetId,
+      variant ?? projectile.config.projectileType,
+      projectile.config.damage ?? 0,
+      projectile.config.damageType ?? 'physical',
+      projectile.config.speed
+    );
   }
 
   /** 获取活跃投射物数量 */
@@ -127,13 +139,8 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
       this._logger.handleFrameworkLog(category, message, context);
     });
 
-    // 初始化投射物系统
+    // 初始化投射物系统（碰撞阈值在 HexGridModel 创建后设置）
     this._projectileEventCollector = new EventCollector();
-    this._projectileSystem = new ProjectileSystem({
-      // 使用距离碰撞检测，hex 坐标系中相邻格子距离约为 1，使用 1.2 作为碰撞阈值
-      collisionDetector: new DistanceCollisionDetector(1.2),
-      eventCollector: this._projectileEventCollector,
-    });
 
     // 创建左方队伍
     const leftTeam: CharacterActor[] = [
@@ -159,15 +166,34 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     }
 
     // 初始化上下文
+    // 使用中心对称的 9x9 地图，hexSize=100 用于世界坐标计算
+    const grid = new HexGridModel({
+      rows: 9,
+      columns: 9,
+      hexSize: 100,  // 六边形尺寸（中心到顶点距离）
+      orientation: 'flat',
+    });
+
     this._context = {
-      grid: new HexGridModel({ width: 9, height: 9 }),
+      grid,
       leftTeam,
       rightTeam,
     };
 
+    // 初始化投射物系统
+    // 碰撞阈值使用世界距离（相邻 hex 中心距离 * 1.2）
+    const collisionThreshold = grid.getAdjacentWorldDistance() * 1.2;
+    this._projectileSystem = new ProjectileSystem({
+      collisionDetector: new DistanceCollisionDetector(collisionThreshold),
+      eventCollector: this._projectileEventCollector,
+    });
+
     // 随机放置角色
-    this.placeTeamRandomly(leftTeam, { qMin: 0, qMax: 3, rMin: 0, rMax: 3 });
-    this.placeTeamRandomly(rightTeam, { qMin: 5, qMax: 8, rMin: 5, rMax: 8 });
+    // 中心对称地图：9x9 的坐标范围是 [-4, 4]
+    // 左方队伍放在左侧 (q: -4~-1)
+    // 右方队伍放在右侧 (q: 1~4)
+    this.placeTeamRandomly(leftTeam, { qMin: -4, qMax: -1, rMin: -4, rMax: -1 });
+    this.placeTeamRandomly(rightTeam, { qMin: 1, qMax: 4, rMin: 1, rMax: 4 });
 
     this._logger.log('✅ 战斗开始');
     this.printBattleInfo();
@@ -327,8 +353,8 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     const skill = actor.skillAbility;
     const skillReady = !actor.abilitySet.isOnCooldown(skill.id);
 
-    // 如果技能可用，50% 使用技能；否则只能移动
-    const useSkill = skillReady && Math.random() > 0.5;
+    // 如果技能可用，90% 使用技能；否则只能移动
+    const useSkill = skillReady && Math.random() > 0.1;
 
     if (useSkill && enemies.length > 0) {
       const isHeal = skill.tags.includes('ally');
@@ -395,6 +421,16 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
       return;
     }
 
+    // 同步角色位置到 Actor.position（使用世界坐标，碰撞检测需要）
+    for (const actor of this.allActors) {
+      const hexPos = this.getActorPosition(actor);
+      if (hexPos) {
+        // 使用 coordToWorld 转换为世界坐标
+        const worldPos = this._context.grid.coordToWorld(hexPos);
+        actor.position = worldPos;
+      }
+    }
+
     // 获取所有可被命中的 Actor（包括投射物和角色）
     const allActors = [...this._projectiles, ...this.allActors];
 
@@ -428,34 +464,50 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     // 投射物携带的伤害
     const damage = hitEvent.damage ?? 0;
     const damageType = hitEvent.damageType ?? 'physical';
+    const sourceId = hitEvent.source.id;
+    const targetId = hitEvent.target.id;
 
-    // 记录日志
-    const sourceName = this.getActor(hitEvent.source.id)?.displayName ?? hitEvent.source.id;
-    const targetName = targetActor.displayName;
+    // 应用伤害
+    let actualDamage = 0;
+    let targetHpRemaining = 0;
+    let isKill = false;
 
-    this._logger.log(`  💥 投射物命中! ${sourceName} → ${targetName} | 伤害: ${damage} ${damageType}`);
-    this._logger.log(`    飞行时间: ${hitEvent.flyTime}ms, 飞行距离: ${hitEvent.flyDistance.toFixed(2)}`);
-
-    // 应用伤害（简化：直接扣血）
-    // 实际项目中应该通过 DamageAction 或事件系统处理
     if (damage > 0 && targetActor.attributeSet) {
       const currentHp = targetActor.attributeSet.hp;
-      const actualDamage = Math.min(damage, currentHp);
+      actualDamage = Math.min(damage, currentHp);
       targetActor.attributeSet.modifyBase('hp', -actualDamage);
-
-      this._logger.log(`    ${targetName} 受到 ${actualDamage} 点伤害, 剩余 HP: ${targetActor.attributeSet.hp}`);
+      targetHpRemaining = targetActor.attributeSet.hp;
 
       // 检查死亡
-      if (targetActor.attributeSet.hp <= 0) {
+      if (targetHpRemaining <= 0) {
+        isKill = true;
         targetActor.onDeath();
-        this._logger.log(`    ☠️ ${targetName} 被击杀!`);
       }
     }
+
+    // 使用强化日志
+    this._logger.projectileHit(
+      hitEvent.projectileId,
+      sourceId,
+      targetId,
+      damage,
+      damageType,
+      hitEvent.flyTime,
+      hitEvent.flyDistance,
+      actualDamage,
+      targetHpRemaining,
+      isKill
+    );
   }
 
   /** 处理投射物未命中 */
   private onProjectileMiss(event: any): void {
-    const sourceName = this.getActor(event.source.id)?.displayName ?? event.source.id;
-    this._logger.log(`  ❌ 投射物未命中: ${event.projectileId} | 原因: ${event.reason}`);
+    this._logger.projectileMiss(
+      event.projectileId,
+      event.source.id,
+      event.target?.id,
+      event.reason,
+      event.flyTime
+    );
   }
 }

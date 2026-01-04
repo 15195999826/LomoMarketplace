@@ -318,6 +318,99 @@ export class BattleLogger {
     }
   }
 
+  // ========== 投射物日志 ==========
+
+  /** 记录投射物发射 */
+  projectileLaunched(
+    projectileId: string,
+    sourceId: string,
+    targetId: string,
+    variant: string,
+    damage: number,
+    damageType: string,
+    speed: number
+  ): void {
+    const sourceName = this.getActorName(sourceId);
+    const targetName = this.getActorName(targetId);
+
+    const line = `  🚀 [${variant}] ${sourceName} → ${targetName} | 伤害:${damage} ${damageType} | 速度:${speed}`;
+    this.writeConsole(line);
+    this.writeActorLog(sourceId, sourceName, `[${this.currentTime}ms] 发射投射物 [${variant}] → ${targetName}`);
+    this.writeActorLog(sourceId, sourceName, `    伤害: ${damage} ${damageType}, 速度: ${speed}`);
+  }
+
+  /** 记录投射物飞行中（可选，用于调试） */
+  projectileFlying(projectileId: string, sourceId: string, flyTime: number, flyDistance: number): void {
+    // 飞行中的日志较频繁，仅在需要时启用
+    // const sourceName = this.getActorName(sourceId);
+    // this.writeConsole(`  ✈️ 投射物飞行中: ${flyTime}ms, 距离: ${flyDistance.toFixed(2)}`);
+  }
+
+  /** 记录投射物命中 */
+  projectileHit(
+    projectileId: string,
+    sourceId: string,
+    targetId: string,
+    damage: number,
+    damageType: string,
+    flyTime: number,
+    flyDistance: number,
+    actualDamage: number,
+    targetHpRemaining: number,
+    isKill: boolean
+  ): void {
+    const sourceName = this.getActorName(sourceId);
+    const targetName = this.getActorName(targetId);
+
+    const killText = isKill ? ' ☠️ 击杀!' : '';
+    const line = `  💥 命中! ${sourceName} → ${targetName} | 伤害:${actualDamage} | 飞行:${flyTime}ms/${flyDistance.toFixed(1)}格${killText}`;
+    this.writeConsole(line);
+
+    // 记录到发射者日志
+    this.writeActorLog(sourceId, sourceName, `[${this.currentTime}ms] 投射物命中 ${targetName}`);
+    this.writeActorLog(sourceId, sourceName, `    造成 ${actualDamage} 点 ${damageType} 伤害 (飞行 ${flyTime}ms, ${flyDistance.toFixed(1)} 格)`);
+    if (isKill) {
+      this.writeActorLog(sourceId, sourceName, `    ☠️ 击杀 ${targetName}!`);
+    }
+
+    // 记录到被击中者日志
+    this.writeActorLog(targetId, targetName, `[${this.currentTime}ms] 被投射物命中 (来自 ${sourceName})`);
+    this.writeActorLog(targetId, targetName, `    受到 ${actualDamage} 点 ${damageType} 伤害, 剩余 HP: ${targetHpRemaining}`);
+    if (isKill) {
+      this.writeActorLog(targetId, targetName, `    ☠️ 阵亡!`);
+    }
+  }
+
+  /** 记录投射物未命中 */
+  projectileMiss(projectileId: string, sourceId: string, targetId: string | undefined, reason: string, flyTime: number): void {
+    const sourceName = this.getActorName(sourceId);
+    const targetName = targetId ? this.getActorName(targetId) : '无目标';
+
+    const line = `  ❌ 未命中! ${sourceName} → ${targetName} | 原因:${reason} | 飞行:${flyTime}ms`;
+    this.writeConsole(line);
+
+    this.writeActorLog(sourceId, sourceName, `[${this.currentTime}ms] 投射物未命中`);
+    this.writeActorLog(sourceId, sourceName, `    目标: ${targetName}, 原因: ${reason}, 飞行时间: ${flyTime}ms`);
+  }
+
+  /** 记录投射物穿透 */
+  projectilePierce(
+    projectileId: string,
+    sourceId: string,
+    targetId: string,
+    pierceCount: number,
+    damage: number
+  ): void {
+    const sourceName = this.getActorName(sourceId);
+    const targetName = this.getActorName(targetId);
+
+    const line = `  ⚡ 穿透! ${sourceName} → ${targetName} | 伤害:${damage} | 穿透次数:${pierceCount}`;
+    this.writeConsole(line);
+
+    this.writeActorLog(sourceId, sourceName, `[${this.currentTime}ms] 投射物穿透 ${targetName} (第 ${pierceCount} 次)`);
+    this.writeActorLog(targetId, targetName, `[${this.currentTime}ms] 被投射物穿透 (来自 ${sourceName})`);
+  }
+
   // ========== 输出方法 ==========
 
   private writeConsole(line: string): void {
@@ -353,7 +446,10 @@ export class BattleLogger {
 
     // 保存角色日志
     for (const [key, logs] of this.actorLogs) {
-      const [actorId, actorName] = key.split('_');
+      // key 格式: "actorId_actorName"，但 actorId 可能包含下划线
+      // 使用最后一个下划线分割
+      const lastUnderscoreIndex = key.lastIndexOf('_');
+      const actorName = lastUnderscoreIndex >= 0 ? key.slice(lastUnderscoreIndex + 1) : key;
       const fileName = `${actorName}.log`;
       fs.writeFileSync(
         path.join(this.battleDir, 'actors', fileName),

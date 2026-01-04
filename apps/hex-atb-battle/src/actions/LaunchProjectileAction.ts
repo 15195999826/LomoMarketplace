@@ -47,23 +47,25 @@ export interface LaunchProjectileActionParams extends BaseActionParams {
 /**
  * 投射物预设配置
  *
- * 速度单位：hex 格/秒
- * 在 hex 坐标系中，相邻格子距离约为 1，所以速度 10 表示每秒飞行 10 格
+ * 速度单位：世界单位/秒 (m/s)
+ * hexSize=100 时，相邻格子中心距离约为 173 (100 * sqrt(3))                                                      
+ * 所以速度 800 表示约每秒飞过 4-5 个格子     
+ * Character 以圆形碰撞体积表示，坐标为格子中心的世界坐标
  */
 const PROJECTILE_PRESETS: Record<ProjectileVariant, Partial<ProjectileConfig>> = {
   arrow: {
     projectileType: 'bullet',
-    speed: 8,         // 每秒 8 格
+    speed: 800,       // 800 m/s
     maxLifetime: 3000,
   },
   fireball: {
     projectileType: 'bullet',
-    speed: 5,         // 每秒 5 格，较慢但威力大
+    speed: 500,       // 500 m/s，较慢但威力大
     maxLifetime: 5000,
   },
   magic_bolt: {
     projectileType: 'bullet',
-    speed: 12,        // 每秒 12 格，快速魔法弹
+    speed: 1200,      // 1200 m/s，快速魔法弹
     maxLifetime: 2000,
   },
   holy_light: {
@@ -112,12 +114,17 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
     // 获取战斗实例以访问位置信息
     const battle = ctx.gameplayState as HexBattle;
 
-    // 获取源和目标的位置（用于计算飞行距离/时间）
+    // 获取源和目标的 hex 位置
     const sourceActor = battle.getActor(source.id);
     const targetActor = battle.getActor(target.id);
 
-    const sourcePos = sourceActor ? battle.getActorPosition(sourceActor as any) : undefined;
-    const targetPos = targetActor ? battle.getActorPosition(targetActor as any) : undefined;
+    const sourceHexPos = sourceActor ? battle.getActorPosition(sourceActor as any) : undefined;
+    const targetHexPos = targetActor ? battle.getActorPosition(targetActor as any) : undefined;
+
+    // 转换为世界坐标
+    const grid = battle.grid;
+    const sourceWorldPos = sourceHexPos ? grid.coordToWorld(sourceHexPos) : { x: 0, y: 0 };
+    const targetWorldPos = targetHexPos ? grid.coordToWorld(targetHexPos) : { x: 0, y: 0 };
 
     // 创建投射物配置
     const projectileConfig: Partial<ProjectileConfig> = {
@@ -133,21 +140,16 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
     // 创建投射物 Actor
     const projectile = new ProjectileActor(projectileConfig);
 
-    // 发射投射物
+    // 发射投射物（使用世界坐标）
     projectile.launch({
       source,
       target,
-      startPosition: sourcePos ? { x: sourcePos.q, y: sourcePos.r } : { x: 0, y: 0 },
-      targetPosition: targetPos ? { x: targetPos.q, y: targetPos.r } : { x: 0, y: 0 },
+      startPosition: sourceWorldPos,
+      targetPosition: targetWorldPos,
     });
 
-    // 添加到战斗的 projectile 列表
-    battle.addProjectile(projectile);
-
-    // 日志
-    const sourceName = sourceActor?.displayName ?? source.id;
-    const targetName = targetActor?.displayName ?? target.id;
-    console.log(`  🎯 [${variant}] ${sourceName} → ${targetName} (伤害:${damage} ${damageType})`);
+    // 添加到战斗的 projectile 列表（传递 variant 用于日志）
+    battle.addProjectile(projectile, variant);
 
     // 创建发射事件
     const launchedEvent = createProjectileLaunchedEvent(
@@ -158,7 +160,7 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
       projectileConfig.projectileType ?? 'bullet',
       projectileConfig.speed ?? 300,
       target,
-      targetPos ? { x: targetPos.q, y: targetPos.r } : undefined
+      targetWorldPos
     );
 
     ctx.eventCollector.push(launchedEvent);

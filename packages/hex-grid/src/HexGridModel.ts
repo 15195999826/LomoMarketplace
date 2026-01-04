@@ -9,10 +9,17 @@
 
 import {
   type AxialCoord,
+  type PixelCoord,
+  type HexOrientation,
+  type WorldCoordConfig,
   hexKey,
   hexEquals,
+  hexToWorld,
+  worldToHex,
+  getAdjacentHexDistance,
+  axial,
 } from './HexCoord.js';
-import { hexNeighbors, hexDistance } from './HexUtils.js';
+import { hexNeighbors, hexDistance, hexRange } from './HexUtils.js';
 
 // ========== 事件系统 ==========
 
@@ -101,14 +108,65 @@ export type OccupantMoveEvent = {
 };
 
 /**
+ * 绘制模式
+ * - baseOnRowColumn: 基于行列数的矩形网格
+ * - baseOnRadius: 基于半径的六边形区域
+ */
+export type DrawMode = 'baseOnRowColumn' | 'baseOnRadius';
+
+/**
  * 网格配置
  */
 export type HexGridConfig = {
-  /** 网格宽度（列数） */
-  width: number;
-  /** 网格高度（行数） */
-  height: number;
-  /** 默认地形 */
+  /**
+   * 绘制模式（默认 'baseOnRowColumn'）
+   */
+  drawMode?: DrawMode;
+
+  // ========== baseOnRowColumn 模式参数 ==========
+  /**
+   * 行数（用于 baseOnRowColumn 模式）
+   * 别名: height
+   */
+  rows?: number;
+  /**
+   * 列数（用于 baseOnRowColumn 模式）
+   * 别名: width
+   */
+  columns?: number;
+  /**
+   * 网格宽度（列数）- 兼容旧 API，等同于 columns
+   * @deprecated 使用 columns 代替
+   */
+  width?: number;
+  /**
+   * 网格高度（行数）- 兼容旧 API，等同于 rows
+   * @deprecated 使用 rows 代替
+   */
+  height?: number;
+
+  // ========== baseOnRadius 模式参数 ==========
+  /**
+   * 半径（用于 baseOnRadius 模式）
+   */
+  radius?: number;
+
+  // ========== 通用配置 ==========
+  /**
+   * 六边形尺寸（中心到顶点距离，默认 1）
+   */
+  hexSize?: number;
+  /**
+   * 地图中心的世界坐标（默认 {x: 0, y: 0}）
+   */
+  mapCenter?: PixelCoord;
+  /**
+   * 六边形方向（默认 'flat'）
+   */
+  orientation?: HexOrientation;
+  /**
+   * 默认地形
+   */
   defaultTerrain?: TerrainType;
 };
 
@@ -122,6 +180,10 @@ export type HexGridConfig = {
  * - 管理占用者
  * - 提供坐标转换和邻居查询
  * - 通过事件通知数据变化
+ *
+ * 支持两种绘制模式：
+ * - baseOnRowColumn: 基于行列数的矩形网格（以 0,0 为中心）
+ * - baseOnRadius: 基于半径的六边形区域
  */
 export class HexGridModel<T = unknown> {
   /** 格子存储 */
@@ -133,11 +195,31 @@ export class HexGridModel<T = unknown> {
   /** 占用者位置索引 */
   private occupantPositions: Map<string, AxialCoord> = new Map();
 
-  /** 网格宽度 */
+  /** 完整配置 */
+  readonly config: Required<
+    Pick<HexGridConfig, 'drawMode' | 'hexSize' | 'mapCenter' | 'orientation' | 'defaultTerrain'>
+  > & {
+    rows: number;
+    columns: number;
+    radius: number;
+  };
+
+  /** 网格宽度（列数）- 兼容旧 API */
   readonly width: number;
 
-  /** 网格高度 */
+  /** 网格高度（行数）- 兼容旧 API */
   readonly height: number;
+
+  // ========== 边界缓存（baseOnRowColumn 模式）==========
+
+  /** 行起始（包含） */
+  readonly rowStart: number;
+  /** 行结束（不包含） */
+  readonly rowEnd: number;
+  /** 列起始（包含） */
+  readonly colStart: number;
+  /** 列结束（不包含） */
+  readonly colEnd: number;
 
   // ========== 事件 ==========
 
@@ -154,25 +236,81 @@ export class HexGridModel<T = unknown> {
   readonly onBuildComplete = new EventEmitter<void>();
 
   constructor(config: HexGridConfig) {
-    this.width = config.width;
-    this.height = config.height;
+    // 解析配置（兼容旧 API）
+    const drawMode = config.drawMode ?? 'baseOnRowColumn';
+    const rows = config.rows ?? config.height ?? 9;
+    const columns = config.columns ?? config.width ?? 9;
+    const radius = config.radius ?? 4;
+    const hexSize = config.hexSize ?? 1;
+    const mapCenter = config.mapCenter ?? { x: 0, y: 0 };
+    const orientation = config.orientation ?? 'flat';
+    const defaultTerrain = config.defaultTerrain ?? 'normal';
+
+    this.config = {
+      drawMode,
+      rows,
+      columns,
+      radius,
+      hexSize,
+      mapCenter,
+      orientation,
+      defaultTerrain,
+    };
+
+    // 兼容旧 API
+    this.width = columns;
+    this.height = rows;
+
+    // 计算边界（中心对称）
+    this.rowStart = -Math.floor(rows / 2);
+    this.rowEnd = Math.ceil(rows / 2);
+    this.colStart = -Math.floor(columns / 2);
+    this.colEnd = Math.ceil(columns / 2);
 
     // 初始化所有格子
-    this.buildTiles(config.defaultTerrain ?? 'normal');
+    this.buildTiles(defaultTerrain);
   }
 
   /**
    * 构建格子数据
    */
   private buildTiles(defaultTerrain: TerrainType): void {
-    // 使用 offset 坐标转 axial 来生成矩形网格
-    // 这里使用 "odd-q" 布局（flat-top，奇数列下移）
-    for (let col = 0; col < this.width; col++) {
-      for (let row = 0; row < this.height; row++) {
-        // odd-q offset to axial 转换
-        const q = col;
-        const r = row - Math.floor(col / 2);
-        const coord: AxialCoord = { q, r };
+    if (this.config.drawMode === 'baseOnRadius') {
+      this.buildTilesBaseOnRadius(defaultTerrain);
+    } else {
+      this.buildTilesBaseOnRowColumn(defaultTerrain);
+    }
+
+    this.onBuildComplete.emit();
+  }
+
+  /**
+   * 基于行列数构建格子（中心对称）
+   *
+   * 9x9 地图: row/col 范围 [-4, 5)
+   * 8x9 地图: row [-4, 4), col [-4, 5)
+   */
+  private buildTilesBaseOnRowColumn(defaultTerrain: TerrainType): void {
+    const { orientation } = this.config;
+
+    // 遍历中心对称的行列范围
+    for (let col = this.colStart; col < this.colEnd; col++) {
+      for (let row = this.rowStart; row < this.rowEnd; row++) {
+        let coord: AxialCoord;
+
+        if (orientation === 'flat') {
+          // Flat-top: odd-q offset to axial
+          // q = col, r = row - (col - (col & 1)) / 2
+          const q = col;
+          const r = row - Math.floor((col - (col & 1 ? 1 : 0)) / 2);
+          coord = { q, r };
+        } else {
+          // Pointy-top: odd-r offset to axial
+          // q = col - (row - (row & 1)) / 2, r = row
+          const q = col - Math.floor((row - (row & 1 ? 1 : 0)) / 2);
+          const r = row;
+          coord = { q, r };
+        }
 
         this.tiles.set(hexKey(coord), {
           coord,
@@ -182,8 +320,26 @@ export class HexGridModel<T = unknown> {
         });
       }
     }
+  }
 
-    this.onBuildComplete.emit();
+  /**
+   * 基于半径构建格子（六边形区域）
+   */
+  private buildTilesBaseOnRadius(defaultTerrain: TerrainType): void {
+    const { radius } = this.config;
+    const origin = axial(0, 0);
+
+    // 使用 hexRange 获取半径内的所有格子
+    const coords = hexRange(origin, radius);
+
+    for (const coord of coords) {
+      this.tiles.set(hexKey(coord), {
+        coord,
+        terrain: defaultTerrain,
+        moveCost: 1,
+        height: 0,
+      });
+    }
   }
 
   // ========== 格子操作 ==========
@@ -393,6 +549,93 @@ export class HexGridModel<T = unknown> {
    */
   getAllOccupants(): Map<string, AxialCoord> {
     return new Map(this.occupantPositions);
+  }
+
+  /**
+   * 遍历所有格子坐标
+   */
+  forEachCoord(fn: (coord: AxialCoord, row: number, col: number) => void): void {
+    if (this.config.drawMode === 'baseOnRadius') {
+      // 半径模式：row/col 没有意义，都传 0
+      for (const tile of this.tiles.values()) {
+        fn(tile.coord, 0, 0);
+      }
+    } else {
+      // 行列模式：提供 row/col 信息
+      for (let col = this.colStart; col < this.colEnd; col++) {
+        for (let row = this.rowStart; row < this.rowEnd; row++) {
+          const tile = this.getTileByRowCol(row, col);
+          if (tile) {
+            fn(tile.coord, row, col);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * 根据 row/col 获取格子（仅 baseOnRowColumn 模式有效）
+   */
+  getTileByRowCol(row: number, col: number): TileData<T> | undefined {
+    if (this.config.drawMode !== 'baseOnRowColumn') {
+      return undefined;
+    }
+
+    const { orientation } = this.config;
+    let coord: AxialCoord;
+
+    if (orientation === 'flat') {
+      const q = col;
+      const r = row - Math.floor((col - (col & 1 ? 1 : 0)) / 2);
+      coord = { q, r };
+    } else {
+      const q = col - Math.floor((row - (row & 1 ? 1 : 0)) / 2);
+      const r = row;
+      coord = { q, r };
+    }
+
+    return this.getTile(coord);
+  }
+
+  // ========== 坐标转换 ==========
+
+  /**
+   * 获取世界坐标转换配置
+   */
+  getWorldCoordConfig(): WorldCoordConfig {
+    return {
+      hexSize: this.config.hexSize,
+      mapCenter: this.config.mapCenter,
+      orientation: this.config.orientation,
+    };
+  }
+
+  /**
+   * 六边形坐标转世界坐标
+   */
+  coordToWorld(coord: AxialCoord): PixelCoord {
+    return hexToWorld(coord, this.getWorldCoordConfig());
+  }
+
+  /**
+   * 世界坐标转六边形坐标
+   */
+  worldToCoord(pixel: PixelCoord): AxialCoord {
+    return worldToHex(pixel, this.getWorldCoordConfig());
+  }
+
+  /**
+   * 检查坐标是否在地图范围内
+   */
+  isCoordInMapArea(coord: AxialCoord): boolean {
+    return this.hasTile(coord);
+  }
+
+  /**
+   * 获取相邻六边形的世界距离
+   */
+  getAdjacentWorldDistance(): number {
+    return getAdjacentHexDistance(this.config.hexSize, this.config.orientation);
   }
 
   // ========== 清理 ==========

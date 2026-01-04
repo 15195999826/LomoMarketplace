@@ -35,6 +35,78 @@ export type PixelCoord = {
   readonly y: number;
 };
 
+/**
+ * 六边形方向
+ * - flat: 平顶六边形（顶边水平）
+ * - pointy: 尖顶六边形（顶点朝上）
+ */
+export type HexOrientation = 'flat' | 'pointy';
+
+/**
+ * 方向矩阵（用于坐标转换）
+ * f0-f3: 正向变换（hex → pixel）
+ * b0-b3: 逆向变换（pixel → hex）
+ */
+export type OrientationMatrix = {
+  readonly f0: number;
+  readonly f1: number;
+  readonly f2: number;
+  readonly f3: number;
+  readonly b0: number;
+  readonly b1: number;
+  readonly b2: number;
+  readonly b3: number;
+};
+
+const SQRT3 = Math.sqrt(3);
+
+/**
+ * Flat-top 方向矩阵
+ */
+export const FLAT_MATRIX: OrientationMatrix = {
+  f0: 3 / 2,
+  f1: 0,
+  f2: SQRT3 / 2,
+  f3: SQRT3,
+  b0: 2 / 3,
+  b1: 0,
+  b2: -1 / 3,
+  b3: SQRT3 / 3,
+};
+
+/**
+ * Pointy-top 方向矩阵
+ */
+export const POINTY_MATRIX: OrientationMatrix = {
+  f0: SQRT3,
+  f1: SQRT3 / 2,
+  f2: 0,
+  f3: 3 / 2,
+  b0: SQRT3 / 3,
+  b1: -1 / 3,
+  b2: 0,
+  b3: 2 / 3,
+};
+
+/**
+ * 获取方向矩阵
+ */
+export function getOrientationMatrix(orientation: HexOrientation): OrientationMatrix {
+  return orientation === 'flat' ? FLAT_MATRIX : POINTY_MATRIX;
+}
+
+/**
+ * 世界坐标转换配置
+ */
+export type WorldCoordConfig = {
+  /** 六边形尺寸（中心到顶点的距离） */
+  hexSize: number;
+  /** 地图中心的世界坐标（默认 {x: 0, y: 0}） */
+  mapCenter?: PixelCoord;
+  /** 六边形方向（默认 'flat'） */
+  orientation?: HexOrientation;
+};
+
 // ========== 坐标创建 ==========
 
 /**
@@ -175,4 +247,67 @@ export function hexSubtract(a: AxialCoord, b: AxialCoord): AxialCoord {
  */
 export function hexScale(coord: AxialCoord, factor: number): AxialCoord {
   return { q: coord.q * factor, r: coord.r * factor };
+}
+
+// ========== 世界坐标转换 ==========
+
+/**
+ * 六边形坐标转世界坐标
+ *
+ * 支持 Flat/Pointy 两种方向，可配置地图中心
+ *
+ * @param coord Axial 坐标
+ * @param config 转换配置
+ * @returns 世界像素坐标
+ */
+export function hexToWorld(coord: AxialCoord, config: WorldCoordConfig): PixelCoord {
+  const { hexSize, mapCenter = { x: 0, y: 0 }, orientation = 'flat' } = config;
+  const matrix = getOrientationMatrix(orientation);
+
+  const x = hexSize * (matrix.f0 * coord.q + matrix.f1 * coord.r);
+  const y = hexSize * (matrix.f2 * coord.q + matrix.f3 * coord.r);
+
+  return {
+    x: x + mapCenter.x,
+    y: y + mapCenter.y,
+  };
+}
+
+/**
+ * 世界坐标转六边形坐标
+ *
+ * @param pixel 世界像素坐标
+ * @param config 转换配置
+ * @returns Axial 坐标（经过 cubeRound 取整）
+ */
+export function worldToHex(pixel: PixelCoord, config: WorldCoordConfig): AxialCoord {
+  const { hexSize, mapCenter = { x: 0, y: 0 }, orientation = 'flat' } = config;
+  const matrix = getOrientationMatrix(orientation);
+
+  // 减去地图中心偏移
+  const localX = (pixel.x - mapCenter.x) / hexSize;
+  const localY = (pixel.y - mapCenter.y) / hexSize;
+
+  // 使用逆矩阵计算
+  const q = matrix.b0 * localX + matrix.b1 * localY;
+  const r = matrix.b2 * localX + matrix.b3 * localY;
+  const s = -q - r;
+
+  // cube rounding 然后转回 axial
+  const rounded = cubeRound(q, r, s);
+  return cubeToAxial(rounded);
+}
+
+/**
+ * 计算两个相邻六边形中心的世界距离
+ *
+ * @param hexSize 六边形尺寸
+ * @param orientation 六边形方向
+ * @returns 相邻格子中心的距离
+ */
+export function getAdjacentHexDistance(hexSize: number, orientation: HexOrientation = 'flat'): number {
+  // 对于 flat-top: 水平方向距离 = hexSize * 3/2，垂直方向 = hexSize * sqrt(3)
+  // 对于 pointy-top: 水平方向距离 = hexSize * sqrt(3)，垂直方向 = hexSize * 3/2
+  // 相邻格子的实际距离 = hexSize * sqrt(3) (对于正六边形)
+  return hexSize * SQRT3;
 }
