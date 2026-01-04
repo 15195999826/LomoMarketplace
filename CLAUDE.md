@@ -20,6 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 LomoMarketplace/
+├── apps/
+│   └── hex-atb-battle/           # Framework example project (ATB battle demo)
 ├── plugins/                      # Claude Code Plugins
 │   ├── UE_ReactUMG/              # ReactUMG development plugin
 │   │   ├── .claude-plugin/
@@ -91,6 +93,8 @@ pnpm --filter @lomo/logic-game-framework build      # 构建
 pnpm --filter @lomo/logic-game-framework test:run   # 运行测试（单次）
 pnpm --filter @lomo/logic-game-framework test       # 运行测试（watch 模式）
 ```
+
+**Example Project:** `apps/hex-atb-battle/` - 完整的六边形 ATB 战斗示例，展示框架的实际使用方式。
 
 ### 2. InkMon Ecosystem
 
