@@ -69,6 +69,6 @@
     "hex-grid@LomoMarketplace": true,
     "linus-coding-standards@LomoMarketplace": true,
     "typescript-style@LomoMarketplace": true,
-    "ralph-wiggum@claude-plugins-official": true
+    "ralph-wiggum@claude-plugins-official": false
   }
 }
