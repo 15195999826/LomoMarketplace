@@ -123,7 +123,7 @@ export const MOVE_ABILITY: AbilityConfig = {
   description: '移动到相邻格子',
   tags: ['action', 'move'],
   components: [
-    new ActivateInstanceComponent({
+    () => new ActivateInstanceComponent({
       triggers: [{
         eventKind: ABILITY_ACTIVATE_EVENT,
         filter: (event, ctx) => (event as ActionUseEvent).abilityInstanceId === ctx.ability.id,
@@ -154,7 +154,7 @@ export const SLASH_ABILITY: AbilityConfig = {
   description: '近战攻击，对敌人造成物理伤害',
   tags: ['skill', 'active', 'melee', 'enemy'],
   activeUseComponents: [
-    new ActiveUseComponent({
+    () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.slash)],
       timelineId: 'skill_slash',
@@ -177,7 +177,7 @@ export const PRECISE_SHOT_ABILITY: AbilityConfig = {
   description: '远程攻击，发射箭矢精准命中敌人',
   tags: ['skill', 'active', 'ranged', 'enemy', 'projectile'],
   activeUseComponents: [
-    new ActiveUseComponent({
+    () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.preciseShot)],
       timelineId: 'skill_precise_shot',
@@ -206,7 +206,7 @@ export const FIREBALL_ABILITY: AbilityConfig = {
   description: '远程魔法攻击，发射火球造成高额伤害',
   tags: ['skill', 'active', 'ranged', 'magic', 'enemy', 'projectile'],
   activeUseComponents: [
-    new ActiveUseComponent({
+    () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.fireball)],
       timelineId: 'skill_fireball',
@@ -234,7 +234,7 @@ export const CRUSHING_BLOW_ABILITY: AbilityConfig = {
   description: '近战重击，造成毁灭性伤害',
   tags: ['skill', 'active', 'melee', 'enemy'],
   activeUseComponents: [
-    new ActiveUseComponent({
+    () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.crushingBlow)],
       timelineId: 'skill_crushing_blow',
@@ -256,7 +256,7 @@ export const SWIFT_STRIKE_ABILITY: AbilityConfig = {
   description: '快速近战攻击，三连击',
   tags: ['skill', 'active', 'melee', 'enemy'],
   activeUseComponents: [
-    new ActiveUseComponent({
+    () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.swiftStrike)],
       timelineId: 'skill_swift_strike',
@@ -280,7 +280,7 @@ export const HOLY_HEAL_ABILITY: AbilityConfig = {
   description: '治疗友方单位，恢复生命值',
   tags: ['skill', 'active', 'heal', 'ally'],
   activeUseComponents: [
-    new ActiveUseComponent({
+    () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.holyHeal)],
       timelineId: 'skill_holy_heal',

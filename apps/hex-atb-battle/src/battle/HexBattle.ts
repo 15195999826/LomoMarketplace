@@ -12,6 +12,7 @@ import {
   EventCollector,
   isProjectileHitEvent,
   isProjectileMissEvent,
+  Ability,
 } from '@lomo/logic-game-framework';
 
 import {
@@ -24,6 +25,7 @@ import { HexGridModel, axial, hexNeighbors, hexDistance, type AxialCoord } from 
 import { CharacterActor } from '../actors/CharacterActor.js';
 import { createActionUseEvent } from '../skills/SkillAbilities.js';
 import { BattleLogger } from '../logger/BattleLogger.js';
+import { INSPIRE_BUFF, INSPIRE_DEF_BONUS, INSPIRE_DURATION_MS } from '../buffs/index.js';
 
 // ========== 战斗常量 ==========
 
@@ -207,8 +209,37 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     this.placeTeamRandomly(leftTeam, { qMin: -4, qMax: -1, rMin: -4, rMax: -1 });
     this.placeTeamRandomly(rightTeam, { qMin: 1, qMax: 4, rMin: 1, rMax: 4 });
 
+    // 给每个角色添加振奋 Buff（防御力 +10，持续 2 秒）
+    this.applyInspireBuffToAll();
+
     this._logger.log('✅ 战斗开始');
     this.printBattleInfo();
+  }
+
+  /** 给所有角色添加振奋 Buff */
+  private applyInspireBuffToAll(): void {
+    for (const actor of this.allActors) {
+      // 注册 Buff 过期回调（仅注册一次）
+      actor.abilitySet.onAbilityRevoked((ability, reason, _abilitySet, expireReason) => {
+        if (ability.configId === 'buff_inspire') {
+          const currentDef = actor.attributeSet.def;
+          this._logger.log(
+            `💨 ${actor.displayName} 的振奋 Buff 结束 (${expireReason ?? reason}): DEF → ${currentDef}`
+          );
+        }
+      });
+
+      // 为每个角色创建独立的 Ability 实例
+      // Ability 构造函数会自动克隆 Component，所以可以安全使用静态配置
+      const inspireBuff = new Ability(INSPIRE_BUFF, actor.toRef());
+      actor.abilitySet.grantAbility(inspireBuff);
+
+      // 记录 Buff 应用日志
+      const currentDef = actor.attributeSet.def;
+      this._logger.log(
+        `🌟 ${actor.displayName} 获得振奋 Buff: DEF ${currentDef - INSPIRE_DEF_BONUS} → ${currentDef} (+${INSPIRE_DEF_BONUS})，持续 ${INSPIRE_DURATION_MS / 1000} 秒`
+      );
+    }
   }
 
   /** 在指定范围内随机放置队伍 */
@@ -273,6 +304,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     this.tickProjectiles(dt);
 
     for (const actor of this.aliveActors) {
+      // 驱动 AbilitySet（Buff 计时、Tag 过期等）
+      actor.abilitySet.tick(dt, this.logicTime);
+
       // 检查该角色是否正在执行行动
       if (this.isActorExecuting(actor)) {
         // 正在执行：驱动执行实例，不累积 ATB

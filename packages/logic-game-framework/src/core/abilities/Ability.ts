@@ -34,6 +34,18 @@ import type { ActiveUseComponent } from './ActiveUseComponent.js';
 export type ComponentConstructor<T extends IAbilityComponent> = new (...args: any[]) => T;
 
 /**
+ * Component 工厂函数类型
+ * 每次调用返回一个新的 Component 实例
+ */
+export type ComponentFactory<T extends IAbilityComponent> = () => T;
+
+/**
+ * Component 输入类型
+ * 支持直接传入实例（兼容旧代码）或工厂函数（推荐）
+ */
+export type ComponentInput<T extends IAbilityComponent> = T | ComponentFactory<T>;
+
+/**
  * Ability 状态
  * - pending: 刚创建，尚未授予
  * - granted: 已授予，效果已应用
@@ -52,18 +64,18 @@ export type AbilityState = 'pending' | 'granted' | 'expired';
  * ## 示例
  *
  * ```typescript
- * // 主动技能
+ * // 主动技能（工厂模式 - 推荐）
  * const fireball: AbilityConfig = {
  *   configId: 'skill_fireball',
- *   activeUseComponents: [new ActiveUseComponent({ ... })],
+ *   activeUseComponents: [() => new ActiveUseComponent({ ... })],
  * };
  *
- * // Buff（无主动激活）
+ * // Buff（工厂模式 - 推荐）
  * const buff: AbilityConfig = {
  *   configId: 'buff_poison',
  *   components: [
- *     new DurationComponent({ time: 10000 }),
- *     new StatModifierComponent({ ... }),
+ *     () => new DurationComponent({ time: 10000 }),
+ *     () => new StatModifierComponent({ ... }),
  *   ],
  * };
  * ```
@@ -71,10 +83,10 @@ export type AbilityState = 'pending' | 'granted' | 'expired';
 export type AbilityConfig = {
   /** 配置表 ID */
   configId: string;
-  /** 主动使用组件列表（可选） - 包含条件/消耗检查 */
-  activeUseComponents?: ActiveUseComponent[];
-  /** 效果组件列表（可选） - 在构造时注入，不可运行时修改 */
-  components?: IAbilityComponent[];
+  /** 主动使用组件列表（可选） - 支持实例或工厂函数 */
+  activeUseComponents?: ComponentInput<ActiveUseComponent>[];
+  /** 效果组件列表（可选） - 支持实例或工厂函数 */
+  components?: ComponentInput<IAbilityComponent>[];
   /** 显示名称 */
   displayName?: string;
   /** 描述 */
@@ -145,10 +157,20 @@ export class Ability implements IAbilityForComponent {
     this.icon = config.icon;
     this.tags = Object.freeze(config.tags ?? []);
 
+    // 解析 Component：工厂函数调用获取新实例，直接实例则直接使用
+    const resolveComponent = <T extends IAbilityComponent>(input: ComponentInput<T>): T => {
+      if (typeof input === 'function') {
+        // 工厂函数：调用获取新实例
+        return input();
+      }
+      // 直接实例：直接使用（兼容旧代码）
+      return input;
+    };
+
     // 合并 activeUseComponents 和 components
     const allComponents: IAbilityComponent[] = [
-      ...(config.activeUseComponents ?? []),
-      ...(config.components ?? []),
+      ...(config.activeUseComponents ?? []).map(resolveComponent),
+      ...(config.components ?? []).map(resolveComponent),
     ];
 
     // Component 在构造时注入，之后不可修改
