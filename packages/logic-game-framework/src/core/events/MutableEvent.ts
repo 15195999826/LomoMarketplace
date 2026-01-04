@@ -164,7 +164,159 @@ export class MutableEventImpl<T extends GameEventBase = GameEventBase> implement
 
     return result;
   }
+
+  /**
+   * 获取字段的详细计算步骤
+   *
+   * 用于调试和追踪 Intent 合并过程。
+   *
+   * @example
+   * ```typescript
+   * const steps = mutable.getFieldComputationSteps('damage');
+   * // 输出示例：
+   * // {
+   * //   field: 'damage',
+   * //   originalValue: 100,
+   * //   finalValue: 63,
+   * //   steps: [
+   * //     { sourceId: 'shield', operation: 'add', value: -10, resultValue: 90 },
+   * //     { sourceId: 'armor', operation: 'multiply', value: 0.7, resultValue: 63 },
+   * //   ]
+   * // }
+   * ```
+   */
+  getFieldComputationSteps(field: string): FieldComputationRecord | null {
+    const originalValue = this.original[field];
+
+    if (typeof originalValue !== 'number') {
+      return null;
+    }
+
+    const fieldMods = this._modifications.filter((m) => m.field === field);
+    if (fieldMods.length === 0) {
+      return null;
+    }
+
+    // 分类
+    const sets = fieldMods.filter((m) => m.operation === 'set');
+    const adds = fieldMods.filter((m) => m.operation === 'add');
+    const muls = fieldMods.filter((m) => m.operation === 'multiply');
+
+    const steps: ComputationStep[] = [];
+    let value = sets.length > 0 ? sets[sets.length - 1].value : originalValue;
+
+    // 记录 set 操作（如果有）
+    if (sets.length > 0) {
+      const lastSet = sets[sets.length - 1];
+      steps.push({
+        sourceId: lastSet.sourceId ?? 'unknown',
+        sourceName: lastSet.sourceName,
+        operation: 'set',
+        value: lastSet.value,
+        resultValue: value,
+      });
+    }
+
+    // 记录 add 操作
+    for (const mod of adds) {
+      value += mod.value;
+      steps.push({
+        sourceId: mod.sourceId ?? 'unknown',
+        sourceName: mod.sourceName,
+        operation: 'add',
+        value: mod.value,
+        resultValue: value,
+      });
+    }
+
+    // 记录 multiply 操作
+    for (const mod of muls) {
+      value *= mod.value;
+      steps.push({
+        sourceId: mod.sourceId ?? 'unknown',
+        sourceName: mod.sourceName,
+        operation: 'multiply',
+        value: mod.value,
+        resultValue: value,
+      });
+    }
+
+    return {
+      field,
+      originalValue,
+      finalValue: value,
+      steps,
+    };
+  }
+
+  /**
+   * 获取所有被修改字段的计算步骤
+   */
+  getAllComputationSteps(): FieldComputationRecord[] {
+    const modifiedFields = new Set(this._modifications.map((m) => m.field));
+    const records: FieldComputationRecord[] = [];
+
+    for (const field of modifiedFields) {
+      const record = this.getFieldComputationSteps(field);
+      if (record) {
+        records.push(record);
+      }
+    }
+
+    return records;
+  }
+
+  /**
+   * 格式化计算过程为可读字符串（用于调试）
+   */
+  formatComputationLog(field: string): string {
+    const record = this.getFieldComputationSteps(field);
+    if (!record) {
+      return `${field}: no modifications`;
+    }
+
+    const lines: string[] = [];
+    lines.push(`${field}: ${record.originalValue} → ${record.finalValue}`);
+
+    for (const step of record.steps) {
+      const source = step.sourceName ?? step.sourceId;
+      const opSign =
+        step.operation === 'add'
+          ? step.value >= 0
+            ? '+'
+            : ''
+          : step.operation === 'multiply'
+            ? '×'
+            : '=';
+      lines.push(`  [${source}] ${opSign}${step.value} → ${step.resultValue}`);
+    }
+
+    return lines.join('\n');
+  }
 }
+
+// ========== 计算步骤类型 ==========
+
+/**
+ * 单个计算步骤
+ */
+export type ComputationStep = {
+  readonly sourceId: string;
+  readonly sourceName?: string;
+  readonly operation: 'set' | 'add' | 'multiply';
+  readonly value: number;
+  readonly resultValue: number;
+};
+
+/**
+ * 字段计算记录
+ */
+export type FieldComputationRecord = {
+  readonly field: string;
+  readonly originalValue: number;
+  readonly finalValue: number;
+  readonly steps: readonly ComputationStep[];
+};
 
 /**
  * 创建可变事件

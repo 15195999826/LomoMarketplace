@@ -34,7 +34,12 @@ export {
 } from './EventPhase.js';
 
 // 可变事件
-export { MutableEventImpl, createMutableEvent } from './MutableEvent.js';
+export {
+  MutableEventImpl,
+  createMutableEvent,
+  type ComputationStep,
+  type FieldComputationRecord,
+} from './MutableEvent.js';
 
 // 事件处理器
 export {

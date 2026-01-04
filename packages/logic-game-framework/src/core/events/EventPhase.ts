@@ -44,6 +44,10 @@ export type EventModification = {
   readonly operation: 'set' | 'add' | 'multiply';
   /** 修改值 */
   readonly value: number;
+  /** 修改来源（Handler/Ability ID），用于追踪 */
+  readonly sourceId?: string;
+  /** 修改来源名称，用于日志显示 */
+  readonly sourceName?: string;
 };
 
 /**
@@ -103,6 +107,11 @@ export type IntentRecord = {
   readonly intent: PreEventIntent;
   /** 执行时间（毫秒） */
   readonly executionTime?: number;
+  /** 处理器执行时发生的错误（如果有） */
+  readonly error?: {
+    readonly message: string;
+    readonly stack?: string;
+  };
 };
 
 /**

@@ -143,6 +143,8 @@ export class PreEventComponent<
     const ability = context.ability;
 
     // 注册到 EventProcessor
+    // 注意: handler 参数类型为 MutableEvent<GameEventBase>，
+    // 但实际传入的事件已通过 eventKind 过滤，类型安全由 filter 保证
     this.unregister = eventProcessor.registerPreHandler({
       id: `${ability.id}_pre_${this.eventKind}`,
       name: this.handlerName ?? ability.displayName ?? ability.configId,
@@ -153,7 +155,8 @@ export class PreEventComponent<
       filter: this.filter
         ? (event) => this.filter!(event as TEvent, this.lifecycleContext!)
         : undefined,
-      handler: (mutable, handlerContext) => this.handlePreEvent(mutable, handlerContext),
+      handler: (mutable, handlerContext) =>
+        this.handlePreEvent(mutable as MutableEvent<TEvent>, handlerContext),
     });
   }
 
@@ -171,9 +174,17 @@ export class PreEventComponent<
 
   /**
    * 处理 Pre 阶段事件
+   *
+   * 注意：此方法作为 PreEventHandler 传递给 EventProcessor，
+   * EventProcessor 会传入正确类型的 MutableEvent<T>。
+   * 由于 TypeScript 的函数参数逆变性，我们需要显式声明参数类型
+   * 以保持类型兼容性。实际调用时类型是安全的。
+   *
+   * 错误处理：handler 抛出的错误会传播到 EventProcessor，
+   * 由 EventProcessor 统一记录到 trace 系统。
    */
   private handlePreEvent(
-    mutable: MutableEvent,
+    mutable: MutableEvent<TEvent>,
     _handlerContext: PreEventHandlerContext
   ): PreEventIntent {
     if (!this.lifecycleContext) {
@@ -181,16 +192,8 @@ export class PreEventComponent<
       return passIntent();
     }
 
-    try {
-      return this.handler(mutable as MutableEvent<TEvent>, this.lifecycleContext);
-    } catch (error) {
-      getLogger().error(`PreEventComponent handler error`, {
-        error,
-        eventKind: this.eventKind,
-        abilityId: this.lifecycleContext.ability.id,
-      });
-      return passIntent();
-    }
+    // 不捕获错误，让 EventProcessor 统一处理并记录到 trace
+    return this.handler(mutable, this.lifecycleContext);
   }
 
   serialize(): object {

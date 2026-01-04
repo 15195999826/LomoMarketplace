@@ -217,23 +217,42 @@ export class EventProcessor {
         // 调用处理器
         const startTime = Date.now();
         let intent: PreEventIntent;
+        let handlerError: { message: string; stack?: string } | undefined;
 
         try {
           intent = registration.handler(mutable, handlerContext);
         } catch (error) {
-          getLogger().error(`PreEventHandler error: ${registration.id}`, { error });
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorStack = error instanceof Error ? error.stack : undefined;
+          handlerError = { message: errorMessage, stack: errorStack };
+
+          getLogger().error(`PreEventHandler error: ${registration.id}`, {
+            error: errorMessage,
+            stack: errorStack,
+            eventKind: event.kind,
+            ownerId: registration.ownerId,
+          });
           intent = { type: 'pass' };
         }
 
         const executionTime = Date.now() - startTime;
 
-        // 记录意图
+        // 记录意图（包含错误信息）
         if (this.traceLevel >= 2) {
           (trace.intents as IntentRecord[]).push({
             handlerId: registration.id,
             handlerName: registration.name ?? registration.configId,
             intent,
             executionTime,
+            error: handlerError,
+          });
+        } else if (this.traceLevel >= 1 && handlerError) {
+          // traceLevel 1 时也记录错误
+          (trace.intents as IntentRecord[]).push({
+            handlerId: registration.id,
+            handlerName: registration.name ?? registration.configId,
+            intent,
+            error: handlerError,
           });
         }
 
@@ -245,7 +264,13 @@ export class EventProcessor {
           (trace as { cancelledBy?: string }).cancelledBy = intent.handlerId;
           break;
         } else if (intent.type === 'modify') {
-          mutable.addModifications(intent.modifications);
+          // 为每个修改添加来源信息
+          const modificationsWithSource = intent.modifications.map((mod) => ({
+            ...mod,
+            sourceId: mod.sourceId ?? intent.handlerId,
+            sourceName: mod.sourceName ?? registration.name ?? registration.configId,
+          }));
+          mutable.addModifications(modificationsWithSource);
         }
       }
 
@@ -424,9 +449,12 @@ export class EventProcessor {
         if (trace.intents.length > 0) {
           for (const record of trace.intents) {
             const intentType = record.intent.type;
-            lines.push(`  [${record.handlerName ?? record.handlerId}] → ${intentType}`);
+            const errorSuffix = record.error ? ' ⚠️ ERROR' : '';
+            lines.push(`  [${record.handlerName ?? record.handlerId}] → ${intentType}${errorSuffix}`);
 
-            if (record.intent.type === 'cancel') {
+            if (record.error) {
+              lines.push(`    Error: ${record.error.message}`);
+            } else if (record.intent.type === 'cancel') {
               lines.push(`    Reason: ${record.intent.reason}`);
             } else if (record.intent.type === 'modify') {
               for (const mod of record.intent.modifications) {

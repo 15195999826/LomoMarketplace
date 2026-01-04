@@ -335,4 +335,149 @@ describe('PreEventComponent', () => {
       expect(capturedAbilityConfigId).toBe('buff_test');
     });
   });
+
+  describe('Error Handling', () => {
+    it('should record error in trace when handler throws', () => {
+      const config: AbilityConfig = {
+        configId: 'buff_error',
+        components: [
+          () =>
+            new PreEventComponent<PreDamageEvent>({
+              eventKind: 'pre_damage',
+              name: 'ErrorHandler',
+              handler: () => {
+                throw new Error('Test error message');
+              },
+            }),
+        ],
+      };
+
+      const ability = new Ability(config, owner);
+      abilitySet.grantAbility(ability);
+
+      const event: PreDamageEvent = {
+        kind: 'pre_damage',
+        logicTime: 1000,
+        sourceId: 'enemy-1',
+        targetId: 'unit-1',
+        damage: 100,
+        damageType: 'physical',
+      };
+
+      // 应该不抛异常，返回 pass
+      const mutable = eventProcessor.processPreEvent(event, {});
+      expect(mutable.cancelled).toBe(false);
+      expect(mutable.getCurrentValue('damage')).toBe(100);
+
+      // 检查 trace 中有错误记录
+      const traces = eventProcessor.getTraces();
+      const lastTrace = traces[traces.length - 1];
+      expect(lastTrace.intents.length).toBeGreaterThan(0);
+      const errorIntent = lastTrace.intents.find((i) => i.error);
+      expect(errorIntent).toBeDefined();
+      expect(errorIntent?.error?.message).toBe('Test error message');
+    });
+  });
+
+  describe('Computation Steps Tracking', () => {
+    it('should track computation steps with source info', () => {
+      // 护甲 Buff: 减伤 30%
+      const armorConfig: AbilityConfig = {
+        configId: 'buff_armor',
+        components: [
+          () =>
+            new PreEventComponent<PreDamageEvent>({
+              eventKind: 'pre_damage',
+              name: '护甲',
+              handler: () =>
+                modifyIntent('armor', [
+                  { field: 'damage', operation: 'multiply', value: 0.7 },
+                ]),
+            }),
+        ],
+      };
+
+      // 护盾 Buff: 固定减伤 10
+      const shieldConfig: AbilityConfig = {
+        configId: 'buff_shield',
+        components: [
+          () =>
+            new PreEventComponent<PreDamageEvent>({
+              eventKind: 'pre_damage',
+              name: '护盾',
+              handler: () =>
+                modifyIntent('shield', [
+                  { field: 'damage', operation: 'add', value: -10 },
+                ]),
+            }),
+        ],
+      };
+
+      abilitySet.grantAbility(new Ability(armorConfig, owner));
+      abilitySet.grantAbility(new Ability(shieldConfig, owner));
+
+      const event: PreDamageEvent = {
+        kind: 'pre_damage',
+        logicTime: 1000,
+        sourceId: 'enemy-1',
+        targetId: 'unit-1',
+        damage: 100,
+        damageType: 'physical',
+      };
+
+      const mutable = eventProcessor.processPreEvent(event, {});
+
+      // 获取计算步骤
+      const impl = mutable as import('../../src/core/events/MutableEvent.js').MutableEventImpl<PreDamageEvent>;
+      const steps = impl.getFieldComputationSteps('damage');
+
+      expect(steps).not.toBeNull();
+      expect(steps?.originalValue).toBe(100);
+      expect(steps?.finalValue).toBeCloseTo(63);
+      expect(steps?.steps.length).toBe(2);
+
+      // 验证每个步骤都有来源信息
+      for (const step of steps?.steps ?? []) {
+        expect(step.sourceId).toBeDefined();
+        expect(step.sourceName).toBeDefined();
+      }
+    });
+
+    it('should format computation log for debugging', () => {
+      const config: AbilityConfig = {
+        configId: 'buff_test',
+        components: [
+          () =>
+            new PreEventComponent<PreDamageEvent>({
+              eventKind: 'pre_damage',
+              name: 'TestBuff',
+              handler: () =>
+                modifyIntent('test', [
+                  { field: 'damage', operation: 'add', value: -20 },
+                  { field: 'damage', operation: 'multiply', value: 0.5 },
+                ]),
+            }),
+        ],
+      };
+
+      abilitySet.grantAbility(new Ability(config, owner));
+
+      const event: PreDamageEvent = {
+        kind: 'pre_damage',
+        logicTime: 1000,
+        sourceId: 'enemy-1',
+        targetId: 'unit-1',
+        damage: 100,
+        damageType: 'physical',
+      };
+
+      const mutable = eventProcessor.processPreEvent(event, {});
+      const impl = mutable as import('../../src/core/events/MutableEvent.js').MutableEventImpl<PreDamageEvent>;
+      const log = impl.formatComputationLog('damage');
+
+      expect(log).toContain('damage: 100 → 40');
+      expect(log).toContain('-20');
+      expect(log).toContain('×0.5');
+    });
+  });
 });
