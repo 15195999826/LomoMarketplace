@@ -17,12 +17,7 @@ export { BattleLogger, type LogLevel, type LogEntry } from './logger/BattleLogge
 export { ATBSystem, type ATBConfig, type IATBUnit } from './atb/index.js';
 
 // 战斗单位
-export {
-  InkMonUnit,
-  createInkMonUnit,
-  resetUnitIdCounter,
-  type InkMonUnitConfig,
-} from './InkMonUnit.js';
+export { InkMonUnit, createInkMonUnit, type InkMonUnitConfig } from './InkMonUnit.js';
 
 // 战斗实例
 export {

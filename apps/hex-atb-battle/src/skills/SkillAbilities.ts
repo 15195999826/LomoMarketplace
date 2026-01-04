@@ -91,6 +91,25 @@ export function createActionUseEvent(
 }
 
 // ============================================================
+// Timeline ID 常量
+// ============================================================
+
+/** Timeline ID 常量（避免硬编码字符串） */
+export const TIMELINE_ID = {
+  // 行动
+  MOVE: 'action_move',
+  // 技能
+  SLASH: 'skill_slash',
+  PRECISE_SHOT: 'skill_precise_shot',
+  FIREBALL: 'skill_fireball',
+  CRUSHING_BLOW: 'skill_crushing_blow',
+  SWIFT_STRIKE: 'skill_swift_strike',
+  HOLY_HEAL: 'skill_holy_heal',
+} as const;
+
+export type TimelineId = (typeof TIMELINE_ID)[keyof typeof TIMELINE_ID];
+
+// ============================================================
 // 技能冷却配置（毫秒）
 // ============================================================
 
@@ -128,7 +147,7 @@ export const MOVE_ABILITY: AbilityConfig = {
         eventKind: ABILITY_ACTIVATE_EVENT,
         filter: (event, ctx) => (event as ActionUseEvent).abilityInstanceId === ctx.ability.id,
       }],
-      timelineId: 'action_move',
+      timelineId: TIMELINE_ID.MOVE,
       tagActions: {
         execute: [new MoveAction({
           targetSelector: abilityOwnerSelector,
@@ -157,7 +176,7 @@ export const SLASH_ABILITY: AbilityConfig = {
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.slash)],
-      timelineId: 'skill_slash',
+      timelineId: TIMELINE_ID.SLASH,
       tagActions: {
         hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 50, damageType: 'physical' })],
       },
@@ -180,7 +199,7 @@ export const PRECISE_SHOT_ABILITY: AbilityConfig = {
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.preciseShot)],
-      timelineId: 'skill_precise_shot',
+      timelineId: TIMELINE_ID.PRECISE_SHOT,
       tagActions: {
         // 在 launch 时发射箭矢，而不是 hit 时直接造成伤害
         launch: [new LaunchProjectileAction({
@@ -209,7 +228,7 @@ export const FIREBALL_ABILITY: AbilityConfig = {
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.fireball)],
-      timelineId: 'skill_fireball',
+      timelineId: TIMELINE_ID.FIREBALL,
       tagActions: {
         // 在 cast 后发射火球
         launch: [new LaunchProjectileAction({
@@ -237,7 +256,7 @@ export const CRUSHING_BLOW_ABILITY: AbilityConfig = {
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.crushingBlow)],
-      timelineId: 'skill_crushing_blow',
+      timelineId: TIMELINE_ID.CRUSHING_BLOW,
       tagActions: {
         hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 90, damageType: 'physical' })],
       },
@@ -259,7 +278,7 @@ export const SWIFT_STRIKE_ABILITY: AbilityConfig = {
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.swiftStrike)],
-      timelineId: 'skill_swift_strike',
+      timelineId: TIMELINE_ID.SWIFT_STRIKE,
       tagActions: {
         hit1: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 10, damageType: 'physical' })],
         hit2: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 10, damageType: 'physical' })],
@@ -283,7 +302,7 @@ export const HOLY_HEAL_ABILITY: AbilityConfig = {
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.holyHeal)],
-      timelineId: 'skill_holy_heal',
+      timelineId: TIMELINE_ID.HOLY_HEAL,
       tagActions: {
         heal: [new HealAction({ targetSelector: defaultTargetSelector, healAmount: 40 })],
       },

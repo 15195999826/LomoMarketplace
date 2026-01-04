@@ -163,9 +163,9 @@ export class HexBattleInstance extends GameplayInstance {
       return false;
     }
 
-    // 添加到单位列表
+    // 添加到单位列表（通过 createActor 注册到 GameplayInstance）
+    this.createActor(() => unit);
     this.units.push(unit);
-    this.addActor(unit);
 
     // 放置到网格
     const placed = this.gridModel.placeOccupant(position, { id: unit.id });
@@ -578,6 +578,13 @@ export class HexBattleInstance extends GameplayInstance {
   }
 
   // ========== 战斗流程 ==========
+
+  /**
+   * 实现基类抽象方法 tick
+   */
+  tick(dt: number): GameEventBase[] {
+    return this.advance(dt);
+  }
 
   /**
    * 推进战斗时间（符合基类签名）

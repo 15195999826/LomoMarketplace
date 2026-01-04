@@ -189,14 +189,6 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   // ========== Actor 管理 ==========
 
   /**
-   * 添加 Actor（内部使用）
-   */
-  private addActor(actor: Actor): void {
-    this.actors.push(actor);
-    actor.onSpawn();
-  }
-
-  /**
    * 创建并添加 Actor（工厂方法）
    *
    * 便捷方法，将创建和注册合为一步。
@@ -216,7 +208,8 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
    */
   createActor<T extends Actor>(factory: () => T): T {
     const actor = factory();
-    this.addActor(actor);
+    this.actors.push(actor);
+    actor.onSpawn();
     return actor;
   }
 
