@@ -363,12 +363,12 @@ export class BattleLogger {
     const targetName = this.getActorName(targetId);
 
     const killText = isKill ? ' ☠️ 击杀!' : '';
-    const line = `  💥 命中! ${sourceName} → ${targetName} | 伤害:${actualDamage} | 飞行:${flyTime}ms/${flyDistance.toFixed(1)}格${killText}`;
+    const line = `  💥 命中! ${sourceName} → ${targetName} | 伤害:${actualDamage} | 飞行:${flyTime}ms/${flyDistance.toFixed(1)}单位${killText}`;
     this.writeConsole(line);
 
     // 记录到发射者日志
     this.writeActorLog(sourceId, sourceName, `[${this.currentTime}ms] 投射物命中 ${targetName}`);
-    this.writeActorLog(sourceId, sourceName, `    造成 ${actualDamage} 点 ${damageType} 伤害 (飞行 ${flyTime}ms, ${flyDistance.toFixed(1)} 格)`);
+    this.writeActorLog(sourceId, sourceName, `    造成 ${actualDamage} 点 ${damageType} 伤害 (飞行 ${flyTime}ms, ${flyDistance.toFixed(1)} 单位)`);
     if (isKill) {
       this.writeActorLog(sourceId, sourceName, `    ☠️ 击杀 ${targetName}!`);
     }
