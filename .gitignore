@@ -15,6 +15,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 .cache/
+*.timestamp-*.mjs
 # inkmon-server (legacy)
 servers/inkmon-server/node_modules
 servers/inkmon-server/build
