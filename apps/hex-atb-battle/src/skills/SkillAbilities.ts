@@ -33,6 +33,7 @@ import type { AxialCoord } from '@lomo/hex-grid';
 import { DamageAction } from '../actions/DamageAction.js';
 import { HealAction } from '../actions/HealAction.js';
 import { MoveAction } from '../actions/MoveAction.js';
+import { LaunchProjectileAction } from '../actions/LaunchProjectileAction.js';
 
 import type { SkillType } from '../config/SkillConfig.js';
 
@@ -165,44 +166,58 @@ export const SLASH_ABILITY: AbilityConfig = {
 };
 
 /**
- * 精准射击 - 远程物理攻击
+ * 精准射击 - 远程物理攻击（发射箭矢）
  *
  * 冷却: 2.5秒
+ * 使用投射物：箭矢飞行后命中目标
  */
 export const PRECISE_SHOT_ABILITY: AbilityConfig = {
   configId: 'skill_precise_shot',
   displayName: '精准射击',
-  description: '远程攻击，精准命中敌人',
-  tags: ['skill', 'active', 'ranged', 'enemy'],
+  description: '远程攻击，发射箭矢精准命中敌人',
+  tags: ['skill', 'active', 'ranged', 'enemy', 'projectile'],
   activeUseComponents: [
     new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.preciseShot)],
       timelineId: 'skill_precise_shot',
       tagActions: {
-        hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 45, damageType: 'physical' })],
+        // 在 launch 时发射箭矢，而不是 hit 时直接造成伤害
+        launch: [new LaunchProjectileAction({
+          targetSelector: defaultTargetSelector,
+          projectileVariant: 'arrow',
+          damage: 45,
+          damageType: 'physical',
+        })],
       },
     }),
   ],
 };
 
 /**
- * 火球术 - 远程魔法攻击
+ * 火球术 - 远程魔法攻击（发射火球）
  *
  * 冷却: 4秒
+ * 使用投射物：火球飞行后命中目标
  */
 export const FIREBALL_ABILITY: AbilityConfig = {
   configId: 'skill_fireball',
   displayName: '火球术',
-  description: '远程魔法攻击，造成高额伤害',
-  tags: ['skill', 'active', 'ranged', 'magic', 'enemy'],
+  description: '远程魔法攻击，发射火球造成高额伤害',
+  tags: ['skill', 'active', 'ranged', 'magic', 'enemy', 'projectile'],
   activeUseComponents: [
     new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
       costs: [new CooldownCost(SKILL_COOLDOWNS.fireball)],
       timelineId: 'skill_fireball',
       tagActions: {
-        hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 80, damageType: 'magical' })],
+        // 在 cast 后发射火球
+        launch: [new LaunchProjectileAction({
+          targetSelector: defaultTargetSelector,
+          projectileVariant: 'fireball',
+          damage: 80,
+          damageType: 'magical',
+        })],
       },
     }),
   ],

@@ -21,27 +21,29 @@ export const SLASH_TIMELINE: TimelineAsset = {
 
 /**
  * 精准射击 Timeline
- * - 远程攻击，0.5s 时命中
+ * - 远程攻击，0.3s 发射箭矢，0.5s 时命中
  */
 export const PRECISE_SHOT_TIMELINE: TimelineAsset = {
   id: 'skill_precise_shot',
   totalDuration: 800,
   tags: {
-    hit: 500,
+    launch: 300, // 300ms 时发射箭矢
+    hit: 500,    // 500ms 时命中（如果是瞬时伤害的话）
     end: 800,
   },
 };
 
 /**
  * 火球术 Timeline
- * - 远程魔法，0.8s 时命中
+ * - 远程魔法，0.4s 发射火球，0.8s 时命中
  */
 export const FIREBALL_TIMELINE: TimelineAsset = {
   id: 'skill_fireball',
   totalDuration: 1200,
   tags: {
-    cast: 200,  // 施法动作
-    hit: 800,   // 命中
+    cast: 200,   // 施法动作
+    launch: 400, // 400ms 时发射火球
+    hit: 800,    // 800ms 时命中（如果是瞬时伤害的话）
     end: 1200,
   },
 };
