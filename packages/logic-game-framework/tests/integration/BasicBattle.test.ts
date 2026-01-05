@@ -6,7 +6,7 @@
  * - 创建自定义战斗单位
  * - 使用 StandardBattleInstance 管理战斗流程
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { GameWorld } from '../../src/core/world/GameWorld.js';
 import { Actor } from '../../src/core/entity/Actor.js';
 import { StandardBattleInstance } from '../../src/stdlib/battle/index.js';
@@ -92,6 +92,12 @@ describe('Basic Battle Integration', () => {
   beforeEach(() => {
     // 使用静默 Logger 避免测试输出
     setLogger(new SilentLogger());
+    // 先销毁旧实例，再初始化新实例
+    GameWorld.destroy();
+    GameWorld.init();
+  });
+
+  afterEach(() => {
     GameWorld.destroy();
   });
 

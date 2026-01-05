@@ -1,7 +1,4 @@
-export {
-  StandardAbilitySystem,
-  type StandardAbilitySystemConfig,
-} from './StandardAbilitySystem.js';
+export { StandardAbilitySystem } from './StandardAbilitySystem.js';
 export {
   ProjectileSystem,
   type ProjectileSystemConfig,

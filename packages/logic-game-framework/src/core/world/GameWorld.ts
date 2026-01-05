@@ -3,10 +3,42 @@
  *
  * 单例模式，管理所有 GameplayInstance
  * 提供全局配置和初始化
+ *
+ * ## 继承支持
+ *
+ * GameWorld 支持继承，子类可以扩展配置和功能：
+ *
+ * ```typescript
+ * interface HexGameWorldConfig extends GameWorldConfig {
+ *   gridSize: number;
+ * }
+ *
+ * class HexGameWorld extends GameWorld {
+ *   readonly hexGrid: HexGrid;
+ *
+ *   constructor(config: HexGameWorldConfig) {
+ *     super(config);
+ *     this.hexGrid = new HexGrid(config.gridSize);
+ *   }
+ *
+ *   // 子类需要覆盖 getInstance 以返回正确类型
+ *   static override getInstance(): HexGameWorld {
+ *     return super.getInstance() as HexGameWorld;
+ *   }
+ * }
+ *
+ * // 使用
+ * HexGameWorld.init({ gridSize: 10 });
+ * HexGameWorld.getInstance().hexGrid; // ✅ 类型正确
+ * ```
  */
 
 import { getLogger, setLogger, type ILogger, ConsoleLogger } from '../utils/Logger.js';
 import type { GameplayInstance } from './GameplayInstance.js';
+import {
+  EventProcessor,
+  type EventProcessorConfig,
+} from '../events/EventProcessor.js';
 
 /**
  * GameWorld 配置
@@ -16,54 +48,84 @@ export interface GameWorldConfig {
   logger?: ILogger;
   /** 是否开启调试模式 */
   debug?: boolean;
+  /** EventProcessor 配置 */
+  eventProcessor?: EventProcessorConfig;
 }
 
 /**
  * GameWorld 单例
  */
 export class GameWorld {
-  private static _instance: GameWorld | null = null;
+  protected static _instance: GameWorld | null = null;
 
   /** 玩法实例存储 */
   private instances: Map<string, GameplayInstance> = new Map();
 
   /** 配置 */
-  private config: GameWorldConfig;
+  protected config: GameWorldConfig;
 
   /** 是否已初始化 */
   private initialized: boolean = false;
 
-  private constructor(config: GameWorldConfig = {}) {
+  /** 事件处理器 - 框架核心单例资源 */
+  readonly eventProcessor: EventProcessor;
+
+  constructor(config: GameWorldConfig = {}) {
     this.config = config;
+    this.eventProcessor = new EventProcessor(config.eventProcessor);
   }
 
   // ========== 单例管理 ==========
 
   /**
    * 获取 GameWorld 单例
-   * 如果未初始化，会使用默认配置初始化
+   *
+   * 注意：如果未初始化会抛出错误，请确保先调用 init()
+   *
+   * 子类应覆盖此方法以返回正确类型：
+   * ```typescript
+   * static override getInstance(): HexGameWorld {
+   *   return super.getInstance() as HexGameWorld;
+   * }
+   * ```
    */
   static getInstance(): GameWorld {
     if (!GameWorld._instance) {
-      GameWorld._instance = new GameWorld();
-      GameWorld._instance.initialize();
+      throw new Error('GameWorld not initialized. Call GameWorld.init() first.');
     }
     return GameWorld._instance;
   }
 
   /**
    * 初始化 GameWorld
-   * 应在应用启动时调用一次
+   *
+   * 支持子类继承：子类调用 `SubClass.init()` 会创建子类实例。
+   *
+   * @param config 配置对象
+   * @returns GameWorld 实例（子类调用时返回子类实例）
+   *
+   * @example
+   * ```typescript
+   * // 基类使用
+   * GameWorld.init({ debug: true });
+   *
+   * // 子类使用
+   * HexGameWorld.init({ debug: true, gridSize: 10 });
+   * ```
    */
-  static init(config: GameWorldConfig = {}): GameWorld {
+  static init<T extends GameWorld>(
+    this: new (config: GameWorldConfig) => T,
+    config: GameWorldConfig = {}
+  ): T {
     if (GameWorld._instance) {
       getLogger().warn('GameWorld already initialized, reinitializing...');
       GameWorld._instance.shutdown();
     }
 
-    GameWorld._instance = new GameWorld(config);
-    GameWorld._instance.initialize();
-    return GameWorld._instance;
+    const instance = new this(config);
+    GameWorld._instance = instance;
+    instance.initialize();
+    return instance;
   }
 
   /**

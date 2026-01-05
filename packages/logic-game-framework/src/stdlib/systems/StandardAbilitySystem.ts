@@ -4,7 +4,7 @@
  * 这是框架提供的标准实现，负责：
  * 1. 驱动所有 Actor 的 AbilitySet.tick()
  * 2. 广播 GameEvent 到所有 Actor 的 AbilitySet
- * 3. 处理 Pre/Post 双阶段事件（通过 EventProcessor）
+ * 3. 处理 Pre/Post 双阶段事件（通过 GameWorld.eventProcessor）
  *
  * ## 标准实现说明
  *
@@ -36,42 +36,29 @@ import type { Actor } from '../../core/entity/Actor.js';
 import type { GameEventBase } from '../../core/events/GameEvent.js';
 import { hasAbilitySet } from '../../core/abilities/AbilitySet.js';
 import { getLogger } from '../../core/utils/Logger.js';
-import {
-  EventProcessor,
-  createEventProcessor,
-  type EventProcessorConfig,
-} from '../../core/events/EventProcessor.js';
+import type { EventProcessor } from '../../core/events/EventProcessor.js';
 import type { MutableEvent } from '../../core/events/EventPhase.js';
-
-/**
- * StandardAbilitySystem 配置
- */
-export type StandardAbilitySystemConfig = {
-  /** EventProcessor 配置 */
-  eventProcessor?: EventProcessorConfig;
-};
+import { GameWorld } from '../../core/world/GameWorld.js';
 
 /**
  * StandardAbilitySystem - 标准能力系统
+ *
+ * EventProcessor 从 GameWorld 全局单例获取，不再由 System 内部创建。
  */
 export class StandardAbilitySystem extends System {
   readonly type = 'AbilitySystem';
 
-  /** 事件处理器 */
-  private readonly eventProcessor: EventProcessor;
-
-  constructor(config?: StandardAbilitySystemConfig) {
+  constructor() {
     super(SystemPriority.NORMAL);
-    this.eventProcessor = createEventProcessor(config?.eventProcessor);
   }
 
   /**
-   * 获取事件处理器
+   * 获取事件处理器（从 GameWorld 全局单例获取）
    *
    * 可用于注册 Pre 阶段处理器或查看追踪日志。
    */
   getEventProcessor(): EventProcessor {
-    return this.eventProcessor;
+    return GameWorld.getInstance().eventProcessor;
   }
 
   /**
@@ -186,7 +173,7 @@ export class StandardAbilitySystem extends System {
     this.broadcastEvent(event, actors, gameplayState);
 
     // 2. 收集 PreEventComponent 的 Intent，应用修改或取消
-    return this.eventProcessor.processPreEvent(event, gameplayState);
+    return this.getEventProcessor().processPreEvent(event, gameplayState);
   }
 
   /**
@@ -210,7 +197,7 @@ export class StandardAbilitySystem extends System {
     actors: Actor[],
     gameplayState: unknown
   ): void {
-    this.eventProcessor.processPostEvent(event, actors, gameplayState);
+    this.getEventProcessor().processPostEvent(event, actors, gameplayState);
   }
 
   /**
@@ -227,7 +214,7 @@ export class StandardAbilitySystem extends System {
     relatedActorIds: Set<string>,
     gameplayState: unknown
   ): void {
-    this.eventProcessor.processPostEventToRelated(event, actors, relatedActorIds, gameplayState);
+    this.getEventProcessor().processPostEventToRelated(event, actors, relatedActorIds, gameplayState);
   }
 
   /**
@@ -236,13 +223,13 @@ export class StandardAbilitySystem extends System {
    * 用于调试，查看事件处理过程。
    */
   getTraceLog(): string {
-    return this.eventProcessor.exportTraceLog();
+    return this.getEventProcessor().exportTraceLog();
   }
 
   /**
    * 清空追踪记录
    */
   clearTraces(): void {
-    this.eventProcessor.clearTraces();
+    this.getEventProcessor().clearTraces();
   }
 }

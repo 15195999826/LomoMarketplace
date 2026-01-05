@@ -7,7 +7,8 @@
  * - F5           (VS Code 调试)
  */
 
-import { GameWorld, getTimelineRegistry, configureDebugLog } from '@lomo/logic-game-framework';
+import { getTimelineRegistry, configureDebugLog } from '@lomo/logic-game-framework';
+import { HexAtbBattleGameWorld } from './world/index.js';
 
 // 开启调试日志（日志通过 BattleLogger 处理，需要启用框架日志）
 configureDebugLog({ enabled: true, categories: [] });
@@ -28,7 +29,7 @@ getTimelineRegistry().registerAll(SKILL_TIMELINES);
 console.log(`📦 已注册 ${SKILL_TIMELINES.length} 个技能 Timeline\n`);
 
 // 初始化 GameWorld（单例模式，用 init 而不是 new）
-const world = GameWorld.init({ debug: true });
+const world = HexAtbBattleGameWorld.init({ debug: true });
 
 // 创建战斗实例
 const battle = world.createInstance(() => new HexBattle('battle-001'));
@@ -53,4 +54,4 @@ console.log(`\n📊 Final: ${battle.logicTime}ms total`);
 console.log(`📊 World instances: ${world.instanceCount}`);
 
 // 清理
-GameWorld.destroy();
+HexAtbBattleGameWorld.destroy();

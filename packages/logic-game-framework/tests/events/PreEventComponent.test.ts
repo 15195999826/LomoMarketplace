@@ -4,7 +4,7 @@
  * 测试 Pre 阶段事件处理组件的注册、触发、Intent 返回等功能
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   PreEventComponent,
   Ability,
@@ -13,7 +13,6 @@ import {
 } from '../../src/core/abilities/index.js';
 import {
   EventProcessor,
-  createEventProcessor,
   passIntent,
   cancelIntent,
   modifyIntent,
@@ -21,6 +20,7 @@ import {
 } from '../../src/core/events/index.js';
 import type { ActorRef } from '../../src/core/types/common.js';
 import type { IAttributeModifierTarget } from '../../src/core/attributes/defineAttributes.js';
+import { GameWorld } from '../../src/core/world/GameWorld.js';
 
 // 测试用事件类型
 interface PreDamageEvent extends GameEventBase {
@@ -46,14 +46,19 @@ describe('PreEventComponent', () => {
   let abilitySet: AbilitySet;
 
   beforeEach(() => {
-    eventProcessor = createEventProcessor({ maxDepth: 10, traceLevel: 2 });
+    // 初始化 GameWorld（EventProcessor 在其中创建）
+    GameWorld.init({ eventProcessor: { maxDepth: 10, traceLevel: 2 } });
+    eventProcessor = GameWorld.getInstance().eventProcessor;
     owner = { id: 'unit-1', displayName: 'Test Unit' };
     modifierTarget = createMockModifierTarget();
     abilitySet = new AbilitySet({
       owner,
       modifierTarget,
-      eventProcessor,
     });
+  });
+
+  afterEach(() => {
+    GameWorld.destroy();
   });
 
   describe('Registration', () => {

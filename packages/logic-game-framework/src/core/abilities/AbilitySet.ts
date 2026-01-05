@@ -69,6 +69,7 @@ import type { EventProcessor } from '../events/EventProcessor.js';
 import type { Ability } from './Ability.js';
 import type { ComponentLifecycleContext } from './AbilityComponent.js';
 import { getLogger, debugLog } from '../utils/Logger.js';
+import { GameWorld } from '../world/GameWorld.js';
 
 // ========== 类型定义 ==========
 
@@ -115,8 +116,6 @@ export type AbilitySetConfig = {
   owner: ActorRef;
   /** Modifier 写入接口 */
   modifierTarget: IAttributeModifierTarget;
-  /** EventProcessor 引用（可选，用于 PreEventComponent 注册 Pre 阶段处理器） */
-  eventProcessor?: EventProcessor;
 };
 
 // ========== AbilitySet 类 ==========
@@ -130,9 +129,6 @@ export class AbilitySet {
 
   /** Modifier 写入接口 */
   private readonly modifierTarget: IAttributeModifierTarget;
-
-  /** EventProcessor 引用（可选） */
-  private readonly eventProcessor?: EventProcessor;
 
   /** 能力列表 */
   private abilities: Ability[] = [];
@@ -169,14 +165,13 @@ export class AbilitySet {
   constructor(config: AbilitySetConfig) {
     this.owner = config.owner;
     this.modifierTarget = config.modifierTarget;
-    this.eventProcessor = config.eventProcessor;
   }
 
   /**
-   * 获取 EventProcessor 引用
+   * 获取 EventProcessor 引用（从全局 GameWorld 获取）
    */
-  getEventProcessor(): EventProcessor | undefined {
-    return this.eventProcessor;
+  getEventProcessor(): EventProcessor {
+    return GameWorld.getInstance().eventProcessor;
   }
 
   // ========== Loose Tag 管理 ==========
@@ -722,7 +717,7 @@ export class AbilitySet {
       attributes: this.modifierTarget,
       ability: ability,
       abilitySet: this,
-      eventProcessor: this.eventProcessor,
+      eventProcessor: this.getEventProcessor(),
     };
   }
 
