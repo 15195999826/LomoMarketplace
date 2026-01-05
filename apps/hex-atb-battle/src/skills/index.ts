@@ -4,3 +4,4 @@
 
 export * from './SkillTimelines.js';
 export * from './SkillAbilities.js';
+export * from './PassiveAbilities.js';

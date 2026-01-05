@@ -131,7 +131,7 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
   /**
    * 检查触发器是否匹配
    */
-  private checkTriggers(event: GameEventBase, context: ComponentLifecycleContext): boolean {
+  protected checkTriggers(event: GameEventBase, context: ComponentLifecycleContext): boolean {
     if (this.triggers.length === 0) {
       return false;
     }

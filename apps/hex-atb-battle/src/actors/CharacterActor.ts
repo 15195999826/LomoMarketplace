@@ -18,7 +18,7 @@ import {
   CHARACTER_ATTRIBUTES,
 } from '../config/ClassConfig.js';
 import { CLASS_SKILLS } from '../config/SkillConfig.js';
-import { SKILL_ABILITIES, MOVE_ABILITY } from '../skills/index.js';
+import { SKILL_ABILITIES, MOVE_ABILITY, PASSIVE_ABILITIES } from '../skills/index.js';
 
 /** ATB 满值 */
 const ATB_FULL = 100;
@@ -72,6 +72,20 @@ export class CharacterActor extends Actor {
     const skillAbility = new Ability(skillConfig, this.toRef());
     this.abilitySet.grantAbility(skillAbility);
     this._skillAbilityId = skillAbility.id;
+
+    // 装备职业被动技能
+    this.grantClassPassives(characterClass);
+  }
+
+  /**
+   * 根据职业装备被动技能
+   */
+  private grantClassPassives(characterClass: CharacterClass): void {
+    // 战士：荆棘反伤
+    if (characterClass === 'Warrior') {
+      const thornPassive = new Ability(PASSIVE_ABILITIES.Thorn, this.toRef());
+      this.abilitySet.grantAbility(thornPassive);
+    }
   }
 
   setTeamID(id: number) {

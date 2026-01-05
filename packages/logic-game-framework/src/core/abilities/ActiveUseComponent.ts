@@ -180,11 +180,16 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
     context: ComponentLifecycleContext,
     gameplayState: unknown
   ): void {
+    // 首先检查触发器是否匹配（避免对不相关事件打印日志）
+    if (!this.checkTriggers(event, context)) {
+      return;
+    }
+
     // 尝试获取 AbilitySet（需要从 gameplayState 中获取）
     const abilitySet = this.getAbilitySet(context, gameplayState);
     if (!abilitySet) {
-      // 无法获取 AbilitySet，回退到父类行为
-      super.onEvent(event, context, gameplayState);
+      // 无法获取 AbilitySet，直接激活（跳过条件/消耗检查）
+      this.activateWithoutChecks(event, context, gameplayState);
       return;
     }
 
@@ -220,7 +225,19 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
     // 支付所有消耗
     this.payCosts(costCtx);
 
-    // 调用父类激活逻辑
+    // 激活执行实例（触发器已检查过，直接激活）
+    this.activateWithoutChecks(event, context, gameplayState);
+  }
+
+  /**
+   * 跳过触发器检查直接激活（内部使用）
+   */
+  private activateWithoutChecks(
+    event: GameEventBase,
+    context: ComponentLifecycleContext,
+    gameplayState: unknown
+  ): void {
+    // 调用父类的 onEvent，但触发器已检查过，会通过
     super.onEvent(event, context, gameplayState);
   }
 
