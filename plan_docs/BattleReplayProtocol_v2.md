@@ -22,6 +22,7 @@
 | **事件溯源** | 初始状态 + 事件流 = 任意时刻状态 |
 | **自描述性** | 事件数据足够详细，能完整表达发生了什么 |
 | **按帧组织** | 同一帧的事件归为一组，无需每个事件记录时间 |
+| **核心层低耦合** | core 层数据结构不依赖 EventCollector，通过回调通知变化 |
 | **简单优先** | v1 采用 JSON 全量导出，后续再优化体积 |
 
 ---
@@ -38,9 +39,9 @@
 | 属性变化 | AttributeSet 变化 | `attributeChanged` 事件 |
 | Tag 变化（CD/Stack） | TagContainer 变化 | `tagChanged` 事件 |
 | 角色位置变化 | 移动 Action | `move` 事件（项目定义） |
-| 投射物创建 | ProjectileSystem | `projectileSpawned` 事件 |
-| 投射物飞行轨迹 | 每帧位置 | `projectilePosition` 事件 |
-| 投射物命中/消失 | ProjectileSystem | `projectileHit`/`projectileDespawned` 事件 |
+| 投射物创建 | ProjectileSystem | `projectileLaunched` 事件 |
+| 投射物飞行轨迹 | 每帧位置 | `projectilePosition` 事件 ⚠️ 新增功能 |
+| 投射物命中/消失 | ProjectileSystem | `projectileHit`/`projectileDespawn` 事件 |
 | 地图配置 | 初始配置 | `configs.map` |
 | 交互 Actor | 动态生成 | `actorSpawned` 事件 |
 
@@ -229,9 +230,12 @@ interface TagChangedEvent {
 
 #### 投射物
 
+> **命名说明**：事件命名与框架代码对齐（`projectileLaunched` 而非 `projectileSpawned`）
+
 ```typescript
-interface ProjectileSpawnedEvent {
-  kind: 'projectileSpawned';
+// 投射物发射（框架已有）
+interface ProjectileLaunchedEvent {
+  kind: 'projectileLaunched';
   projectileId: string;
   configId: string;
   sourceActorId: string;
@@ -241,13 +245,15 @@ interface ProjectileSpawnedEvent {
   config?: unknown;           // v1 可选内嵌完整配置
 }
 
-// 每帧位置更新（v1 简单方案，前端直接 lerp）
+// ⚠️ 新增功能：每帧位置更新（v1 简单方案，前端直接 lerp）
+// 需要在 ProjectileSystem 中增加配置项 broadcastPosition: boolean
 interface ProjectilePositionEvent {
   kind: 'projectilePosition';
   projectileId: string;
   position: { x: number; y: number; z: number };
 }
 
+// 投射物命中（框架已有）
 interface ProjectileHitEvent {
   kind: 'projectileHit';
   projectileId: string;
@@ -255,8 +261,9 @@ interface ProjectileHitEvent {
   position: { x: number; y: number; z: number };
 }
 
-interface ProjectileDespawnedEvent {
-  kind: 'projectileDespawned';
+// 投射物消失（框架已有，注意是 projectileDespawn 不是 Despawned）
+interface ProjectileDespawnEvent {
+  kind: 'projectileDespawn';
   projectileId: string;
   reason: 'hit' | 'expired' | 'outOfRange' | 'pierceLimit' | string;
 }
@@ -307,7 +314,42 @@ interface DeathEvent {
 
 ## 5. 架构设计
 
-### 5.1 框架层 vs 项目层职责
+### 5.1 核心设计：Observer/Bridge 模式
+
+> **重要**：框架的 core 层数据结构（AttributeSet、AbilitySet、TagContainer）设计得非常纯粹，
+> 它们**不持有 EventCollector**，**不直接产生 GameEvent**。
+> 这些类只通过回调函数（`onXxxChanged`、`onGranted`）通知变化，保持核心层的低耦合。
+
+**事件产生机制**：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    BattleRecorder (Observer)                    │
+│              在 Actor 创建时订阅各组件的回调                      │
+│              负责将回调转化为 GameEvent 推入 EventCollector       │
+└─────────────────────────────────────────────────────────────────┘
+          │ 订阅回调                          │ push 事件
+          ▼                                  ▼
+┌───────────────────────┐           ┌───────────────────────┐
+│   Core 层数据结构      │           │    EventCollector     │
+│   (纯粹，不依赖事件)   │           │                       │
+├───────────────────────┤           │    事件流 → 回放数据  │
+│ AttributeSet          │           │                       │
+│   └─ onAttributeChanged()         │                       │
+│ AbilitySet            │──────────▶│                       │
+│   └─ onGranted/onRemoved()        │                       │
+│ TagContainer          │           │                       │
+│   └─ onTagChanged()   │           │                       │
+└───────────────────────┘           └───────────────────────┘
+```
+
+**这样设计的好处**：
+- Core 层保持纯粹，不依赖 EventCollector
+- 录制功能是可选的，不开启时无性能损耗
+- 符合单一职责原则
+- 便于测试和维护
+
+### 5.2 框架层 vs 项目层职责
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -323,14 +365,12 @@ interface DeathEvent {
 │                                                                 │
 │  录制器 (stdlib/replay/BattleRecorder.ts)：                      │
 │  └── BattleRecorder System                                      │
+│      ├── 订阅 Actor 的各组件回调                                 │
+│      ├── 将回调转化为标准事件                                    │
+│      └── 记录事件到时间线                                        │
 │                                                                 │
-│  框架事件产生点：                                                 │
-│  ├── GameplayInstance    → actorSpawned/actorDestroyed          │
-│  ├── AttributeSet        → attributeChanged                     │
-│  ├── AbilitySet          → abilityGranted/abilityRemoved        │
-│  ├── AbilityExecution    → abilityActivated                     │
-│  ├── TagContainer        → tagChanged                           │
-│  └── ProjectileSystem    → projectile* 系列                     │
+│  框架已有事件（由 ProjectileSystem 直接产生）：                   │
+│  └── projectileLaunched/projectileHit/projectileDespawn         │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -355,46 +395,59 @@ interface DeathEvent {
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 事件产生时机
+### 5.3 事件产生时机
 
-| 事件 | 产生位置 | 触发条件 |
-|------|---------|---------|
-| `actorSpawned` | `GameplayInstance.addActor()` | 战斗中动态创建 Actor |
-| `actorDestroyed` | `GameplayInstance.removeActor()` | Actor 被移除 |
-| `attributeChanged` | `AttributeSet` | CurrentValue 变化时 |
-| `abilityGranted` | `AbilitySet.grantAbility()` | 获得新 Ability |
-| `abilityRemoved` | `AbilitySet.removeAbility()` | 移除 Ability |
-| `abilityActivated` | `AbilityExecutionInstance` | Ability 开始执行 |
-| `tagChanged` | `TagContainer.add/remove()` | Tag 计数变化 |
-| `projectileSpawned` | `ProjectileSystem` | 投射物创建 |
-| `projectilePosition` | `ProjectileSystem.tick()` | 每帧更新位置 |
-| `projectileHit` | `ProjectileSystem` | 投射物命中 |
-| `projectileDespawned` | `ProjectileSystem` | 投射物消失 |
-| `damage/heal/move/...` | 项目 Action | Action 执行时 |
+> **注意**：Core 层组件（AttributeSet、AbilitySet、TagContainer）不直接产生事件，
+> 而是由 BattleRecorder 订阅其回调后转化为事件。
 
-### 5.3 录制流程
+| 事件 | 数据来源 | 事件产生方式 |
+|------|---------|-------------|
+| `actorSpawned` | `GameplayInstance` | BattleRecorder 监听 Actor 创建 |
+| `actorDestroyed` | `GameplayInstance` | BattleRecorder 监听 Actor 移除 |
+| `attributeChanged` | `AttributeSet.onAttributeChanged` | BattleRecorder 订阅回调后转化 |
+| `abilityGranted` | `AbilitySet.onGranted` | BattleRecorder 订阅回调后转化 |
+| `abilityRemoved` | `AbilitySet.onRemoved` | BattleRecorder 订阅回调后转化 |
+| `abilityActivated` | `AbilityExecutionInstance` | 框架在 Ability 激活时产生（已有 `abilityActivate`） |
+| `tagChanged` | `TagContainer.onTagChanged` | BattleRecorder 订阅回调后转化 |
+| `projectileLaunched` | `ProjectileSystem` | 框架直接产生（已有） |
+| `projectilePosition` | `ProjectileSystem` | ⚠️ 需新增：在 tick 中广播位置 |
+| `projectileHit` | `ProjectileSystem` | 框架直接产生（已有） |
+| `projectileDespawn` | `ProjectileSystem` | 框架直接产生（已有） |
+| `damage/heal/move/...` | 项目 Action | 项目在 Action 中手动 push |
+
+### 5.4 录制流程
 
 ```
 战斗开始
     │
     ├── BattleRecorder.startRecording()
     │   ├── 记录 configs
-    │   └── 记录 initialActors（遍历所有 Actor）
+    │   ├── 记录 initialActors（遍历所有 Actor）
+    │   └── 订阅所有 Actor 的组件回调（AttributeSet、AbilitySet、TagContainer）
     │
     ▼
 每个 Tick
     │
     ├── 各 System 执行
     ├── 各 Action 执行，push 事件到 EventCollector
+    ├── Core 组件状态变化 → 触发回调 → BattleRecorder 转化为事件
     │
     ├── Tick 结束时
     │   ├── events = eventCollector.flush()
     │   └── BattleRecorder.recordFrame(frameNumber, events)
     │
     ▼
+Actor 动态创建/销毁
+    │
+    ├── BattleRecorder 监听 GameplayInstance
+    ├── 创建时：记录 actorSpawned 事件 + 订阅新 Actor 的回调
+    └── 销毁时：记录 actorDestroyed 事件 + 取消订阅
+    │
+    ▼
 战斗结束
     │
     ├── BattleRecorder.stopRecording()
+    │   ├── 取消所有回调订阅
     │   └── 计算 meta.totalFrames
     │
     └── 导出 replay.json
@@ -460,7 +513,7 @@ Actor [enemy_1] "哥布林" @ hex(3,2)
   tagChanged: [hero_1] skill_slash_cd: 0 → 1
 
 [Frame 50]
-  projectileSpawned: [proj_1] fireball at (1.5, 0, 0.5)
+  projectileLaunched: [proj_1] fireball at (1.5, 0, 0.5)
 
 [Frame 52]
   projectilePosition: [proj_1] at (2.0, 0, 1.0)
@@ -469,7 +522,7 @@ Actor [enemy_1] "哥布林" @ hex(3,2)
   projectileHit: [proj_1] hit [enemy_1] at (3.0, 0, 2.0)
   damage: 30 magical damage to [enemy_1]
   attributeChanged: [enemy_1] HP 55 → 25
-  projectileDespawned: [proj_1] reason=hit
+  projectileDespawn: [proj_1] reason=hit
 
 === End of Replay ===
 ```
@@ -584,34 +637,55 @@ Actor [enemy_1] "哥布林" @ hex(3,2)
 
 ## 8. 设计决策记录
 
-### 8.1 为什么不在事件中记录 logicTime？
+### 8.1 为什么使用 Observer/Bridge 模式产生事件？
+
+框架的 core 层数据结构（AttributeSet、AbilitySet、TagContainer）设计得非常纯粹：
+- **不持有 EventCollector**
+- **不直接产生 GameEvent**
+- 只通过回调函数（`onXxxChanged`、`onGranted`）通知变化
+
+如果在这些类内部直接 push 事件，会：
+1. 让 core 层依赖 EventCollector
+2. 破坏单一职责原则
+3. 让核心数据结构变得不纯粹
+4. 即使不需要录制，也会产生性能开销
+
+**解决方案**：BattleRecorder 作为 Observer，在 Actor 创建时订阅各组件的回调，负责将回调转化为 GameEvent 推入 EventCollector。
+
+### 8.2 为什么不在事件中记录 logicTime？
 
 事件按帧 flush，同一帧的事件时间相同。通过 `frame * tickInterval` 即可计算 logicTime。减少冗余数据。
 
-### 8.2 为什么选择 JSON 而非 Protobuf？
+### 8.3 为什么选择 JSON 而非 Protobuf？
 
 - 全平台零依赖解析
 - 可读性强，便于调试
 - v1 简单优先，后续可通过 GZip 压缩优化体积
 - 需要时再引入 Protobuf
 
-### 8.3 为什么投射物记录每帧位置而非初始状态？
+### 8.4 为什么投射物记录每帧位置而非初始状态？
 
 - v1 简单方案：前端只需 lerp 到目标位置
 - 保证逻辑层和表现层轨迹完全一致
 - 后续优化：可改为只记录初始状态，前端重算轨迹
 
-### 8.4 为什么不做检查点（Checkpoint）？
+### 8.5 为什么不做检查点（Checkpoint）？
 
 - v1 战斗时长有限，事件溯源足够
 - 检查点增加复杂度
 - 未来需要"跳转到某帧"功能时再添加
 
-### 8.5 为什么配置全量内嵌？
+### 8.6 为什么配置全量内嵌？
 
 - v1 简单方案，保证 replay 文件自包含
 - 离线可用，无需额外加载配置
 - 后续优化：配置引用模式，减少体积
+
+### 8.7 事件命名约定
+
+- 与框架代码对齐：使用 `projectileLaunched` 而非 `projectileSpawned`
+- 回放事件使用过去时态（`abilityActivated`），表示"已发生的事实"
+- 框架层事件（如 `abilityActivate`）可能需要映射为回放层事件
 
 ---
 
