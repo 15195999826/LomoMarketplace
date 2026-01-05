@@ -26,6 +26,8 @@ import {
   Actor,
 } from '@lomo/logic-game-framework';
 
+import { getActorsFromGameplayState, getActorDisplayName } from '../utils/ActionUtils.js';
+
 import type { DamageType } from './DamageAction.js';
 
 /**
@@ -89,8 +91,8 @@ export class ReflectDamageAction implements IAction {
     const owner = ctx.ability?.owner;
 
     // 获取显示名称
-    const ownerName = this.getActorDisplayName(owner, ctx.gameplayState);
-    const attackerName = this.getActorDisplayName(attacker, ctx.gameplayState);
+    const ownerName = getActorDisplayName(owner, ctx.gameplayState);
+    const attackerName = getActorDisplayName(attacker, ctx.gameplayState);
     console.log(`  [ReflectDamageAction] ${ownerName} 反伤 ${attackerName} ${damage} 点 ${damageType} 伤害`);
 
     // 产生伤害事件（对攻击者），带 isReflected 标记防止无限循环
@@ -105,37 +107,12 @@ export class ReflectDamageAction implements IAction {
     });
 
     // Post 阶段：触发其他被动（如吸血），但不会触发反伤（因为有 isReflected 标记）
-    const actors = this.getActorsFromGameplayState(ctx.gameplayState);
+    const actors = getActorsFromGameplayState(ctx.gameplayState);
     if (actors.length > 0) {
       const eventProcessor = GameWorld.getInstance().eventProcessor;
       eventProcessor.processPostEvent(reflectEvent, actors, ctx.gameplayState);
     }
 
     return createSuccessResult([reflectEvent], { damage, target: attacker.id });
-  }
-
-  /**
-   * 从 gameplayState 获取 Actor 列表
-   */
-  private getActorsFromGameplayState(gameplayState: unknown): Actor[] {
-    if (gameplayState && typeof gameplayState === 'object' && 'aliveActors' in gameplayState) {
-      return (gameplayState as { aliveActors: Actor[] }).aliveActors;
-    }
-    return [];
-  }
-
-  /**
-   * 获取 Actor 的显示名称
-   */
-  private getActorDisplayName(actorRef: ActorRef | undefined, gameplayState: unknown): string {
-    if (!actorRef) return '???';
-
-    // 尝试从 gameplayState 获取 Actor 实例
-    if (gameplayState && typeof gameplayState === 'object' && 'getActor' in gameplayState) {
-      const actor = (gameplayState as { getActor: (id: string) => Actor | undefined }).getActor(actorRef.id);
-      if (actor) return actor.displayName;
-    }
-
-    return actorRef.id;
   }
 }

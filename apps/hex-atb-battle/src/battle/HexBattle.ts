@@ -13,6 +13,7 @@ import {
   isProjectileHitEvent,
   isProjectileMissEvent,
   Ability,
+  IGameplayStateProvider,
 } from '@lomo/logic-game-framework';
 
 import {
@@ -56,7 +57,7 @@ type ActionDecision = {
   targetCoord?: AxialCoord;
 };
 
-export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
+export class HexBattle extends GameplayInstance implements IAbilitySetProvider, IGameplayStateProvider {
   readonly type = 'HexBattle';
 
   private tickCount = 0;

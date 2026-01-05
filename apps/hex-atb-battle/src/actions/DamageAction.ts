@@ -22,6 +22,8 @@ import {
   Actor,
 } from '@lomo/logic-game-framework';
 
+import { getActorsFromGameplayState, getActorDisplayName } from '../utils/ActionUtils.js';
+
 /**
  * 伤害类型
  */
@@ -74,7 +76,7 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     const allEvents: ReturnType<typeof ctx.eventCollector.push>[] = [];
 
     // 获取 actors 列表（用于 Post 阶段广播）
-    const actors = this.getActorsFromGameplayState(ctx.gameplayState);
+    const actors = getActorsFromGameplayState(ctx.gameplayState);
 
     for (const target of targets) {
       // ========== Pre 阶段 ==========
@@ -91,7 +93,7 @@ export class DamageAction extends BaseAction<DamageActionParams> {
 
       // 如果被取消（如免疫），跳过此目标
       if (mutable.cancelled) {
-        const targetName = this.getActorDisplayName(target, ctx.gameplayState);
+        const targetName = getActorDisplayName(target, ctx.gameplayState);
         console.log(`  [DamageAction] ${targetName} 的伤害被取消`);
         continue;
       }
@@ -100,8 +102,8 @@ export class DamageAction extends BaseAction<DamageActionParams> {
       const finalDamage = mutable.getCurrentValue('damage') as number;
 
       // 打印日志（使用 displayName）
-      const sourceName = this.getActorDisplayName(source, ctx.gameplayState);
-      const targetName = this.getActorDisplayName(target, ctx.gameplayState);
+      const sourceName = getActorDisplayName(source, ctx.gameplayState);
+      const targetName = getActorDisplayName(target, ctx.gameplayState);
       if (finalDamage !== baseDamage) {
         console.log(`  [DamageAction] ${sourceName} 对 ${targetName} 造成 ${finalDamage} ${damageType} 伤害 (原始: ${baseDamage})`);
       } else {
@@ -127,33 +129,5 @@ export class DamageAction extends BaseAction<DamageActionParams> {
     }
 
     return createSuccessResult(allEvents, { damage: baseDamage });
-  }
-
-  /**
-   * 从 gameplayState 获取 Actor 列表
-   *
-   * 项目层需要确保 gameplayState 实现了获取 actors 的方法。
-   */
-  private getActorsFromGameplayState(gameplayState: unknown): Actor[] {
-    // 尝试访问 aliveActors 属性（HexBattle 实现）
-    if (gameplayState && typeof gameplayState === 'object' && 'aliveActors' in gameplayState) {
-      return (gameplayState as { aliveActors: Actor[] }).aliveActors;
-    }
-    return [];
-  }
-
-  /**
-   * 获取 Actor 的显示名称
-   */
-  private getActorDisplayName(actorRef: ActorRef | undefined, gameplayState: unknown): string {
-    if (!actorRef) return '???';
-
-    // 尝试从 gameplayState 获取 Actor 实例
-    if (gameplayState && typeof gameplayState === 'object' && 'getActor' in gameplayState) {
-      const actor = (gameplayState as { getActor: (id: string) => Actor | undefined }).getActor(actorRef.id);
-      if (actor) return actor.displayName;
-    }
-
-    return actorRef.id;
   }
 }
