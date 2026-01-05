@@ -65,6 +65,14 @@
       "version": "1.0.0",
       "keywords": ["browser", "chrome", "terminal", "automation"],
       "category": "productivity"
+    },
+    {
+      "name": "gemini-bridge",
+      "source": "./plugins/gemini-bridge",
+      "description": "Gemini CLI 桥接插件 - 委托任务给 Google Gemini AI",
+      "version": "1.0.0",
+      "keywords": ["gemini", "google", "ai", "bridge", "cross-ai"],
+      "category": "productivity"
     }
   ]
 }

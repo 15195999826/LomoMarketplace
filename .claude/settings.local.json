@@ -59,7 +59,8 @@
       "Bash(pnpm --filter @lomo/core build:*)",
       "Bash(pnpm --filter @lomo/core test:run:*)",
       "Bash(pnpm --filter hex-atb-battle build:*)",
-      "Bash(node dist/main.js:*)"
+      "Bash(node dist/main.js:*)",
+      "Bash(pnpm build:all:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
