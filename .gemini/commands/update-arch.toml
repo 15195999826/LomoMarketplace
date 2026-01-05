@@ -1,0 +1,32 @@
+description = "Incremental update of project architecture documentation based on git commits"
+prompt = """
+Your task is to update the project architecture documentation based on git commits since the last tracked commit.
+
+## Execution Steps
+
+1. **Check Last Tracked Commit**
+   - Read `.claude/skills/exploring-project/SKILL.md`.
+   - Extract `last_tracked_commit` from the YAML config block.
+   - Get current HEAD hash: `git rev-parse HEAD`.
+
+2. **Analyze Changes**
+   - If `last_tracked_commit` is missing, do a full update.
+   - Otherwise, find changed files: `git log {last_tracked_commit}..HEAD --name-only`.
+
+3. **Update Documents**
+   - **Directory Structure**: Update `references/directory.md` if folders changed.
+   - **Overview**: Update `references/overview.md` if `package.json` etc. changed.
+   - **Modules**:
+     - Read `references/module_*.md` files to get their `tracked_paths`.
+     - If changed files match a module's paths, read that module doc.
+     - Regenerate specific sections (marked with `<!-- SECTION: ... -->`) that relate to the changed files.
+     - Update the `last_updated` field in the module doc.
+
+4. **Sync and Commit**
+   - Run `python scripts/sync_skill.py . --commit {HEAD_COMMIT}`.
+   - Check status: `git status .claude/skills/exploring-project/`.
+   - If there are changes, commit them with a message like "docs(arch): Update architecture docs".
+
+5. **Report**
+   - List updated files and the new tracked commit hash.
+"""

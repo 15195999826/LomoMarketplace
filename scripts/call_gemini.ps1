@@ -33,7 +33,7 @@ param(
     [ValidateSet("json", "text", "stream-json")]
     [string]$OutputFormat = "json",
 
-    [string]$Model = "gemini-3-pro-preview",
+    [string]$Model = "gemini-3-flash-preview",
 
     [switch]$Yolo,
 

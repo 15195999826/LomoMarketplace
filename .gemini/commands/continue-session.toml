@@ -1,0 +1,32 @@
+description = "Continue a previous session from project-notes/"
+prompt = """
+Your task is to resume work from a previous session note.
+
+Target Note: {{args}}
+
+## Execution Steps
+
+1. **Locate the session note**
+   - If a path is provided in 'Target Note' above, use it directly.
+   - If 'Target Note' is empty, list all `.md` files in `project-notes/` and select the one with the **latest filename** (chronological order).
+
+2. **Read and parse the note**
+   - Read the file and extract: Git Commit, Todo Items, Key Decisions, Completed Work.
+
+3. **Check project changes**
+   - Run `git log --oneline <commit-hash>..HEAD` to see changes since the note.
+   - Run `git diff --stat <commit-hash>..HEAD` for details if needed.
+
+4. **Analyze Todo Items**
+   - For each uncompleted item, assess if it is still valid or affected by recent changes.
+
+5. **Present Context**
+   - Display a summary:
+     - Continuing from: [filename]
+     - Changes since last session: [summary]
+     - Completed (by subsequent work): [list]
+     - Outstanding Todo Items: [list]
+
+6. **Next Steps**
+   - Ask me which task to continue from the outstanding list.
+"""

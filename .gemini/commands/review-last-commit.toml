@@ -1,0 +1,28 @@
+description = "Review the last N commits content"
+prompt = """
+Your task is to review the last N commits in the repository.
+
+Number of commits (N): {{args}}
+(If N is empty or invalid, default to 1).
+
+## Execution Steps
+
+1. **Get commit information**
+   - Run `git log -N --pretty=format:"%h|%s|%an|%ar"` (Replace N with the number).
+
+2. **Analyze details**
+   - For each commit, run `git show <hash> --stat` to understand the intent and file changes.
+
+3. **Generate Review Report**
+   - Create a report with the following structure:
+     - **Commit <hash>**: <subject> (<author>)
+     - **Files**: List of changed files with stats.
+     - **Summary**: Brief description of the change.
+     - **Observations**: Notable patterns, concerns, or potential issues.
+
+4. **Overall Summary**
+   - Summarize the total files affected and key changes across all reviewed commits.
+
+5. **Recommendations**
+   - Provide actionable suggestions based on the review.
+"""

@@ -1,0 +1,23 @@
+description = "Read todo items from project-notes and suggest next actions"
+prompt = """
+Your task is to help me understand what to work on next.
+
+## Execution Steps
+
+1. **Read Notes**
+   - List and read recent `.md` files in `project-notes/`.
+
+2. **Extract Todos**
+   - Find uncompleted items (`- [ ]`).
+   - Identify urgent/important items.
+
+3. **Check Git Status**
+   - Run `git status --short` to see uncommitted work.
+
+4. **Provide Suggestions**
+   - Organize tasks by Priority, Recency, and Dependencies.
+
+5. **Ask**
+   - Present the "Outstanding Tasks" list.
+   - Ask me: "Which task would you like to start with?"
+"""

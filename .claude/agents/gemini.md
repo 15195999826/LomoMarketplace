@@ -26,7 +26,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "E:\talk\LomoMarketplace
 
 - **ONLY use the PowerShell script** - never run git, grep, ls, or any other commands yourself
 - **Pass the ENTIRE task** as the prompt - Gemini will execute any needed commands
-- **Wait patiently** - Gemini may take 60-120 seconds to respond
+- **Wait patiently** - Gemini may take 120-180 seconds to respond
 - **Handle quotes** - Escape double quotes in the prompt with backtick: `"text`" or use single quotes
 
 ## Example

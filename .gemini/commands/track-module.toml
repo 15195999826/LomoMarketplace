@@ -1,0 +1,31 @@
+description = "追踪复杂模块，生成详细文档并添加到架构追踪列表"
+prompt = """
+Your task is to add a new complex module to the architecture tracking list.
+
+Module Name: {{args}}
+(Module name must be kebab-case, e.g., 'auth-system'. If empty, ask me for it).
+
+## Execution Flow
+
+1. **Gather Info**
+   - If Module Name is not provided, ask me for it.
+   - Ask me for the **Module Paths** (directories/files) and a **Description**.
+
+2. **Create Module Document**
+   - Run `python scripts/create_module.py . {module_name} --description "{desc}" --paths "{paths}"`.
+   - This creates `references/module_{module_name}.md`.
+
+3. **Explore and Fill Content**
+   - Read the created file.
+   - Explore the code at the tracked paths.
+   - Update the sections in the file (Core Concepts, Design Decisions, API Interfaces, etc.) using `replace`.
+
+4. **Sync Architecture**
+   - Run `python scripts/sync_skill.py .` to update `SKILL.md`.
+
+5. **Report**
+   - Confirm completion:
+     - Module added: [name]
+     - Created: references/module_[name].md
+     - Tracked paths: [list]
+"""
