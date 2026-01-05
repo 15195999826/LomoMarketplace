@@ -125,14 +125,18 @@ export type ActiveUseComponentConfig = Omit<ActivateInstanceComponentConfig, 'tr
 };
 
 /**
- * 默认触发器：监听 AbilityActivateEvent，匹配 abilityInstanceId
+ * 默认触发器：监听 AbilityActivateEvent，匹配 abilityInstanceId 和 sourceId
  */
 function createDefaultTrigger(): EventTrigger {
   return {
     eventKind: ABILITY_ACTIVATE_EVENT,
-    filter: (event: GameEventBase, ctx: { ability: ComponentLifecycleContext['ability'] }) => {
+    filter: (event: GameEventBase, ctx: ComponentLifecycleContext) => {
       const activateEvent = event as AbilityActivateEvent;
-      return activateEvent.abilityInstanceId === ctx.ability.id;
+      // 同时检查：技能ID匹配 && 发起者是技能持有者
+      return (
+        activateEvent.abilityInstanceId === ctx.ability.id &&
+        activateEvent.sourceId === ctx.owner.id
+      );
     },
   };
 }
@@ -180,7 +184,7 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
     context: ComponentLifecycleContext,
     gameplayState: unknown
   ): void {
-    // 首先检查触发器是否匹配（避免对不相关事件打印日志）
+    // 检查是否是使用Ability的事件
     if (!this.checkTriggers(event, context)) {
       return;
     }

@@ -213,9 +213,11 @@ export class BattleLogger {
   private handleAbilityLog(message: string, ctx: DebugLogContext): void {
     const actorId = ctx.actorId ?? '???';
     const actorName = this.getActorName(actorId);
-    const abilityName = ctx.abilityName ?? ctx.configId ?? '???';
+    const abilityName = ctx.abilityName ?? ctx.configId;
 
-    this.writeConsole(`[ability] [${actorName}] ${message} [${abilityName}]`);
+    // 只有在有 abilityName 时才显示
+    const suffix = abilityName ? ` [${abilityName}]` : '';
+    this.writeConsole(`[ability] [${actorName}] ${message}${suffix}`);
   }
 
   // ========== 帧控制 ==========

@@ -340,22 +340,6 @@ describe('AbilityExecutionInstance', () => {
       expect(events[0].kind).toBe('damage');
     });
 
-    it('flushEvents 应该清空事件缓冲区', () => {
-      const timeline = createTestTimeline('test', 1000, { hit: 100 });
-      registry.register(timeline);
-
-      const hitAction = createMockActionWithEvent('hit', 'damage');
-      const config = createTestConfig('test', { hit: [hitAction] });
-      const instance = new AbilityExecutionInstance(config);
-
-      instance.tick(200);
-
-      const events1 = instance.flushEvents();
-      expect(events1.length).toBe(1);
-
-      const events2 = instance.flushEvents();
-      expect(events2.length).toBe(0);
-    });
   });
 
   describe('多实例并行', () => {

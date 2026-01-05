@@ -238,7 +238,9 @@ export class AbilitySet {
     const expiresAt = this.currentLogicTime + duration;
     this.autoDurationTags.push({ tag, expiresAt });
 
-    debugLog('ability', `添加 AutoDurationTag: ${tag}`, {
+    // 格式化时间显示（毫秒或秒）
+    const durationStr = duration >= 1000 ? `${duration / 1000}s` : `${duration}ms`;
+    debugLog('ability', `添加 AutoDurationTag: ${tag} (${durationStr})`, {
       actorId: this.owner.id,
       duration,
       expiresAt,

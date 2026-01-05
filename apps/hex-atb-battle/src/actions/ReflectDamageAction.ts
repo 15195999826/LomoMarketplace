@@ -8,6 +8,11 @@
  *
  * 此 Action 直接实现 IAction 接口（不继承 BaseAction），
  * 因为目标是从触发事件动态获取的，不使用 targetSelector。
+ *
+ * ## 反伤链防护
+ *
+ * 反伤产生的 damage 事件带有 `isReflected: true` 标记，
+ * 荆棘被动应在 filter 中排除这类事件，避免无限循环。
  */
 
 import {
@@ -17,6 +22,8 @@ import {
   type ActorRef,
   createSuccessResult,
   getCurrentEvent,
+  GameWorld,
+  Actor,
 } from '@lomo/logic-game-framework';
 
 import type { DamageType } from './DamageAction.js';
@@ -34,6 +41,14 @@ type DamageEventLike = {
 };
 
 /**
+ * 反伤产生的伤害事件（带标记）
+ */
+export type ReflectedDamageEvent = DamageEventLike & {
+  /** 标记：这是反伤产生的伤害，不应再触发反伤 */
+  isReflected: true;
+};
+
+/**
  * ReflectDamageAction 参数
  */
 export interface ReflectDamageActionParams {
@@ -47,6 +62,7 @@ export interface ReflectDamageActionParams {
  * ReflectDamageAction - 反伤 Action
  *
  * 从触发事件（damage）中获取攻击来源，对其造成固定伤害。
+ * 产生的事件带有 `isReflected: true` 标记，防止反伤链无限循环。
  */
 export class ReflectDamageAction implements IAction {
   readonly type = 'reflectDamage';
@@ -72,18 +88,54 @@ export class ReflectDamageAction implements IAction {
     const damageType = this.params.damageType ?? 'pure';
     const owner = ctx.ability?.owner;
 
-    console.log(`  [ReflectDamageAction] ${owner?.id} 反伤 ${attacker.id} ${damage} 点 ${damageType} 伤害`);
+    // 获取显示名称
+    const ownerName = this.getActorDisplayName(owner, ctx.gameplayState);
+    const attackerName = this.getActorDisplayName(attacker, ctx.gameplayState);
+    console.log(`  [ReflectDamageAction] ${ownerName} 反伤 ${attackerName} ${damage} 点 ${damageType} 伤害`);
 
-    // 产生伤害事件（对攻击者）
-    const event = ctx.eventCollector.push({
+    // 产生伤害事件（对攻击者），带 isReflected 标记防止无限循环
+    const reflectEvent = ctx.eventCollector.push({
       kind: 'damage',
       logicTime: currentEvent.logicTime,
       source: owner,
       target: attacker,
       damage,
       damageType,
+      isReflected: true,  // 标记：这是反伤，不应再触发反伤
     });
 
-    return createSuccessResult([event], { damage, target: attacker.id });
+    // Post 阶段：触发其他被动（如吸血），但不会触发反伤（因为有 isReflected 标记）
+    const actors = this.getActorsFromGameplayState(ctx.gameplayState);
+    if (actors.length > 0) {
+      const eventProcessor = GameWorld.getInstance().eventProcessor;
+      eventProcessor.processPostEvent(reflectEvent, actors, ctx.gameplayState);
+    }
+
+    return createSuccessResult([reflectEvent], { damage, target: attacker.id });
+  }
+
+  /**
+   * 从 gameplayState 获取 Actor 列表
+   */
+  private getActorsFromGameplayState(gameplayState: unknown): Actor[] {
+    if (gameplayState && typeof gameplayState === 'object' && 'aliveActors' in gameplayState) {
+      return (gameplayState as { aliveActors: Actor[] }).aliveActors;
+    }
+    return [];
+  }
+
+  /**
+   * 获取 Actor 的显示名称
+   */
+  private getActorDisplayName(actorRef: ActorRef | undefined, gameplayState: unknown): string {
+    if (!actorRef) return '???';
+
+    // 尝试从 gameplayState 获取 Actor 实例
+    if (gameplayState && typeof gameplayState === 'object' && 'getActor' in gameplayState) {
+      const actor = (gameplayState as { getActor: (id: string) => Actor | undefined }).getActor(actorRef.id);
+      if (actor) return actor.displayName;
+    }
+
+    return actorRef.id;
   }
 }

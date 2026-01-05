@@ -13,7 +13,6 @@ import {
   isProjectileHitEvent,
   isProjectileMissEvent,
   Ability,
-  GameWorld,
 } from '@lomo/logic-game-framework';
 
 import {
@@ -299,9 +298,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
     this.baseTick(dt);
     this.tickCount++;
 
-    // 清理已处理的事件集合（每帧重置）
-    this._processedEventIds.clear();
-
     this._logger.tick(this.tickCount, this.logicTime);
 
     // 更新投射物系统
@@ -315,9 +311,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
       if (this.isActorExecuting(actor)) {
         // 正在执行：驱动执行实例，不累积 ATB
         actor.abilitySet.tickExecutions(dt);
-
-        // 收集并广播执行实例产生的事件（触发被动技能）
-        this.broadcastExecutionEvents(actor);
       } else {
         // 空闲：累积 ATB
         actor.accumulateATB(dt);
@@ -347,40 +340,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider {
       }
     }
     return false;
-  }
-
-  /** 已处理的事件 ID 集合（避免重复广播） */
-  private _processedEventIds: Set<string> = new Set();
-
-  /**
-   * 广播执行实例产生的事件
-   *
-   * 收集所有执行实例的事件，通过 EventProcessor 广播到所有 Actor，
-   * 触发响应型被动技能（如反伤、吸血）。
-   *
-   * 只广播 damage/heal 等需要触发被动的事件类型。
-   */
-  private broadcastExecutionEvents(actor: CharacterActor): void {
-    const eventProcessor = GameWorld.getInstance().eventProcessor;
-
-    for (const ability of actor.abilitySet.getAbilities()) {
-      for (const instance of ability.getExecutingInstances()) {
-        // 获取执行实例产生的事件
-        const events = instance.flushEvents();
-
-        // 广播需要触发被动的事件类型
-        for (const event of events) {
-          if (event.kind === 'damage' || event.kind === 'heal') {
-            // 使用事件的唯一标识避免重复广播
-            const eventKey = `${event.kind}-${event.logicTime}-${(event as any).source?.id}-${(event as any).target?.id}`;
-            if (!this._processedEventIds.has(eventKey)) {
-              this._processedEventIds.add(eventKey);
-              eventProcessor.processPostEvent(event, this.aliveActors, this);
-            }
-          }
-        }
-      }
-    }
   }
 
   /** 开始角色行动 */

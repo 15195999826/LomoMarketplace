@@ -33,6 +33,8 @@ type DamageEvent = GameEventBase & {
   target: ActorRef;
   damage: number;
   damageType: string;
+  /** 是否为反伤产生的伤害（用于防止无限循环） */
+  isReflected?: boolean;
 };
 
 // ============================================================
@@ -61,7 +63,9 @@ export const THORN_PASSIVE: AbilityConfig = {
             const hasSource = !!e.source;
             // 不反弹自己对自己的伤害
             const notSelfDamage = e.source?.id !== ctx.owner.id;
-            return isTarget && hasSource && notSelfDamage;
+            // 不反弹反伤产生的伤害（防止无限循环）
+            const notReflectedDamage = !e.isReflected;
+            return isTarget && hasSource && notSelfDamage && notReflectedDamage;
           },
         },
       ],

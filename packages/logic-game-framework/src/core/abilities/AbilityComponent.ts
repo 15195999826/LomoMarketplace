@@ -44,8 +44,6 @@ export interface IAbilityExecutionInstance {
   readonly state: 'executing' | 'completed' | 'cancelled';
   readonly isExecuting: boolean;
   cancel(): void;
-  /** 获取并清空收集的事件 */
-  flushEvents(): GameEventBase[];
 }
 
 // ========== IAbilityForComponent ==========
