@@ -20,6 +20,7 @@ import {
   resolveOptionalParam,
   GameWorld,
   Actor,
+  type GameEventBase,
 } from '@lomo/logic-game-framework';
 
 import { getActorsFromGameplayState, getActorDisplayName } from '../utils/ActionUtils.js';
@@ -31,9 +32,8 @@ export type { DamageType } from '../events/index.js';
 /**
  * Pre 阶段伤害事件
  */
-export type PreDamageEvent = {
+export type PreDamageEvent = GameEventBase & {
   readonly kind: 'pre_damage';
-  readonly logicTime: number;
   readonly source?: ActorRef;
   readonly target: ActorRef;
   readonly damage: number;
@@ -81,7 +81,6 @@ export class DamageAction extends BaseAction<DamageActionParams> {
       // ========== Pre 阶段 ==========
       const preEvent: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: currentEvent.logicTime,
         source,
         target,
         damage: baseDamage,
@@ -112,7 +111,6 @@ export class DamageAction extends BaseAction<DamageActionParams> {
       // ========== 产生最终事件（回放格式） ==========
       const damageEvent = ctx.eventCollector.push(
         createDamageEvent(
-          currentEvent.logicTime,
           target.id,
           finalDamage,
           damageType,

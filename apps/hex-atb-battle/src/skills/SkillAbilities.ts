@@ -75,14 +75,12 @@ export type ActionUseEvent = AbilityActivateEvent & {
  * 创建行动使用事件
  */
 export function createActionUseEvent(
-  logicTime: number,
   abilityInstanceId: string,
   sourceId: string,
   options?: { target?: ActorRef; targetCoord?: AxialCoord }
 ): ActionUseEvent {
   return {
     kind: ABILITY_ACTIVATE_EVENT,
-    logicTime,
     abilityInstanceId,
     sourceId,
     target: options?.target,

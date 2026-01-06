@@ -85,7 +85,7 @@ describe('PreEventComponent', () => {
       // 发送事件验证处理器已注册
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -122,7 +122,7 @@ describe('PreEventComponent', () => {
       // 发送事件验证处理器已注销
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -155,7 +155,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -185,7 +185,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -223,7 +223,7 @@ describe('PreEventComponent', () => {
       // 物理伤害 - 应该减伤
       const physicalEvent: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -236,7 +236,7 @@ describe('PreEventComponent', () => {
       // 魔法伤害 - 不应该减伤
       const magicEvent: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -287,7 +287,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -327,7 +327,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -362,7 +362,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -423,7 +423,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,
@@ -469,7 +469,7 @@ describe('PreEventComponent', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'enemy-1',
         targetId: 'unit-1',
         damage: 100,

@@ -236,10 +236,7 @@ export class BattleRecorder {
 
     // 记录 Actor 创建事件
     const initData = this.captureActorInitData(actor);
-    const event = createActorSpawnedEvent(
-      this.currentFrame * this.config.tickInterval,
-      initData
-    );
+    const event = createActorSpawnedEvent(initData);
     this.pendingEvents.push(event);
 
     // 订阅 Actor
@@ -253,11 +250,7 @@ export class BattleRecorder {
     if (!this.isRecording) return;
 
     // 记录 Actor 销毁事件
-    const event = createActorDestroyedEvent(
-      this.currentFrame * this.config.tickInterval,
-      actorId,
-      reason
-    );
+    const event = createActorDestroyedEvent(actorId, reason);
     this.pendingEvents.push(event);
 
     // 取消订阅

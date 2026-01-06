@@ -20,6 +20,7 @@ import {
   type ActionResult,
   type ExecutionContext,
   type ActorRef,
+  type GameEventBase,
   createSuccessResult,
   getCurrentEvent,
   GameWorld,
@@ -32,9 +33,8 @@ import { createDamageEvent, type DamageType } from '../events/index.js';
 /**
  * 伤害事件（从触发链获取，使用回放格式）
  */
-type DamageEventLike = {
+type DamageEventLike = GameEventBase & {
   kind: 'damage';
-  logicTime: number;
   sourceActorId?: string;
   targetActorId: string;
   damage: number;
@@ -90,7 +90,6 @@ export class ReflectDamageAction implements IAction {
     // 产生伤害事件（回放格式），带 isReflected 标记防止无限循环
     const reflectEvent = ctx.eventCollector.push(
       createDamageEvent(
-        currentEvent.logicTime,
         attackerId,
         damage,
         damageType,

@@ -406,7 +406,6 @@ export class ProjectileSystem extends System {
 
     const source = projectile.source ?? { id: 'unknown' };
     const event = createProjectileHitEvent(
-      logicTime,
       projectile.id,
       source,
       target,
@@ -435,7 +434,6 @@ export class ProjectileSystem extends System {
     const finalPosition = projectile.position ?? { x: 0, y: 0 };
 
     const event = createProjectileMissEvent(
-      logicTime,
       projectile.id,
       source,
       reason,
@@ -448,7 +446,6 @@ export class ProjectileSystem extends System {
 
     // 同时发送 despawn 事件
     const despawnEvent = createProjectileDespawnEvent(
-      logicTime,
       projectile.id,
       source,
       'miss'
@@ -468,7 +465,6 @@ export class ProjectileSystem extends System {
 
     const source = projectile.source ?? { id: 'unknown' };
     const event = createProjectilePierceEvent(
-      logicTime,
       projectile.id,
       source,
       target,

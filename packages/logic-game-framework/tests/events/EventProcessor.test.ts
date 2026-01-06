@@ -31,7 +31,7 @@ describe('MutableEvent', () => {
   it('should create mutable event from original', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -49,7 +49,7 @@ describe('MutableEvent', () => {
   it('should get original value when no modifications', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -65,7 +65,7 @@ describe('MutableEvent', () => {
   it('should apply add modification', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -81,7 +81,7 @@ describe('MutableEvent', () => {
   it('should apply multiply modification', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -97,7 +97,7 @@ describe('MutableEvent', () => {
   it('should apply set modification', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -113,7 +113,7 @@ describe('MutableEvent', () => {
   it('should apply modifications in correct order: set -> add -> multiply', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -134,7 +134,7 @@ describe('MutableEvent', () => {
   it('should generate final event with modifications', () => {
     const original: PreDamageEvent = {
       kind: 'pre_damage',
-      logicTime: 1000,
+      
       sourceId: 'attacker',
       targetId: 'defender',
       damage: 100,
@@ -163,7 +163,7 @@ describe('EventProcessor', () => {
     it('should process pre event without handlers', () => {
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -194,7 +194,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -224,7 +224,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -263,7 +263,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -291,7 +291,7 @@ describe('EventProcessor', () => {
       // 魔法伤害不触发减伤
       const magicEvent: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -331,7 +331,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -360,7 +360,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -396,7 +396,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -424,7 +424,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -456,7 +456,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -474,7 +474,7 @@ describe('EventProcessor', () => {
     it('should clear traces', () => {
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,
@@ -520,7 +520,7 @@ describe('EventProcessor', () => {
 
       const event: PreDamageEvent = {
         kind: 'pre_damage',
-        logicTime: 1000,
+        
         sourceId: 'attacker',
         targetId: 'defender',
         damage: 100,

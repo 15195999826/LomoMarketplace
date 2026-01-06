@@ -456,7 +456,7 @@ describe('Ability', () => {
       );
       ability.applyEffects(createMockContext(ability));
 
-      const event: GameEventBase = { kind: 'damage', logicTime: 0 };
+      const event: GameEventBase = { kind: 'damage' };
       const gameplayState = { battleId: 'b1' };
       ability.receiveEvent(event, createMockContext(ability), gameplayState);
 
@@ -475,7 +475,7 @@ describe('Ability', () => {
       ability.applyEffects(createMockContext(ability));
       ability.expire('test');
 
-      const event: GameEventBase = { kind: 'damage', logicTime: 0 };
+      const event: GameEventBase = { kind: 'damage' };
       ability.receiveEvent(event, createMockContext(ability), {});
 
       expect(component.onEventCalls.length).toBe(0);
@@ -490,7 +490,7 @@ describe('Ability', () => {
       ability.applyEffects(createMockContext(ability));
       component.markExpired();
 
-      const event: GameEventBase = { kind: 'damage', logicTime: 0 };
+      const event: GameEventBase = { kind: 'damage' };
       ability.receiveEvent(event, createMockContext(ability), {});
 
       expect(component.onEventCalls.length).toBe(0);

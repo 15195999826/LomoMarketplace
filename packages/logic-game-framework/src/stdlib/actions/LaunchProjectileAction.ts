@@ -129,9 +129,6 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
    * 执行 Action
    */
   execute(ctx: ExecutionContext): ActionResult {
-    const currentEvent = getCurrentEvent(ctx);
-    const logicTime = currentEvent.logicTime;
-
     // 解析起始位置
     const startPosition = this.params.startPositionResolver(ctx);
     if (!startPosition) {
@@ -179,7 +176,6 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
 
     // 创建发射事件
     const launchedEvent = createProjectileLaunchedEvent(
-      logicTime,
       projectile.id,
       source,
       startPosition,

@@ -74,7 +74,6 @@ export class MoveAction extends BaseAction<MoveActionParams> {
       // 产生回放格式事件
       return ctx.eventCollector.push(
         createMoveEvent(
-          currentEvent.logicTime,
           target.id,
           fromHex ?? { q: 0, r: 0 },  // 默认值（理论上不应触发）
           targetCoord ?? { q: 0, r: 0 }

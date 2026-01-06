@@ -179,7 +179,6 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
 
     // 创建发射事件
     const launchedEvent = createProjectileLaunchedEvent(
-      currentEvent.logicTime,
       projectile.id,
       source,
       projectile.position ?? { x: 0, y: 0 },

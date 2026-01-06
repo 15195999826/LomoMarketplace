@@ -411,7 +411,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
     // 创建事件并广播
     const event = createActionUseEvent(
-      this.logicTime,
       decision.abilityInstanceId,
       actor.id,
       { target: decision.target, targetCoord: decision.targetCoord }

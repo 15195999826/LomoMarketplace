@@ -49,7 +49,6 @@ export class HealAction extends BaseAction<HealActionParams> {
     const allEvents = targets.map(target =>
       ctx.eventCollector.push(
         createHealEvent(
-          currentEvent.logicTime,
           target.id,
           healAmount,
           source?.id

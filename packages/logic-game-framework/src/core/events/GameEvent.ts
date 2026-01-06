@@ -28,14 +28,16 @@
  *
  * 游戏通过扩展此接口定义自己的事件类型：
  * - kind: 事件类型标识（字符串）
- * - logicTime: 逻辑时间戳
  * - 其他字段由游戏自定义
+ *
+ * ## 时间来源
+ *
+ * - 逻辑时间通过 IRecordingContext.getLogicTime() 获取
+ * - 回放中通过 frame * tickInterval 计算
  */
 export interface GameEventBase {
   /** 事件类型标识 */
   readonly kind: string;
-  /** 逻辑时间戳（毫秒） */
-  readonly logicTime: number;
   /** 允许游戏添加任意额外字段 */
   readonly [key: string]: unknown;
 }
@@ -104,7 +106,6 @@ export const ABILITY_ACTIVATE_EVENT = 'abilityActivate' as const;
  * // 基础使用
  * const event: AbilityActivateEvent = {
  *   kind: 'abilityActivate',
- *   logicTime: 1000,
  *   abilityInstanceId: 'ability_123',
  *   sourceId: 'actor_1',
  * };
@@ -128,13 +129,11 @@ export interface AbilityActivateEvent extends GameEventBase {
  * 创建标准 Ability 激活事件
  */
 export function createAbilityActivateEvent(
-  logicTime: number,
   abilityInstanceId: string,
   sourceId: string
 ): AbilityActivateEvent {
   return {
     kind: ABILITY_ACTIVATE_EVENT,
-    logicTime,
     abilityInstanceId,
     sourceId,
   };
@@ -312,12 +311,10 @@ export type FrameworkEvent =
  * 创建 Actor 生成事件
  */
 export function createActorSpawnedEvent(
-  logicTime: number,
   actor: unknown
 ): ActorSpawnedEvent {
   return {
     kind: ACTOR_SPAWNED_EVENT,
-    logicTime,
     actor,
   };
 }
@@ -326,13 +323,11 @@ export function createActorSpawnedEvent(
  * 创建 Actor 销毁事件
  */
 export function createActorDestroyedEvent(
-  logicTime: number,
   actorId: string,
   reason?: string
 ): ActorDestroyedEvent {
   return {
     kind: ACTOR_DESTROYED_EVENT,
-    logicTime,
     actorId,
     reason,
   };
@@ -342,7 +337,6 @@ export function createActorDestroyedEvent(
  * 创建属性变化事件
  */
 export function createAttributeChangedEvent(
-  logicTime: number,
   actorId: string,
   attribute: string,
   oldValue: number,
@@ -351,7 +345,6 @@ export function createAttributeChangedEvent(
 ): AttributeChangedEvent {
   return {
     kind: ATTRIBUTE_CHANGED_EVENT,
-    logicTime,
     actorId,
     attribute,
     oldValue,
@@ -364,13 +357,11 @@ export function createAttributeChangedEvent(
  * 创建 Ability 获得事件
  */
 export function createAbilityGrantedEvent(
-  logicTime: number,
   actorId: string,
   ability: IAbilityInitDataForEvent
 ): AbilityGrantedEvent {
   return {
     kind: ABILITY_GRANTED_EVENT,
-    logicTime,
     actorId,
     ability,
   };
@@ -380,13 +371,11 @@ export function createAbilityGrantedEvent(
  * 创建 Ability 移除事件
  */
 export function createAbilityRemovedEvent(
-  logicTime: number,
   actorId: string,
   abilityInstanceId: string
 ): AbilityRemovedEvent {
   return {
     kind: ABILITY_REMOVED_EVENT,
-    logicTime,
     actorId,
     abilityInstanceId,
   };
@@ -396,7 +385,6 @@ export function createAbilityRemovedEvent(
  * 创建 Ability 激活完成事件
  */
 export function createAbilityActivatedEvent(
-  logicTime: number,
   actorId: string,
   abilityInstanceId: string,
   abilityConfigId: string,
@@ -404,7 +392,6 @@ export function createAbilityActivatedEvent(
 ): AbilityActivatedEvent {
   return {
     kind: ABILITY_ACTIVATED_EVENT,
-    logicTime,
     actorId,
     abilityInstanceId,
     abilityConfigId,
@@ -416,7 +403,6 @@ export function createAbilityActivatedEvent(
  * 创建 Tag 变化事件
  */
 export function createTagChangedEvent(
-  logicTime: number,
   actorId: string,
   tag: string,
   oldCount: number,
@@ -424,7 +410,6 @@ export function createTagChangedEvent(
 ): TagChangedEvent {
   return {
     kind: TAG_CHANGED_EVENT,
-    logicTime,
     actorId,
     tag,
     oldCount,

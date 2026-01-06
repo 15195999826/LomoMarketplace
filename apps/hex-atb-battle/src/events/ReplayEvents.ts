@@ -92,7 +92,6 @@ export interface DeathEvent extends GameEventBase {
  * 创建伤害事件
  */
 export function createDamageEvent(
-  logicTime: number,
   targetActorId: string,
   damage: number,
   damageType: DamageType,
@@ -101,7 +100,6 @@ export function createDamageEvent(
 ): DamageEvent {
   return {
     kind: 'damage',
-    logicTime,
     sourceActorId,
     targetActorId,
     damage,
@@ -114,14 +112,12 @@ export function createDamageEvent(
  * 创建治疗事件
  */
 export function createHealEvent(
-  logicTime: number,
   targetActorId: string,
   healAmount: number,
   sourceActorId?: string
 ): HealEvent {
   return {
     kind: 'heal',
-    logicTime,
     sourceActorId,
     targetActorId,
     healAmount,
@@ -132,7 +128,6 @@ export function createHealEvent(
  * 创建移动事件
  */
 export function createMoveEvent(
-  logicTime: number,
   actorId: string,
   fromHex: { q: number; r: number },
   toHex: { q: number; r: number },
@@ -140,7 +135,6 @@ export function createMoveEvent(
 ): MoveEvent {
   return {
     kind: 'move',
-    logicTime,
     actorId,
     fromHex,
     toHex,
@@ -152,13 +146,11 @@ export function createMoveEvent(
  * 创建死亡事件
  */
 export function createDeathEvent(
-  logicTime: number,
   actorId: string,
   killerActorId?: string
 ): DeathEvent {
   return {
     kind: 'death',
-    logicTime,
     actorId,
     killerActorId,
   };

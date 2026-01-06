@@ -146,7 +146,6 @@ export type ProjectileEvent =
  * 创建投射物发射事件
  */
 export function createProjectileLaunchedEvent(
-  logicTime: number,
   projectileId: string,
   source: ActorRef,
   startPosition: Position,
@@ -157,7 +156,6 @@ export function createProjectileLaunchedEvent(
 ): ProjectileLaunchedEvent {
   return {
     kind: PROJECTILE_LAUNCHED_EVENT,
-    logicTime,
     projectileId,
     source,
     target,
@@ -172,7 +170,6 @@ export function createProjectileLaunchedEvent(
  * 创建投射物命中事件
  */
 export function createProjectileHitEvent(
-  logicTime: number,
   projectileId: string,
   source: ActorRef,
   target: ActorRef,
@@ -188,7 +185,6 @@ export function createProjectileHitEvent(
 ): ProjectileHitEvent {
   return {
     kind: PROJECTILE_HIT_EVENT,
-    logicTime,
     projectileId,
     source,
     target,
@@ -203,7 +199,6 @@ export function createProjectileHitEvent(
  * 创建投射物未命中事件
  */
 export function createProjectileMissEvent(
-  logicTime: number,
   projectileId: string,
   source: ActorRef,
   reason: string,
@@ -213,7 +208,6 @@ export function createProjectileMissEvent(
 ): ProjectileMissEvent {
   return {
     kind: PROJECTILE_MISS_EVENT,
-    logicTime,
     projectileId,
     source,
     target,
@@ -227,14 +221,12 @@ export function createProjectileMissEvent(
  * 创建投射物消失事件
  */
 export function createProjectileDespawnEvent(
-  logicTime: number,
   projectileId: string,
   source: ActorRef,
   reason: 'hit' | 'miss' | 'timeout' | 'manual'
 ): ProjectileDespawnEvent {
   return {
     kind: PROJECTILE_DESPAWN_EVENT,
-    logicTime,
     projectileId,
     source,
     reason,
@@ -245,7 +237,6 @@ export function createProjectileDespawnEvent(
  * 创建投射物穿透事件
  */
 export function createProjectilePierceEvent(
-  logicTime: number,
   projectileId: string,
   source: ActorRef,
   target: ActorRef,
@@ -255,7 +246,6 @@ export function createProjectilePierceEvent(
 ): ProjectilePierceEvent {
   return {
     kind: PROJECTILE_PIERCE_EVENT,
-    logicTime,
     projectileId,
     source,
     target,

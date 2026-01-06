@@ -44,7 +44,7 @@ function createMockActionWithEvent(type: string, eventKind: string): IAction {
     type,
     execute(ctx: ExecutionContext): ActionResult {
       return {
-        events: [{ kind: eventKind, logicTime: 0 }],
+        events: [{ kind: eventKind }],
       };
     },
   };
@@ -470,7 +470,7 @@ describe('AbilityExecutionInstance', () => {
       const config: ExecutionInstanceConfig = {
         timelineId: 'test',
         tagActions: { hit: [action] },
-        eventChain: [{ kind: 'input', logicTime: 0 }],
+        eventChain: [{ kind: 'input' }],
         gameplayState: { battleId: 'battle_1' },
         abilityInfo: {
           id: 'ability_123',
@@ -486,7 +486,7 @@ describe('AbilityExecutionInstance', () => {
       expect(action.executeCalls.length).toBe(1);
       const ctx = action.executeCalls[0];
 
-      expect(ctx.eventChain).toEqual([{ kind: 'input', logicTime: 0 }]);
+      expect(ctx.eventChain).toEqual([{ kind: 'input' }]);
       expect(ctx.gameplayState).toEqual({ battleId: 'battle_1' });
       expect(ctx.ability?.id).toBe('ability_123');
       expect(ctx.ability?.configId).toBe('fireball');

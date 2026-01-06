@@ -84,7 +84,6 @@ export function recordAttributeChanges(
   const listener: AttributeChangeListener = (event) => {
     ctx.pushEvent(
       createAttributeChangedEvent(
-        ctx.getLogicTime(),
         ctx.actorId,
         event.attributeName,
         event.oldValue,
@@ -104,8 +103,7 @@ export function recordAttributeChanges(
  * 订阅 AbilitySet 的 Ability 生命周期变化
  *
  * 监听 Ability 的获得和移除，自动转换为对应事件。
- *
- * 注意：Tag 变化暂不支持（AbilitySet 目前没有 onTagChanged 回调）
+ * 同时自动订阅 Tag 变化（通过 AbilitySet 代理的 TagContainer）。
  *
  * @param abilitySet AbilitySet 实例
  * @param ctx 录像上下文
@@ -130,7 +128,7 @@ export function recordAbilitySetChanges(
   unsubscribes.push(
     abilitySet.onAbilityGranted((ability) => {
       ctx.pushEvent(
-        createAbilityGrantedEvent(ctx.getLogicTime(), ctx.actorId, {
+        createAbilityGrantedEvent(ctx.actorId, {
           instanceId: ability.id,
           configId: ability.configId,
         })
@@ -142,7 +140,7 @@ export function recordAbilitySetChanges(
   unsubscribes.push(
     abilitySet.onAbilityRevoked((ability) => {
       ctx.pushEvent(
-        createAbilityRemovedEvent(ctx.getLogicTime(), ctx.actorId, ability.id)
+        createAbilityRemovedEvent(ctx.actorId, ability.id)
       );
     })
   );
@@ -191,7 +189,6 @@ export function recordTagChanges(
   return tagSource.onTagChanged((tag, oldCount, newCount) => {
     ctx.pushEvent(
       createTagChangedEvent(
-        ctx.getLogicTime(),
         ctx.actorId,
         tag,
         oldCount,
