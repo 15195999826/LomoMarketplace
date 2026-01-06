@@ -23,6 +23,7 @@ export {
   AbilityRevokeReason,
   AbilityGrantedCallback,
   AbilityRevokedCallback,
+  TagChangedCallback,
   createAbilitySet,
   hasAbilitySet,
   DurationTagEntry,

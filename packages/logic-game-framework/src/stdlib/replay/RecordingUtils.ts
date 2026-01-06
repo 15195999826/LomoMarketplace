@@ -11,6 +11,12 @@
  * - **可组合**: 每个函数独立，Actor 可自由组合
  * - **可扩展**: 项目可以添加自己的录像工具函数
  *
+ * ## 可用函数
+ *
+ * - `recordAttributeChanges` - 订阅属性变化
+ * - `recordAbilitySetChanges` - 订阅 Ability 生命周期和 Tag 变化
+ * - `recordTagChanges` - 单独订阅 Tag 变化（已包含在 recordAbilitySetChanges 中）
+ *
  * @example
  * ```typescript
  * class CharacterActor implements IRecordableActor {
@@ -25,12 +31,13 @@
  */
 
 import type { AttributeChangeListener } from '../../core/attributes/AttributeSet.js';
-import type { AbilitySet } from '../../core/abilities/AbilitySet.js';
+import type { AbilitySet, TagChangedCallback } from '../../core/abilities/AbilitySet.js';
 import type { IRecordingContext } from './ReplayTypes.js';
 import {
   createAttributeChangedEvent,
   createAbilityGrantedEvent,
   createAbilityRemovedEvent,
+  createTagChangedEvent,
 } from '../../core/events/GameEvent.js';
 
 /**
@@ -131,7 +138,48 @@ export function recordAbilitySetChanges(
     })
   );
 
-  // TODO: 订阅 Tag 变化（需要 AbilitySet 添加 onTagChanged 回调）
+  // 订阅 Tag 变化
+  unsubscribes.push(recordTagChanges(abilitySet, ctx));
 
   return unsubscribes;
+}
+
+/**
+ * 订阅 AbilitySet 的 Tag 变化
+ *
+ * 监听所有来源（Loose/AutoDuration/Component）的 Tag 总层数变化，
+ * 自动转换为 TagChangedEvent。
+ *
+ * 主要用于记录冷却等 Tag 的变化。
+ *
+ * @param abilitySet AbilitySet 实例
+ * @param ctx 录像上下文
+ * @returns 取消订阅函数
+ *
+ * @example
+ * ```typescript
+ * setupRecording(ctx: IRecordingContext) {
+ *   return [
+ *     recordTagChanges(this.abilitySet, ctx),
+ *   ];
+ * }
+ * ```
+ */
+export function recordTagChanges(
+  abilitySet: AbilitySet,
+  ctx: IRecordingContext
+): () => void {
+  const listener: TagChangedCallback = (tag, oldCount, newCount) => {
+    ctx.pushEvent(
+      createTagChangedEvent(
+        ctx.getLogicTime(),
+        ctx.actorId,
+        tag,
+        oldCount,
+        newCount
+      )
+    );
+  };
+
+  return abilitySet.onTagChanged(listener);
 }

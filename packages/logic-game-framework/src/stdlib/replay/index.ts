@@ -23,6 +23,7 @@ export { BattleRecorder, type IBattleRecorderConfig } from './BattleRecorder.js'
 export {
   recordAttributeChanges,
   recordAbilitySetChanges,
+  recordTagChanges,
   type IAttributeChangeSubscribable,
 } from './RecordingUtils.js';
 

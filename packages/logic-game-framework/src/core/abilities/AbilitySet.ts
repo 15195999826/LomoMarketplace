@@ -109,6 +109,24 @@ export type AbilityRevokedCallback = (
 ) => void;
 
 /**
+ * Tag 变化回调
+ *
+ * 当任何来源（Loose/AutoDuration/Component）的 Tag 总层数发生变化时触发。
+ * 主要用于录像系统记录冷却等 Tag 的变化。
+ *
+ * @param tag Tag 名称
+ * @param oldCount 变化前的总层数
+ * @param newCount 变化后的总层数
+ * @param abilitySet AbilitySet 引用
+ */
+export type TagChangedCallback = (
+  tag: string,
+  oldCount: number,
+  newCount: number,
+  abilitySet: AbilitySet
+) => void;
+
+/**
  * AbilitySet 配置
  */
 export type AbilitySetConfig = {
@@ -162,6 +180,9 @@ export class AbilitySet {
   /** Ability 移除回调 */
   private onRevokedCallbacks: AbilityRevokedCallback[] = [];
 
+  /** Tag 变化回调 */
+  private onTagChangedCallbacks: TagChangedCallback[] = [];
+
   constructor(config: AbilitySetConfig) {
     this.owner = config.owner;
     this.modifierTarget = config.modifierTarget;
@@ -185,13 +206,20 @@ export class AbilitySet {
    * @param stacks 层数，默认 1
    */
   addLooseTag(tag: string, stacks: number = 1): void {
+    const oldCount = this.getTagStacks(tag);
     const current = this.looseTags.get(tag) ?? 0;
     this.looseTags.set(tag, current + stacks);
+    const newCount = this.getTagStacks(tag);
 
     debugLog('ability', `添加 LooseTag: ${tag}`, {
       actorId: this.owner.id,
       stacks: current + stacks,
     });
+
+    // 触发 Tag 变化回调
+    if (oldCount !== newCount) {
+      this.notifyTagChanged(tag, oldCount, newCount);
+    }
   }
 
   /**
@@ -207,6 +235,8 @@ export class AbilitySet {
       return false;
     }
 
+    const oldCount = this.getTagStacks(tag);
+
     if (stacks === undefined || stacks >= current) {
       // 全部移除
       this.looseTags.delete(tag);
@@ -218,6 +248,13 @@ export class AbilitySet {
         actorId: this.owner.id,
         remainingStacks: current - stacks,
       });
+    }
+
+    const newCount = this.getTagStacks(tag);
+
+    // 触发 Tag 变化回调
+    if (oldCount !== newCount) {
+      this.notifyTagChanged(tag, oldCount, newCount);
     }
 
     return true;
@@ -235,8 +272,10 @@ export class AbilitySet {
    * @param duration 持续时间（毫秒）
    */
   addAutoDurationTag(tag: string, duration: number): void {
+    const oldCount = this.getTagStacks(tag);
     const expiresAt = this.currentLogicTime + duration;
     this.autoDurationTags.push({ tag, expiresAt });
+    const newCount = this.getTagStacks(tag);
 
     // 格式化时间显示（毫秒或秒）
     const durationStr = duration >= 1000 ? `${duration / 1000}s` : `${duration}ms`;
@@ -246,6 +285,11 @@ export class AbilitySet {
       expiresAt,
       totalStacks: this.getAutoDurationTagStacks(tag),
     });
+
+    // 触发 Tag 变化回调
+    if (oldCount !== newCount) {
+      this.notifyTagChanged(tag, oldCount, newCount);
+    }
   }
 
   /**
@@ -262,12 +306,14 @@ export class AbilitySet {
    */
   private cleanupExpiredAutoDurationTags(): void {
     const beforeCount = this.autoDurationTags.length;
-    const expiredTags = new Set<string>();
 
-    // 记录哪些 tag 有过期的层
+    // 记录哪些 tag 有过期的层，以及变化前的层数
+    const tagOldCounts = new Map<string, number>();
     for (const entry of this.autoDurationTags) {
       if (entry.expiresAt <= this.currentLogicTime) {
-        expiredTags.add(entry.tag);
+        if (!tagOldCounts.has(entry.tag)) {
+          tagOldCounts.set(entry.tag, this.getTagStacks(entry.tag));
+        }
       }
     }
 
@@ -276,14 +322,19 @@ export class AbilitySet {
       (e) => e.expiresAt > this.currentLogicTime
     );
 
-    // 记录日志
-    for (const tag of expiredTags) {
-      const remaining = this.getAutoDurationTagStacks(tag);
+    // 记录日志并触发回调
+    for (const [tag, oldCount] of tagOldCounts) {
+      const newCount = this.getTagStacks(tag);
       debugLog('ability', `AutoDurationTag 层过期: ${tag}`, {
         actorId: this.owner.id,
         removedLayers: beforeCount - this.autoDurationTags.length,
-        remainingStacks: remaining,
+        remainingStacks: newCount,
       });
+
+      // 触发 Tag 变化回调
+      if (oldCount !== newCount) {
+        this.notifyTagChanged(tag, oldCount, newCount);
+      }
     }
   }
 
@@ -299,6 +350,12 @@ export class AbilitySet {
   _addComponentTags(abilityId: string, tags: Record<string, number>): void {
     if (Object.keys(tags).length === 0) return;
 
+    // 记录变化前的层数
+    const oldCounts = new Map<string, number>();
+    for (const tag of Object.keys(tags)) {
+      oldCounts.set(tag, this.getTagStacks(tag));
+    }
+
     // 合并到已有的 tags（同一 Ability 可能有多个 TagComponent）
     const existing = this.componentTags.get(abilityId) ?? {};
     const merged = { ...existing };
@@ -312,6 +369,14 @@ export class AbilitySet {
       actorId: this.owner.id,
       abilityId,
     });
+
+    // 触发 Tag 变化回调
+    for (const [tag, oldCount] of oldCounts) {
+      const newCount = this.getTagStacks(tag);
+      if (oldCount !== newCount) {
+        this.notifyTagChanged(tag, oldCount, newCount);
+      }
+    }
   }
 
   /**
@@ -324,6 +389,12 @@ export class AbilitySet {
     const tags = this.componentTags.get(abilityId);
     if (!tags || Object.keys(tags).length === 0) return;
 
+    // 记录变化前的层数
+    const oldCounts = new Map<string, number>();
+    for (const tag of Object.keys(tags)) {
+      oldCounts.set(tag, this.getTagStacks(tag));
+    }
+
     this.componentTags.delete(abilityId);
 
     const tagList = Object.entries(tags).map(([t, s]) => `${t}:${s}`).join(', ');
@@ -331,6 +402,14 @@ export class AbilitySet {
       actorId: this.owner.id,
       abilityId,
     });
+
+    // 触发 Tag 变化回调
+    for (const [tag, oldCount] of oldCounts) {
+      const newCount = this.getTagStacks(tag);
+      if (oldCount !== newCount) {
+        this.notifyTagChanged(tag, oldCount, newCount);
+      }
+    }
   }
 
   // ========== Tag 联合查询 ==========
@@ -708,6 +787,25 @@ export class AbilitySet {
     };
   }
 
+  /**
+   * 注册 Tag 变化回调
+   *
+   * 当任何来源（Loose/AutoDuration/Component）的 Tag 总层数发生变化时触发。
+   * 主要用于录像系统记录冷却等 Tag 的变化。
+   *
+   * @param callback 回调函数
+   * @returns 取消订阅函数
+   */
+  onTagChanged(callback: TagChangedCallback): () => void {
+    this.onTagChangedCallbacks.push(callback);
+    return () => {
+      const index = this.onTagChangedCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this.onTagChangedCallbacks.splice(index, 1);
+      }
+    };
+  }
+
   // ========== 内部方法 ==========
 
   /**
@@ -745,6 +843,19 @@ export class AbilitySet {
         callback(ability, reason, this, expireReason);
       } catch (error) {
         getLogger().error('Error in ability revoked callback', { error });
+      }
+    }
+  }
+
+  /**
+   * 通知 Tag 变化
+   */
+  private notifyTagChanged(tag: string, oldCount: number, newCount: number): void {
+    for (const callback of this.onTagChangedCallbacks) {
+      try {
+        callback(tag, oldCount, newCount, this);
+      } catch (error) {
+        getLogger().error('Error in tag changed callback', { error, tag });
       }
     }
   }
