@@ -259,7 +259,7 @@ export class ReplayLogPrinter {
 
       // 未知事件
       default: {
-        const { kind: k, logicTime: _t, ...rest } = e;
+        const { kind: k, ...rest } = e;
         const restStr = Object.keys(rest).length > 0 ? ` ${JSON.stringify(rest)}` : '';
         return `${k}${restStr}`;
       }

@@ -7,8 +7,9 @@
  *
  * - **Core 层纯粹性**: Core 层组件不依赖 BattleRecorder
  * - **可选功能**: BattleRecorder 是可选的 stdlib 组件
- * - **事件继承 GameEventBase**: 所有事件带 kind + logicTime
+ * - **事件继承 GameEventBase**: 所有事件带 kind 字段
  * - **自动清理**: 停止录制时自动清理所有订阅
+ * - **无冗余时间**: 事件不包含 logicTime，通过 frame * tickInterval 计算
  *
  * ## 使用方式
  *

@@ -11,7 +11,7 @@
  * 1. **事件溯源**: 初始状态 + 事件流 = 任意时刻状态
  * 2. **自描述性**: 事件数据足够详细，能完整表达发生了什么
  * 3. **按帧组织**: 同一帧的事件归为一组，无需每个事件记录时间
- * 4. **继承 GameEventBase**: 所有事件带 kind + logicTime
+ * 4. **无冗余时间**: 事件不包含 logicTime，通过 frame * tickInterval 计算
  */
 
 import type { GameEventBase } from '../../core/events/GameEvent.js';
