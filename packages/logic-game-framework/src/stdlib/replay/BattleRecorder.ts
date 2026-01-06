@@ -32,10 +32,6 @@
 
 import type { GameEventBase } from '../../core/events/GameEvent.js';
 import {
-  createAttributeChangedEvent,
-  createAbilityGrantedEvent,
-  createAbilityRemovedEvent,
-  createTagChangedEvent,
   createActorSpawnedEvent,
   createActorDestroyedEvent,
 } from '../../core/events/GameEvent.js';
@@ -46,6 +42,7 @@ import {
   type IBattleMeta,
   type IFrameData,
   type IActorInitData,
+  type IRecordingContext,
   type IRecordableActor,
 } from './ReplayTypes.js';
 
@@ -277,6 +274,9 @@ export class BattleRecorder {
 
   /**
    * 订阅 Actor 的组件回调
+   *
+   * 通过调用 Actor 的 setupRecording 方法，让 Actor 自行决定订阅什么。
+   * 这种控制反转设计避免了 duck typing，实现完全类型安全。
    */
   private subscribeActor(actor: IRecordableActor): void {
     const actorId = actor.id;
@@ -286,91 +286,24 @@ export class BattleRecorder {
       return;
     }
 
-    const unsubscribes: UnsubscribeFn[] = [];
-
-    // 尝试订阅属性变化（如果 Actor 提供）
-    const actorWithAttr = actor as unknown as {
-      onAttributeChanged?: (
-        listener: (attr: string, oldVal: number, newVal: number) => void
-      ) => UnsubscribeFn;
-    };
-    if (typeof actorWithAttr.onAttributeChanged === 'function') {
-      const unsub = actorWithAttr.onAttributeChanged((attr, oldVal, newVal) => {
-        if (!this.isRecording) return;
-        const event = createAttributeChangedEvent(
-          this.currentFrame * this.config.tickInterval,
-          actorId,
-          attr,
-          oldVal,
-          newVal
-        );
-        this.pendingEvents.push(event);
-      });
-      unsubscribes.push(unsub);
+    // 如果 Actor 没有实现 setupRecording，跳过订阅
+    if (!actor.setupRecording) {
+      return;
     }
 
-    // 尝试订阅 Ability 变化（如果 Actor 提供 abilitySet）
-    const actorWithAbility = actor as unknown as {
-      abilitySet?: {
-        onAbilityGranted?: (
-          listener: (ability: { id: string; configId: string }) => void
-        ) => UnsubscribeFn;
-        onAbilityRevoked?: (
-          listener: (ability: { id: string; configId: string }) => void
-        ) => UnsubscribeFn;
-        onTagChanged?: (
-          listener: (tag: string, oldCount: number, newCount: number) => void
-        ) => UnsubscribeFn;
-      };
+    // 创建录像上下文
+    const ctx: IRecordingContext = {
+      actorId,
+      getLogicTime: () => this.currentFrame * this.config.tickInterval,
+      pushEvent: (event: GameEventBase) => {
+        if (this.isRecording) {
+          this.pendingEvents.push(event);
+        }
+      },
     };
 
-    if (actorWithAbility.abilitySet) {
-      const abilitySet = actorWithAbility.abilitySet;
-
-      // Ability 获得
-      if (typeof abilitySet.onAbilityGranted === 'function') {
-        const unsub = abilitySet.onAbilityGranted((ability) => {
-          if (!this.isRecording) return;
-          const event = createAbilityGrantedEvent(
-            this.currentFrame * this.config.tickInterval,
-            actorId,
-            { instanceId: ability.id, configId: ability.configId }
-          );
-          this.pendingEvents.push(event);
-        });
-        unsubscribes.push(unsub);
-      }
-
-      // Ability 移除
-      if (typeof abilitySet.onAbilityRevoked === 'function') {
-        const unsub = abilitySet.onAbilityRevoked((ability) => {
-          if (!this.isRecording) return;
-          const event = createAbilityRemovedEvent(
-            this.currentFrame * this.config.tickInterval,
-            actorId,
-            ability.id
-          );
-          this.pendingEvents.push(event);
-        });
-        unsubscribes.push(unsub);
-      }
-
-      // Tag 变化
-      if (typeof abilitySet.onTagChanged === 'function') {
-        const unsub = abilitySet.onTagChanged((tag, oldCount, newCount) => {
-          if (!this.isRecording) return;
-          const event = createTagChangedEvent(
-            this.currentFrame * this.config.tickInterval,
-            actorId,
-            tag,
-            oldCount,
-            newCount
-          );
-          this.pendingEvents.push(event);
-        });
-        unsubscribes.push(unsub);
-      }
-    }
+    // 调用 Actor 的 setupRecording，获取取消订阅函数列表
+    const unsubscribes = actor.setupRecording(ctx);
 
     // 保存订阅信息
     if (unsubscribes.length > 0) {

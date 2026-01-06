@@ -12,11 +12,19 @@ export {
   type IFrameData,
   type IActorInitData,
   type IAbilityInitData,
+  type IRecordingContext,
   type IRecordableActor,
 } from './ReplayTypes.js';
 
 // 录制器
 export { BattleRecorder, type IBattleRecorderConfig } from './BattleRecorder.js';
+
+// 录像工具函数
+export {
+  recordAttributeChanges,
+  recordAbilitySetChanges,
+  type IAttributeChangeSubscribable,
+} from './RecordingUtils.js';
 
 // 日志打印
 export { ReplayLogPrinter } from './ReplayLogPrinter.js';

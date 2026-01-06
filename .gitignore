@@ -37,3 +37,5 @@ backup_lomo_mcp
 inkmon-pokedex/public/images/inkmon/MossBear/main.png
 plugins/dev-helper/scripts/__pycache__
 packages/logic-game-framework/examples/atb-battle
+
+apps/hex-atb-battle/Replays/

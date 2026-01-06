@@ -2,7 +2,8 @@
 
 > 版本：v2.0
 > 创建日期：2026-01-06
-> 状态：设计完成，待实现
+> 状态：Phase 1 ✅ 已完成 | Phase 2 🚧 进行中
+> 最后更新：2026-01-07
 
 ## 1. 目标与动机
 
@@ -457,7 +458,7 @@ Actor 动态创建/销毁
 
 ## 6. 实现计划
 
-### Phase 1: 框架层 (@lomo/logic-game-framework)
+### Phase 1: 框架层 (@lomo/logic-game-framework) ✅ 已完成
 
 **目标**：提供录制基础设施
 
@@ -465,29 +466,33 @@ Actor 动态创建/销毁
 packages/logic-game-framework/src/stdlib/replay/
 ├── index.ts              # 导出
 ├── ReplayTypes.ts        # 类型定义
-└── BattleRecorder.ts     # 录制器 System
+├── BattleRecorder.ts     # 录制器 System
+└── ReplayLogPrinter.ts   # 日志打印器
 ```
 
 **任务清单**：
-- [ ] 1.1 创建 `ReplayTypes.ts`，定义所有接口
-- [ ] 1.2 实现 `BattleRecorder` System
-  - [ ] `startRecording(actors, configs)` - 捕获初始状态
-  - [ ] `recordFrame(frame, events)` - 记录一帧事件
-  - [ ] `stopRecording()` - 完成录制，返回 `IBattleRecord`
-  - [ ] `exportJSON()` - 导出为 JSON 字符串
-- [ ] 1.3 在框架模块添加事件产生点（可选，根据实际需要逐步添加）
-- [ ] 1.4 从 `stdlib/index.ts` 导出
+- [x] 1.1 创建 `ReplayTypes.ts`，定义所有接口
+- [x] 1.2 实现 `BattleRecorder` System
+  - [x] `startRecording(actors, configs)` - 捕获初始状态
+  - [x] `recordFrame(frame, events)` - 记录一帧事件
+  - [x] `stopRecording()` - 完成录制，返回 `IBattleRecord`
+  - [x] `exportJSON()` - 导出为 JSON 字符串
+- [x] 1.3 在框架模块添加事件产生点（在 `core/events/GameEvent.ts` 中添加框架层事件类型）
+- [x] 1.4 从 `stdlib/index.ts` 导出
 
-### Phase 2: 验证层 (apps/hex-atb-battle)
+### Phase 2: 验证层 (apps/hex-atb-battle) 🚧 进行中
 
 **目标**：在验证项目中跑通录制流程，实现日志对照
 
 **任务清单**：
-- [ ] 2.1 定义项目特有事件类型
+- [ ] 2.1 定义项目特有事件类型（damage/heal/move/death 等）
 - [ ] 2.2 在各 Action 中 push 业务事件
-- [ ] 2.3 集成 BattleRecorder 到 HexBattle
-- [ ] 2.4 战斗结束时导出 `Replays/replay_{timestamp}.json`
-- [ ] 2.5 实现 `ReplayLogPrinter`（将 replay.json 转为可读日志）
+- [x] 2.3 集成 BattleRecorder 到 HexBattle
+  - [x] `CharacterActor` 实现 `IRecordableActor` 接口
+  - [x] `HexBattle` 初始化 BattleRecorder 并调用 `startRecording()`
+  - [x] 每帧调用 `recordFrame()`
+- [x] 2.4 战斗结束时导出 `Replays/replay_{timestamp}.json`
+- [x] 2.5 实现 `ReplayLogPrinter`（将 replay.json 转为可读日志）
 - [ ] 2.6 与现有 BattleLogger 输出对照验证
 
 **ReplayLogPrinter 输出示例**：
@@ -697,3 +702,4 @@ Actor [enemy_1] "哥布林" @ hex(3,2)
 - [ ] 检查点支持（用于长战斗快进）
 - [ ] JSON Schema 校验
 - [ ] 协议版本兼容性处理
+- [ ] 异步文件写入（当前 `exportReplay()` 使用同步 `fs.writeFileSync`，生产环境应改为异步）

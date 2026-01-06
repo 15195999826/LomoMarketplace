@@ -140,6 +140,25 @@ export interface IAbilityInitData {
   stackCount?: number;
 }
 
+// ========== 录像上下文 ==========
+
+/**
+ * 录像上下文
+ *
+ * 传递给 Actor 的 setupRecording 方法，提供录像所需的能力。
+ * 通过接口隔离，避免 Actor 直接依赖 BattleRecorder。
+ */
+export interface IRecordingContext {
+  /** 当前 Actor ID */
+  readonly actorId: string;
+
+  /** 获取当前逻辑时间（毫秒） */
+  getLogicTime(): number;
+
+  /** 推送事件到录像时间线 */
+  pushEvent(event: GameEventBase): void;
+}
+
 // ========== 可录制 Actor 接口 ==========
 
 /**
@@ -181,4 +200,25 @@ export interface IRecordableActor {
    * 返回 Tag 名到层数的映射
    */
   getTagSnapshot(): Record<string, number>;
+
+  /**
+   * 设置录像订阅（可选）
+   *
+   * Actor 在此方法中调用框架提供的工具函数来订阅各组件的变化。
+   * 返回取消订阅函数数组，BattleRecorder 会在停止录制时调用。
+   *
+   * @example
+   * ```typescript
+   * setupRecording(ctx: IRecordingContext) {
+   *   return [
+   *     recordAttributeChanges(this.attributeSet, ctx),
+   *     ...recordAbilitySetChanges(this.abilitySet, ctx),
+   *   ];
+   * }
+   * ```
+   *
+   * @param ctx 录像上下文
+   * @returns 取消订阅函数数组
+   */
+  setupRecording?(ctx: IRecordingContext): (() => void)[];
 }
