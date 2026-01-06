@@ -31,7 +31,7 @@
  */
 
 import type { AttributeChangeListener } from '../../core/attributes/AttributeSet.js';
-import type { AbilitySet, TagChangedCallback } from '../../core/abilities/AbilitySet.js';
+import type { AbilitySet } from '../../core/abilities/AbilitySet.js';
 import type { IRecordingContext } from './ReplayTypes.js';
 import {
   createAttributeChangedEvent,
@@ -48,6 +48,15 @@ import {
 export interface IAttributeChangeSubscribable {
   addChangeListener(listener: AttributeChangeListener): void;
   removeChangeListener(listener: AttributeChangeListener): void;
+}
+
+/**
+ * 可订阅 Tag 变化的对象接口
+ *
+ * 匹配 TagContainer 和 AbilitySet 的 onTagChanged API
+ */
+export interface ITagChangeSubscribable {
+  onTagChanged(callback: (tag: string, oldCount: number, newCount: number) => void): () => void;
 }
 
 /**
@@ -145,31 +154,41 @@ export function recordAbilitySetChanges(
 }
 
 /**
- * 订阅 AbilitySet 的 Tag 变化
+ * 订阅 Tag 变化
  *
  * 监听所有来源（Loose/AutoDuration/Component）的 Tag 总层数变化，
  * 自动转换为 TagChangedEvent。
  *
  * 主要用于记录冷却等 Tag 的变化。
  *
- * @param abilitySet AbilitySet 实例
+ * 可以接受 TagContainer 或 AbilitySet（两者都实现了 ITagChangeSubscribable）。
+ *
+ * @param tagSource 实现 onTagChanged 的对象（TagContainer 或 AbilitySet）
  * @param ctx 录像上下文
  * @returns 取消订阅函数
  *
  * @example
  * ```typescript
+ * // 使用 AbilitySet
  * setupRecording(ctx: IRecordingContext) {
  *   return [
  *     recordTagChanges(this.abilitySet, ctx),
  *   ];
  * }
+ *
+ * // 使用独立的 TagContainer
+ * setupRecording(ctx: IRecordingContext) {
+ *   return [
+ *     recordTagChanges(this.tagContainer, ctx),
+ *   ];
+ * }
  * ```
  */
 export function recordTagChanges(
-  abilitySet: AbilitySet,
+  tagSource: ITagChangeSubscribable,
   ctx: IRecordingContext
 ): () => void {
-  const listener: TagChangedCallback = (tag, oldCount, newCount) => {
+  return tagSource.onTagChanged((tag, oldCount, newCount) => {
     ctx.pushEvent(
       createTagChangedEvent(
         ctx.getLogicTime(),
@@ -179,7 +198,5 @@ export function recordTagChanges(
         newCount
       )
     );
-  };
-
-  return abilitySet.onTagChanged(listener);
+  });
 }

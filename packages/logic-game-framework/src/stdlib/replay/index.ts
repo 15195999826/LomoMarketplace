@@ -25,6 +25,7 @@ export {
   recordAbilitySetChanges,
   recordTagChanges,
   type IAttributeChangeSubscribable,
+  type ITagChangeSubscribable,
 } from './RecordingUtils.js';
 
 // 日志打印

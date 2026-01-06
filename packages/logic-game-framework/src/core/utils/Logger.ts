@@ -56,8 +56,9 @@ export class SilentLogger implements ILogger {
  * - action: Action 执行
  * - ability: Ability 生命周期（授予、移除）
  * - attribute: 属性变化（Modifier 添加/移除）
+ * - tag: Tag 变化（TagContainer）
  */
-export type LogCategory = 'execution' | 'timeline' | 'action' | 'ability' | 'attribute';
+export type LogCategory = 'execution' | 'timeline' | 'action' | 'ability' | 'attribute' | 'tag';
 
 /**
  * 调试日志配置

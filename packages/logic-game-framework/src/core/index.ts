@@ -26,6 +26,9 @@ export * from './entity/index.js';
 // Abilities
 export * from './abilities/index.js';
 
+// Tags
+export * from './tags/index.js';
+
 // World
 export * from './world/index.js';
 
