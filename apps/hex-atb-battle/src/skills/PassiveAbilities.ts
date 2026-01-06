@@ -12,30 +12,13 @@
 
 import {
   type AbilityConfig,
-  type ActorRef,
   type GameEventBase,
   NoInstanceComponent,
   type ComponentLifecycleContext,
 } from '@lomo/logic-game-framework';
 
 import { ReflectDamageAction } from '../actions/index.js';
-
-// ============================================================
-// 伤害事件类型（用于类型安全的 filter）
-// ============================================================
-
-/**
- * 伤害事件
- */
-type DamageEvent = GameEventBase & {
-  kind: 'damage';
-  source?: ActorRef;
-  target: ActorRef;
-  damage: number;
-  damageType: string;
-  /** 是否为反伤产生的伤害（用于防止无限循环） */
-  isReflected?: boolean;
-};
+import type { DamageEvent } from '../events/index.js';
 
 // ============================================================
 // 被动技能配置
@@ -59,10 +42,11 @@ export const THORN_PASSIVE: AbilityConfig = {
           eventKind: 'damage',
           filter: (event: GameEventBase, ctx: ComponentLifecycleContext) => {
             const e = event as DamageEvent;
-            const isTarget = e.target.id === ctx.owner.id;
-            const hasSource = !!e.source;
+            // 使用回放事件格式：targetActorId/sourceActorId
+            const isTarget = e.targetActorId === ctx.owner.id;
+            const hasSource = !!e.sourceActorId;
             // 不反弹自己对自己的伤害
-            const notSelfDamage = e.source?.id !== ctx.owner.id;
+            const notSelfDamage = e.sourceActorId !== ctx.owner.id;
             // 不反弹反伤产生的伤害（防止无限循环）
             const notReflectedDamage = !e.isReflected;
             return isTarget && hasSource && notSelfDamage && notReflectedDamage;

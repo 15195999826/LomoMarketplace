@@ -23,11 +23,10 @@ import {
 } from '@lomo/logic-game-framework';
 
 import { getActorsFromGameplayState, getActorDisplayName } from '../utils/ActionUtils.js';
+import { createDamageEvent, type DamageType } from '../events/index.js';
 
-/**
- * 伤害类型
- */
-export type DamageType = 'physical' | 'magical' | 'pure';
+// 重新导出 DamageType 以保持 API 兼容
+export type { DamageType } from '../events/index.js';
 
 /**
  * Pre 阶段伤害事件
@@ -110,15 +109,16 @@ export class DamageAction extends BaseAction<DamageActionParams> {
         console.log(`  [DamageAction] ${sourceName} 对 ${targetName} 造成 ${finalDamage} ${damageType} 伤害`);
       }
 
-      // ========== 产生最终事件 ==========
-      const damageEvent = ctx.eventCollector.push({
-        kind: 'damage',
-        logicTime: currentEvent.logicTime,
-        source,
-        target,
-        damage: finalDamage,
-        damageType,
-      });
+      // ========== 产生最终事件（回放格式） ==========
+      const damageEvent = ctx.eventCollector.push(
+        createDamageEvent(
+          currentEvent.logicTime,
+          target.id,
+          finalDamage,
+          damageType,
+          source?.id
+        )
+      );
       allEvents.push(damageEvent);
 
       // ========== Post 阶段 ==========

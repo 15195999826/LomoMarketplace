@@ -27,27 +27,19 @@ import {
 } from '@lomo/logic-game-framework';
 
 import { getActorsFromGameplayState, getActorDisplayName } from '../utils/ActionUtils.js';
-
-import type { DamageType } from './DamageAction.js';
+import { createDamageEvent, type DamageType } from '../events/index.js';
 
 /**
- * 伤害事件（从触发链获取）
+ * 伤害事件（从触发链获取，使用回放格式）
  */
 type DamageEventLike = {
   kind: 'damage';
   logicTime: number;
-  source?: ActorRef;
-  target: ActorRef;
+  sourceActorId?: string;
+  targetActorId: string;
   damage: number;
   damageType: DamageType;
-};
-
-/**
- * 反伤产生的伤害事件（带标记）
- */
-export type ReflectedDamageEvent = DamageEventLike & {
-  /** 标记：这是反伤产生的伤害，不应再触发反伤 */
-  isReflected: true;
+  isReflected?: boolean;
 };
 
 /**
@@ -77,11 +69,11 @@ export class ReflectDamageAction implements IAction {
   execute(ctx: ExecutionContext): ActionResult {
     const currentEvent = getCurrentEvent(ctx);
 
-    // 从触发事件获取攻击来源
+    // 从触发事件获取攻击来源（使用回放格式）
     const triggerEvent = currentEvent as DamageEventLike;
-    const attacker = triggerEvent.source;
+    const attackerId = triggerEvent.sourceActorId;
 
-    if (!attacker) {
+    if (!attackerId) {
       console.log('  [ReflectDamageAction] 无攻击来源，跳过反伤');
       return createSuccessResult([], { skipped: true });
     }
@@ -90,21 +82,22 @@ export class ReflectDamageAction implements IAction {
     const damageType = this.params.damageType ?? 'pure';
     const owner = ctx.ability?.owner;
 
-    // 获取显示名称
+    // 获取显示名称（使用 ActorRef 模拟以兼容现有函数）
     const ownerName = getActorDisplayName(owner, ctx.gameplayState);
-    const attackerName = getActorDisplayName(attacker, ctx.gameplayState);
+    const attackerName = getActorDisplayName({ id: attackerId }, ctx.gameplayState);
     console.log(`  [ReflectDamageAction] ${ownerName} 反伤 ${attackerName} ${damage} 点 ${damageType} 伤害`);
 
-    // 产生伤害事件（对攻击者），带 isReflected 标记防止无限循环
-    const reflectEvent = ctx.eventCollector.push({
-      kind: 'damage',
-      logicTime: currentEvent.logicTime,
-      source: owner,
-      target: attacker,
-      damage,
-      damageType,
-      isReflected: true,  // 标记：这是反伤，不应再触发反伤
-    });
+    // 产生伤害事件（回放格式），带 isReflected 标记防止无限循环
+    const reflectEvent = ctx.eventCollector.push(
+      createDamageEvent(
+        currentEvent.logicTime,
+        attackerId,
+        damage,
+        damageType,
+        owner?.id,
+        { isReflected: true }
+      )
+    );
 
     // Post 阶段：触发其他被动（如吸血），但不会触发反伤（因为有 isReflected 标记）
     const actors = getActorsFromGameplayState(ctx.gameplayState);
@@ -113,6 +106,6 @@ export class ReflectDamageAction implements IAction {
       eventProcessor.processPostEvent(reflectEvent, actors, ctx.gameplayState);
     }
 
-    return createSuccessResult([reflectEvent], { damage, target: attacker.id });
+    return createSuccessResult([reflectEvent], { damage, target: attackerId });
   }
 }

@@ -2,7 +2,7 @@
 
 > 版本：v2.0
 > 创建日期：2026-01-06
-> 状态：Phase 1 ✅ 已完成 | Phase 2 🚧 进行中
+> 状态：Phase 1 ✅ 已完成 | Phase 2 ✅ 已完成
 > 最后更新：2026-01-07
 
 ## 1. 目标与动机
@@ -480,20 +480,31 @@ packages/logic-game-framework/src/stdlib/replay/
 - [x] 1.3 在框架模块添加事件产生点（在 `core/events/GameEvent.ts` 中添加框架层事件类型）
 - [x] 1.4 从 `stdlib/index.ts` 导出
 
-### Phase 2: 验证层 (apps/hex-atb-battle) 🚧 进行中
+### Phase 2: 验证层 (apps/hex-atb-battle) ✅ 已完成
 
 **目标**：在验证项目中跑通录制流程，实现日志对照
 
 **任务清单**：
-- [ ] 2.1 定义项目特有事件类型（damage/heal/move/death 等）
-- [ ] 2.2 在各 Action 中 push 业务事件
+- [x] 2.1 定义项目特有事件类型（damage/heal/move/death 等）
+  - [x] 创建 `src/events/ReplayEvents.ts` 定义事件接口
+  - [x] 提供工厂函数 `createDamageEvent`/`createHealEvent`/`createMoveEvent`/`createDeathEvent`
+- [x] 2.2 在各 Action 中 push 业务事件
+  - [x] `DamageAction` 使用回放事件格式 (`sourceActorId`/`targetActorId`)
+  - [x] `HealAction` 使用回放事件格式
+  - [x] `MoveAction` 使用回放事件格式（包含 `fromHex`/`toHex`）
+  - [x] `ReflectDamageAction` 使用回放事件格式
+  - [x] 更新 `PassiveAbilities` 的 filter 函数适配新格式
 - [x] 2.3 集成 BattleRecorder 到 HexBattle
   - [x] `CharacterActor` 实现 `IRecordableActor` 接口
   - [x] `HexBattle` 初始化 BattleRecorder 并调用 `startRecording()`
   - [x] 每帧调用 `recordFrame()`
+  - [x] 收集 ExecutionInstance 的事件 (`flushCollectedEvents()`)
 - [x] 2.4 战斗结束时导出 `Replays/replay_{timestamp}.json`
 - [x] 2.5 实现 `ReplayLogPrinter`（将 replay.json 转为可读日志）
-- [ ] 2.6 与现有 BattleLogger 输出对照验证
+- [x] 2.6 与现有 BattleLogger 输出对照验证
+  - [x] 验证事件类型正确（damage/heal/move/projectileLaunched 等）
+  - [x] 验证事件字段符合协议（sourceActorId/targetActorId 等）
+  - [x] 修复事件重复收集问题（AbilityExecutionInstance 不再重复 push ActionResult.events）
 
 **ReplayLogPrinter 输出示例**：
 

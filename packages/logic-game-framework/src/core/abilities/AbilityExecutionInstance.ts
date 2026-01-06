@@ -252,10 +252,26 @@ export class AbilityExecutionInstance {
     return this.eventCollector.collect();
   }
 
+  /**
+   * 消费已收集的事件（清空缓冲区）
+   *
+   * 返回事件数组并清空内部缓冲区。
+   * 适用于回放录制等需要消费事件的场景。
+   *
+   * @returns 事件数组
+   */
+  flushCollectedEvents(): GameEventBase[] {
+    return this.eventCollector.flush();
+  }
+
   // ========== 内部方法 ==========
 
   /**
    * 执行指定 Tag 的 Action 列表（内部方法，actions 已解析）
+   *
+   * 注意：Action 应通过 ctx.eventCollector.push() 推送事件，
+   * 不需要在此处额外收集 ActionResult.events，因为 execContext.eventCollector
+   * 就是 this.eventCollector。
    */
   private executeActionsForTagInternal(tagName: string, actions: IAction[]): void {
     if (actions.length === 0) {
@@ -266,11 +282,8 @@ export class AbilityExecutionInstance {
 
     for (const action of actions) {
       try {
-        const result = action.execute(execContext);
-        // 收集事件
-        for (const event of result.events) {
-          this.eventCollector.push(event);
-        }
+        // 执行 Action，事件通过 ctx.eventCollector.push() 自动收集到 this.eventCollector
+        action.execute(execContext);
       } catch (error) {
         getLogger().error(`ExecutionInstance action error: ${action.type}`, {
           error,

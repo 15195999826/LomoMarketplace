@@ -17,6 +17,8 @@ import {
 } from '@lomo/logic-game-framework';
 
 import type { AxialCoord } from '@lomo/hex-grid';
+import { createMoveEvent } from '../events/index.js';
+import type { HexBattle } from '../battle/HexBattle.js';
 
 /**
  * MoveAction 参数
@@ -58,16 +60,26 @@ export class MoveAction extends BaseAction<MoveActionParams> {
     // 解析目标坐标
     const targetCoord = resolveParam(this.params.targetCoord, ctx);
 
+    // 获取 HexBattle 实例（用于查询位置）
+    const battle = ctx.gameplayState as HexBattle;
+
     // 对每个目标执行移动
     const allEvents = targets.map(target => {
-      console.log(`  [MoveAction] ${target.id} 移动到 (${targetCoord?.q}, ${targetCoord?.r})`);
+      // 获取 Actor 当前位置
+      const actor = battle.getActor(target.id);
+      const fromHex = actor ? battle.getActorPosition(actor as any) : undefined;
 
-      return ctx.eventCollector.push({
-        kind: 'move',
-        logicTime: currentEvent.logicTime,
-        source: target,
-        targetCoord,
-      });
+      console.log(`  [MoveAction] ${target.id} 移动从 (${fromHex?.q ?? '?'}, ${fromHex?.r ?? '?'}) 到 (${targetCoord?.q}, ${targetCoord?.r})`);
+
+      // 产生回放格式事件
+      return ctx.eventCollector.push(
+        createMoveEvent(
+          currentEvent.logicTime,
+          target.id,
+          fromHex ?? { q: 0, r: 0 },  // 默认值（理论上不应触发）
+          targetCoord ?? { q: 0, r: 0 }
+        )
+      );
     });
 
     return createSuccessResult(allEvents, { targetCoord });

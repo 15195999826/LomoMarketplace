@@ -13,6 +13,8 @@ import {
   resolveParam,
 } from '@lomo/logic-game-framework';
 
+import { createHealEvent } from '../events/index.js';
+
 /**
  * HealAction 参数
  */
@@ -43,14 +45,16 @@ export class HealAction extends BaseAction<HealActionParams> {
     const targetIds = targets.map(t => t.id).join(', ');
     console.log(`  [HealAction] ${source?.id} 对 [${targetIds}] 治疗 ${healAmount} HP`);
 
+    // 产生回放格式事件
     const allEvents = targets.map(target =>
-      ctx.eventCollector.push({
-        kind: 'heal',
-        logicTime: currentEvent.logicTime,
-        source,
-        target,
-        healAmount,
-      })
+      ctx.eventCollector.push(
+        createHealEvent(
+          currentEvent.logicTime,
+          target.id,
+          healAmount,
+          source?.id
+        )
+      )
     );
 
     return createSuccessResult(allEvents, { healAmount });

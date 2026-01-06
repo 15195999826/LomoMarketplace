@@ -339,8 +339,11 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       }
     }
 
-    // 录制当前帧
-    this._recorder.recordFrame(this.tickCount, baseEvents);
+    // 收集所有执行实例的事件（Action 产生的事件）
+    const actionEvents = this.collectExecutionEvents();
+
+    // 录制当前帧（合并基础事件和 Action 事件）
+    this._recorder.recordFrame(this.tickCount, [...baseEvents, ...actionEvents]);
 
     // 检查战斗是否结束（简化：100 tick 后结束）
     if (this.tickCount >= 100) {
@@ -361,6 +364,32 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       }
     }
     return false;
+  }
+
+  /**
+   * 收集所有执行实例产生的事件
+   *
+   * ExecutionInstance 有自己的 eventCollector，需要手动收集事件
+   * 以便录制到回放中。使用 flush 模式避免重复收集。
+   */
+  private collectExecutionEvents(): GameEventBase[] {
+    const events: GameEventBase[] = [];
+
+    for (const actor of this.allActors) {
+      for (const ability of actor.abilitySet.getAbilities()) {
+        for (const instance of ability.getExecutingInstances()) {
+          // flushCollectedEvents 是 AbilityExecutionInstance 的方法，
+          // 但 IAbilityExecutionInstance 接口没有暴露它
+          const instanceWithEvents = instance as { flushCollectedEvents?: () => GameEventBase[] };
+          if (instanceWithEvents.flushCollectedEvents) {
+            const instanceEvents = instanceWithEvents.flushCollectedEvents();
+            events.push(...instanceEvents);
+          }
+        }
+      }
+    }
+
+    return events;
   }
 
   /** 开始角色行动 */
