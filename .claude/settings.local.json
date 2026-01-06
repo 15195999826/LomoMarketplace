@@ -61,7 +61,10 @@
       "Bash(pnpm --filter hex-atb-battle build:*)",
       "Bash(node dist/main.js:*)",
       "Bash(pnpm build:all:*)",
-      "Bash(powershell.exe:*)"
+      "Bash(powershell.exe:*)",
+      "Bash(git worktree add:*)",
+      "Bash(git worktree:*)",
+      "Bash(git branch:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

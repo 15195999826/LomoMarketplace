@@ -22,3 +22,6 @@ export * from './components/index.js';
 
 // Battle（标准战斗实例）
 export * from './battle/index.js';
+
+// Replay（战斗回放录制）
+export * from './replay/index.js';

@@ -2,6 +2,8 @@
  * 六边形战斗实例
  */
 
+import fs from 'node:fs';
+
 import {
   GameplayInstance,
   type GameEventBase,
@@ -19,6 +21,8 @@ import {
 import {
   ProjectileSystem,
   DistanceCollisionDetector,
+  BattleRecorder,
+  ReplayLogPrinter,
 } from '@lomo/logic-game-framework/stdlib';
 
 import { HexGridModel, axial, hexNeighbors, hexDistance, type AxialCoord } from '@lomo/hex-grid';
@@ -72,6 +76,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
   /** 投射物事件收集器 */
   private _projectileEventCollector!: EventCollector;
+
+  /** 战斗录制器 */
+  private _recorder!: BattleRecorder;
 
   /** 角色位置缓存（用于检测移动，优化世界坐标计算） */
   private _actorHexPositionCache: Map<string, string> = new Map();
@@ -213,6 +220,15 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     // 给每个角色添加振奋 Buff（防御力 +10，持续 2 秒）
     this.applyInspireBuffToAll();
 
+    // 初始化战斗录制器
+    this._recorder = new BattleRecorder({
+      battleId: this.id,
+      tickInterval: 100,
+    });
+    this._recorder.startRecording(this.allActors, {
+      map: { type: 'hex', rows: 9, columns: 9, hexSize: 100 },
+    });
+
     this._logger.log('✅ 战斗开始');
     this.printBattleInfo();
   }
@@ -296,7 +312,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
   // ========== 战斗主循环 ==========
 
   override tick(dt: number): GameEventBase[] {
-    this.baseTick(dt);
+    const baseEvents = this.baseTick(dt);
     this.tickCount++;
 
     this._logger.tick(this.tickCount, this.logicTime);
@@ -323,10 +339,14 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       }
     }
 
+    // 录制当前帧
+    this._recorder.recordFrame(this.tickCount, baseEvents);
+
     // 检查战斗是否结束（简化：100 tick 后结束）
     if (this.tickCount >= 100) {
       this._logger.log('\n✅ 战斗结束（达到最大回合数）');
       this._logger.save();
+      this.exportReplay();
       this.end();
     }
 
@@ -563,5 +583,41 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       event.reason,
       event.flyTime
     );
+  }
+
+  // ========== 回放导出 ==========
+
+  /** 导出战斗回放 */
+  private exportReplay(): void {
+    const record = this._recorder.stopRecording('completed');
+
+    // 保存 JSON 文件
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `Replays/replay_${timestamp}.json`;
+
+    try {
+      // 确保目录存在
+      if (!fs.existsSync('Replays')) {
+        fs.mkdirSync('Replays', { recursive: true });
+      }
+
+      const json = JSON.stringify(record, null, 2);
+      fs.writeFileSync(filename, json);
+      console.log(`\n🎥 回放已保存: ${filename}`);
+
+      // 打印回放日志摘要
+      console.log('\n📋 回放日志摘要:');
+      console.log('-'.repeat(50));
+      const log = ReplayLogPrinter.print(record);
+      // 只打印前 50 行
+      const lines = log.split('\n');
+      const preview = lines.slice(0, 50).join('\n');
+      console.log(preview);
+      if (lines.length > 50) {
+        console.log(`\n... (共 ${lines.length} 行，完整日志见文件)`);
+      }
+    } catch (error) {
+      console.error('❌ 保存回放失败:', error);
+    }
   }
 }

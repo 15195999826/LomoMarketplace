@@ -1,0 +1,22 @@
+/**
+ * Battle Replay Module
+ *
+ * 战斗回放录制和播放模块。
+ */
+
+// 类型定义
+export {
+  REPLAY_PROTOCOL_VERSION,
+  type IBattleRecord,
+  type IBattleMeta,
+  type IFrameData,
+  type IActorInitData,
+  type IAbilityInitData,
+  type IRecordableActor,
+} from './ReplayTypes.js';
+
+// 录制器
+export { BattleRecorder, type IBattleRecorderConfig } from './BattleRecorder.js';
+
+// 日志打印
+export { ReplayLogPrinter } from './ReplayLogPrinter.js';

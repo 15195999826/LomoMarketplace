@@ -150,3 +150,284 @@ export function isAbilityActivateEvent(event: GameEventBase): event is AbilityAc
     typeof (event as AbilityActivateEvent).sourceId === 'string'
   );
 }
+
+// ========== 框架层事件（用于战斗回放录制）==========
+
+/**
+ * Ability 初始数据（用于事件）
+ */
+export interface IAbilityInitDataForEvent {
+  instanceId: string;
+  configId: string;
+  remainingCooldown?: number;
+  stackCount?: number;
+}
+
+/**
+ * 框架层事件类型常量
+ */
+export const ACTOR_SPAWNED_EVENT = 'actorSpawned' as const;
+export const ACTOR_DESTROYED_EVENT = 'actorDestroyed' as const;
+export const ATTRIBUTE_CHANGED_EVENT = 'attributeChanged' as const;
+export const ABILITY_GRANTED_EVENT = 'abilityGranted' as const;
+export const ABILITY_REMOVED_EVENT = 'abilityRemoved' as const;
+export const ABILITY_ACTIVATED_EVENT = 'abilityActivated' as const;
+export const TAG_CHANGED_EVENT = 'tagChanged' as const;
+
+// ========== Actor 生命周期事件 ==========
+
+/**
+ * Actor 生成事件
+ *
+ * 当战斗中动态创建 Actor 时产生。
+ */
+export interface ActorSpawnedEvent extends GameEventBase {
+  readonly kind: typeof ACTOR_SPAWNED_EVENT;
+  /** Actor 完整初始数据（使用 unknown 避免循环依赖） */
+  readonly actor: unknown;
+}
+
+/**
+ * Actor 销毁事件
+ *
+ * 当 Actor 被移除时产生。
+ */
+export interface ActorDestroyedEvent extends GameEventBase {
+  readonly kind: typeof ACTOR_DESTROYED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** 销毁原因（可选） */
+  readonly reason?: string;
+}
+
+// ========== 属性变化事件 ==========
+
+/**
+ * 属性变化事件
+ *
+ * 当 Actor 的属性值发生变化时产生。
+ */
+export interface AttributeChangedEvent extends GameEventBase {
+  readonly kind: typeof ATTRIBUTE_CHANGED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** 属性名称 */
+  readonly attribute: string;
+  /** 旧值 */
+  readonly oldValue: number;
+  /** 新值 */
+  readonly newValue: number;
+  /** 变化来源（可选） */
+  readonly source?: {
+    actorId?: string;
+    abilityId?: string;
+  };
+}
+
+// ========== Ability 生命周期事件 ==========
+
+/**
+ * Ability 获得事件
+ *
+ * 当 Actor 获得新的 Ability 时产生。
+ */
+export interface AbilityGrantedEvent extends GameEventBase {
+  readonly kind: typeof ABILITY_GRANTED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** Ability 初始数据 */
+  readonly ability: IAbilityInitDataForEvent;
+}
+
+/**
+ * Ability 移除事件
+ *
+ * 当 Ability 被移除时产生。
+ */
+export interface AbilityRemovedEvent extends GameEventBase {
+  readonly kind: typeof ABILITY_REMOVED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** Ability 实例 ID */
+  readonly abilityInstanceId: string;
+}
+
+/**
+ * Ability 激活完成事件（过去时态）
+ *
+ * 当 Ability 被激活完成时产生。
+ * 注意：不同于 AbilityActivateEvent（现在时态，用于触发激活）。
+ */
+export interface AbilityActivatedEvent extends GameEventBase {
+  readonly kind: typeof ABILITY_ACTIVATED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** Ability 实例 ID */
+  readonly abilityInstanceId: string;
+  /** Ability 配置 ID */
+  readonly abilityConfigId: string;
+  /** 目标（可选） */
+  readonly target?: {
+    actorId?: string;
+    position?: unknown;
+  };
+}
+
+// ========== Tag 变化事件 ==========
+
+/**
+ * Tag 变化事件
+ *
+ * 当 Tag 层数发生变化时产生。
+ */
+export interface TagChangedEvent extends GameEventBase {
+  readonly kind: typeof TAG_CHANGED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** Tag 名称 */
+  readonly tag: string;
+  /** 旧层数 */
+  readonly oldCount: number;
+  /** 新层数 */
+  readonly newCount: number;
+}
+
+// ========== 框架层事件联合类型 ==========
+
+/**
+ * 所有框架层事件的联合类型
+ */
+export type FrameworkEvent =
+  | ActorSpawnedEvent
+  | ActorDestroyedEvent
+  | AttributeChangedEvent
+  | AbilityGrantedEvent
+  | AbilityRemovedEvent
+  | AbilityActivatedEvent
+  | TagChangedEvent;
+
+// ========== 工厂函数 ==========
+
+/**
+ * 创建 Actor 生成事件
+ */
+export function createActorSpawnedEvent(
+  logicTime: number,
+  actor: unknown
+): ActorSpawnedEvent {
+  return {
+    kind: ACTOR_SPAWNED_EVENT,
+    logicTime,
+    actor,
+  };
+}
+
+/**
+ * 创建 Actor 销毁事件
+ */
+export function createActorDestroyedEvent(
+  logicTime: number,
+  actorId: string,
+  reason?: string
+): ActorDestroyedEvent {
+  return {
+    kind: ACTOR_DESTROYED_EVENT,
+    logicTime,
+    actorId,
+    reason,
+  };
+}
+
+/**
+ * 创建属性变化事件
+ */
+export function createAttributeChangedEvent(
+  logicTime: number,
+  actorId: string,
+  attribute: string,
+  oldValue: number,
+  newValue: number,
+  source?: { actorId?: string; abilityId?: string }
+): AttributeChangedEvent {
+  return {
+    kind: ATTRIBUTE_CHANGED_EVENT,
+    logicTime,
+    actorId,
+    attribute,
+    oldValue,
+    newValue,
+    source,
+  };
+}
+
+/**
+ * 创建 Ability 获得事件
+ */
+export function createAbilityGrantedEvent(
+  logicTime: number,
+  actorId: string,
+  ability: IAbilityInitDataForEvent
+): AbilityGrantedEvent {
+  return {
+    kind: ABILITY_GRANTED_EVENT,
+    logicTime,
+    actorId,
+    ability,
+  };
+}
+
+/**
+ * 创建 Ability 移除事件
+ */
+export function createAbilityRemovedEvent(
+  logicTime: number,
+  actorId: string,
+  abilityInstanceId: string
+): AbilityRemovedEvent {
+  return {
+    kind: ABILITY_REMOVED_EVENT,
+    logicTime,
+    actorId,
+    abilityInstanceId,
+  };
+}
+
+/**
+ * 创建 Ability 激活完成事件
+ */
+export function createAbilityActivatedEvent(
+  logicTime: number,
+  actorId: string,
+  abilityInstanceId: string,
+  abilityConfigId: string,
+  target?: { actorId?: string; position?: unknown }
+): AbilityActivatedEvent {
+  return {
+    kind: ABILITY_ACTIVATED_EVENT,
+    logicTime,
+    actorId,
+    abilityInstanceId,
+    abilityConfigId,
+    target,
+  };
+}
+
+/**
+ * 创建 Tag 变化事件
+ */
+export function createTagChangedEvent(
+  logicTime: number,
+  actorId: string,
+  tag: string,
+  oldCount: number,
+  newCount: number
+): TagChangedEvent {
+  return {
+    kind: TAG_CHANGED_EVENT,
+    logicTime,
+    actorId,
+    tag,
+    oldCount,
+    newCount,
+  };
+}

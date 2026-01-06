@@ -9,6 +9,8 @@ import {
   defineAttributes,
 } from '@lomo/logic-game-framework';
 
+import type { IRecordableActor, IAbilityInitData } from '@lomo/logic-game-framework/stdlib';
+
 import { BattleAbilitySet, createBattleAbilitySet } from '../abilities/index.js';
 
 import {
@@ -23,9 +25,14 @@ import { SKILL_ABILITIES, MOVE_ABILITY, PASSIVE_ABILITIES } from '../skills/inde
 /** ATB 满值 */
 const ATB_FULL = 100;
 
-export class CharacterActor extends Actor {
+export class CharacterActor extends Actor implements IRecordableActor {
   readonly type = 'Character';
   readonly characterClass: CharacterClass;
+
+  /** 配置 ID（用于回放） */
+  get configId(): string {
+    return this.characterClass;
+  }
 
   readonly attributeSet: AttributeSet<typeof CHARACTER_ATTRIBUTES>;
   readonly abilitySet: BattleAbilitySet;
@@ -139,5 +146,40 @@ export class CharacterActor extends Actor {
   /** 重置 ATB */
   resetATB(): void {
     this._atbGauge = 0;
+  }
+
+  // ========== IRecordableActor 实现 ==========
+
+  /** 队伍（用于回放，覆盖基类） */
+  override get team(): string {
+    return String(this._teamID);
+  }
+
+  /** 获取属性快照 */
+  getAttributeSnapshot(): Record<string, number> {
+    return {
+      hp: this.attributeSet.hp,
+      maxHp: this.attributeSet.maxHp,
+      atk: this.attributeSet.atk,
+      def: this.attributeSet.def,
+      speed: this.attributeSet.speed,
+    };
+  }
+
+  /** 获取 Ability 快照 */
+  getAbilitySnapshot(): IAbilityInitData[] {
+    return this.abilitySet.getAbilities().map((ability) => ({
+      instanceId: ability.id,
+      configId: ability.configId,
+    }));
+  }
+
+  /** 获取 Tag 快照 */
+  getTagSnapshot(): Record<string, number> {
+    const tags: Record<string, number> = {};
+    for (const [tag, count] of this.abilitySet.getAllTags()) {
+      tags[tag] = count;
+    }
+    return tags;
   }
 }
