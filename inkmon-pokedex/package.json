@@ -13,9 +13,12 @@
   "dependencies": {
     "@inkmon/battle": "workspace:*",
     "@inkmon/core": "workspace:*",
+    "@lomo/hex-grid": "workspace:*",
+    "@types/three": "^0.182.0",
     "next": "16.1.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@types/node": "^20",

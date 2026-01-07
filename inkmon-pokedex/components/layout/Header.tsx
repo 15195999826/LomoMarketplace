@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/items", label: "物品", match: ["/items"] },
   { href: "/world", label: "世界地图", match: ["/world"] },
   { href: "/battle", label: "战斗模拟", match: ["/battle"] },
+  { href: "/tools/pathfinding", label: "工具", match: ["/tools"] },
 ];
 
 export function Header() {
