@@ -1,12 +1,13 @@
 # hex-grid 寻路功能设计方案
 
-> 版本: v0.4
+> 版本: v0.5
 > 日期: 2026-01-07
 > 参考: UE GraphAStar.h, GridPathFindingNavMesh
 > 变更历史:
 >   - v0.2 针对泛型键支持、堆性能优化、接口健壮性进行改进
 >   - v0.3 添加 FloodResult 封装，优化 MinHeap.update 注释
 >   - v0.4 添加 shouldIgnoreClosedNodes / shouldIncludeStartNodeInPath 可选方法
+>   - v0.5 终点可通行预检改为必选（快速失败优化）
 
 ## 1. 概述
 
@@ -261,7 +262,7 @@ class GraphAStar<TNodeRef> {
 1.  **预检**:
     *   验证起点是否有效 (`graph.isValidRef`).
     *   验证终点是否有效.
-    *   (可选) 验证终点是否"自身"可通行 (`filter.isTraversalAllowed(end, end)`), 快速失败.
+    *   验证终点是否"自身"可通行 (`filter.isTraversalAllowed(end, end)`), 快速失败返回 `GoalUnreachable`.
 
 2.  **初始化**:
     *   清空 `nodePool` 和 `openList`.

@@ -70,6 +70,11 @@ export class GraphAStar<TNodeRef> {
       };
     }
 
+    // 可选快速失败：检查终点是否可通行
+    if (!filter.isTraversalAllowed(end, end)) {
+      return this.createFailResult(PathfindingResult.GoalUnreachable);
+    }
+
     // 2. 初始化
     this.reset();
 
