@@ -20,6 +20,94 @@ export interface ActorState {
   elements: string[];
 }
 
+// ========== InkMon Replay Event Types ==========
+
+/**
+ * InkMon 战斗事件联合类型（用于 BattleStage）
+ */
+export type InkMonReplayEvent =
+  | BattleStartEvent
+  | BattleEndEvent
+  | TurnStartEvent
+  | MoveEvent
+  | SkillUseEvent
+  | DamageEvent
+  | HealEvent
+  | DeathEvent
+  | SkipEvent
+  | UnknownEvent;
+
+export interface BattleStartEvent {
+  kind: "battleStart";
+  teamAIds: string[];
+  teamBIds: string[];
+}
+
+export interface BattleEndEvent {
+  kind: "battleEnd";
+  result: string;
+  turnCount: number;
+  survivorIds: string[];
+}
+
+export interface TurnStartEvent {
+  kind: "turnStart";
+  turnNumber: number;
+  actorId: string;
+}
+
+export interface MoveEvent {
+  kind: "move";
+  actorId: string;
+  fromHex: { q: number; r: number };
+  toHex: { q: number; r: number };
+}
+
+export interface SkillUseEvent {
+  kind: "skillUse";
+  actorId: string;
+  skillName: string;
+  element: string;
+  targetActorId?: string;
+  targetHex?: { q: number; r: number };
+}
+
+export interface DamageEvent {
+  kind: "damage";
+  sourceActorId?: string;
+  targetActorId: string;
+  damage: number;
+  element: string;
+  damageCategory: string;
+  effectiveness: string;
+  typeMultiplier: number;
+  isCritical: boolean;
+  isSTAB: boolean;
+}
+
+export interface HealEvent {
+  kind: "heal";
+  sourceActorId?: string;
+  targetActorId: string;
+  healAmount: number;
+}
+
+export interface DeathEvent {
+  kind: "death";
+  actorId: string;
+  killerActorId?: string;
+}
+
+export interface SkipEvent {
+  kind: "skip";
+  actorId: string;
+}
+
+export interface UnknownEvent {
+  kind: string;
+  [key: string]: unknown;
+}
+
 // ========== Replay Player State ==========
 
 /**

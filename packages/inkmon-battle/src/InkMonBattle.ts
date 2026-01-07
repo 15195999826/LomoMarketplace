@@ -614,9 +614,9 @@ export class InkMonBattle
       this._units.set(actor.id, actor);
     }
 
-    // 放置队伍
-    this.placeTeamRandomly(teamA, { qMin: -4, qMax: -1, rMin: -4, rMax: 4 });
-    this.placeTeamRandomly(teamB, { qMin: 1, qMax: 4, rMin: -4, rMax: 4 });
+    // 放置队伍 - 使用确定性的位置分配，避免重叠
+    this.placeTeamDeterministically(teamA, -3, 3);  // 队伍A 放在左侧区域
+    this.placeTeamDeterministically(teamB, -3, 3);  // 队伍B 放在右侧区域
 
     // 初始化录制器
     this._recorder = new BattleRecorder({
@@ -658,6 +658,42 @@ export class InkMonBattle
       const coord = availableCoords[i];
       grid.placeOccupant(coord, { id: team[i].id });
       team[i].setPosition(coord);
+    }
+  }
+
+  /**
+   * 确定性地放置队伍（按顺序排列，避免重叠）
+   * @param team 队伍
+   * @param baseQ 基础 q 坐标（队伍A用负数，队伍B用正数）
+   * @param spacing 间隔
+   */
+  private placeTeamDeterministically(
+    team: InkMonActor[],
+    baseQ: number,
+    spacing: number = 3,
+  ): void {
+    const grid = this._context.grid;
+
+    for (let i = 0; i < team.length; i++) {
+      // 队伍A放在左侧(q<0)，队伍B放在右侧(q>0)
+      const q = baseQ + (i % spacing);
+      const r = Math.floor(i / spacing);
+
+      const coord = axial(q, r);
+      if (grid.hasTile(coord) && !grid.isOccupied(coord)) {
+        grid.placeOccupant(coord, { id: team[i].id });
+        team[i].setPosition(coord);
+      } else {
+        // 如果首选位置被占用，查找附近空位
+        const neighbors = hexNeighbors(coord);
+        for (const neighbor of neighbors) {
+          if (grid.hasTile(neighbor) && !grid.isOccupied(neighbor)) {
+            grid.placeOccupant(neighbor, { id: team[i].id });
+            team[i].setPosition(neighbor);
+            break;
+          }
+        }
+      }
     }
   }
 

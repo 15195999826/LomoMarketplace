@@ -4,98 +4,104 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1rem;
-  background: var(--bg-secondary, #1a1a2e);
-  border-radius: 12px;
-  color: var(--text-primary, #e0e0e0);
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* 摘要信息 */
 .summary {
-  padding: 0.75rem 1rem;
-  background: var(--bg-tertiary, #16213e);
-  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
 }
 
 .summary h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3a86ff, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .summaryGrid {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
-  font-size: 0.85rem;
-  color: var(--text-secondary, #a0a0a0);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* 控制栏 */
 .controls {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: var(--bg-tertiary, #16213e);
-  border-radius: 8px;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .controlBtn {
-  padding: 0.5rem 0.75rem;
+  width: 44px;
+  height: 44px;
   font-size: 1.2rem;
-  background: var(--bg-primary, #0f0f23);
-  border: 1px solid var(--border-color, #333);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .controlBtn:hover {
-  background: var(--accent-color, #3a86ff);
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.controlBtnPlay {
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3a86ff 0%, #6366f1 100%);
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.2s;
   color: white;
+  box-shadow: 0 4px 12px rgba(58, 134, 255, 0.3);
+}
+
+.controlBtnPlay:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(58, 134, 255, 0.4);
 }
 
 .frameInfo {
-  margin: 0 1rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary, #a0a0a0);
-}
-
-.frameIndexHint {
-  font-size: 0.7rem;
-  color: var(--text-tertiary, #666);
-  margin-left: 0.25rem;
-}
-
-.speedControls {
-  display: flex;
-  gap: 0.25rem;
   margin-left: auto;
-}
-
-.speedBtn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
-  background: var(--bg-primary, #0f0f23);
-  border: 1px solid var(--border-color, #333);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.speedBtn:hover,
-.speedBtn.active {
-  background: var(--accent-color, #3a86ff);
-  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: monospace;
 }
 
 /* 进度条 */
 .progressContainer {
   position: relative;
-  height: 8px;
-  background: var(--bg-tertiary, #16213e);
-  border-radius: 4px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .progressSlider {
@@ -111,21 +117,48 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #3a86ff, #8338ec);
-  border-radius: 4px;
+  background: linear-gradient(90deg, #3a86ff 0%, #6366f1 50%, #8b5cf6 100%);
+  border-radius: 6px;
   transition: width 0.1s linear;
+  box-shadow: 0 0 10px rgba(58, 134, 255, 0.5);
 }
 
 /* 主面板 */
 .mainPanel {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 1rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .mainPanel {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+}
+
+/* BattleStage 容器 */
+.battleStageContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0f23;
+  border-radius: 8px;
+  padding: 1rem;
+  min-width: 0;
+}
+
+/* 右侧面板 */
+.sidePanel {
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .sidePanel {
+    width: 100%;
   }
 }
 
@@ -136,9 +169,39 @@
   border-radius: 8px;
 }
 
+.actorsPanel {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
 .actorsPanel h4 {
   margin: 0 0 0.75rem 0;
   font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 折叠按钮 */
+.actorsToggle {
+  display: flex;
+  justify-content: center;
+}
+
+.toggleBtn {
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary, #16213e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.toggleBtn:hover {
+  background: var(--bg-primary, #0f0f23);
 }
 
 .teamsContainer {
@@ -166,10 +229,10 @@
 
 /* Actor 卡片 */
 .actorCard {
-  padding: 0.5rem;
+  padding: 0.75rem;
   margin-bottom: 0.5rem;
-  background: var(--bg-primary, #0f0f23);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
   border-left: 3px solid transparent;
   transition: all 0.2s;
 }
@@ -184,72 +247,79 @@
 
 .actorCard.dead {
   opacity: 0.5;
-  background: #2a2a2a;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .actorCard.active {
-  box-shadow: 0 0 8px var(--accent-color, #3a86ff);
+  box-shadow: 0 0 12px rgba(58, 134, 255, 0.4);
 }
 
 .actorName {
   font-weight: 600;
   margin-bottom: 0.25rem;
+  color: white;
 }
 
 .actorHp {
   font-size: 0.85rem;
-  color: var(--text-secondary, #a0a0a0);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .hpBar {
-  height: 4px;
-  background: var(--bg-tertiary, #16213e);
-  border-radius: 2px;
-  margin-top: 0.25rem;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin-top: 0.5rem;
   overflow: hidden;
 }
 
 .hpFill {
   height: 100%;
   background: linear-gradient(90deg, #4caf50, #8bc34a);
-  transition: width 0.2s;
+  transition: width 0.3s ease;
 }
 
 .actorPos {
   font-size: 0.75rem;
-  color: var(--text-tertiary, #666);
+  color: rgba(255, 255, 255, 0.4);
   margin-top: 0.25rem;
 }
 
 /* 事件面板 */
 .eventsPanel {
-  padding: 0.75rem;
-  background: var(--bg-tertiary, #16213e);
-  border-radius: 8px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
 }
 
 .eventsPanel h4 {
   margin: 0 0 0.75rem 0;
   font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .eventsList {
-  max-height: 300px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
 .eventItem {
-  padding: 0.5rem;
-  margin-bottom: 0.25rem;
-  background: var(--bg-primary, #0f0f23);
-  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
   font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  border-left: 3px solid #3a86ff;
 }
 
 .noEvents {
   padding: 1rem;
   text-align: center;
-  color: var(--text-tertiary, #666);
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
 }
 
 /* 战斗结果 */
