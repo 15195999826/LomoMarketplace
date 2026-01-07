@@ -41,10 +41,13 @@ interface DemoState {
   viewMode: '2d' | '3d';
 
   // Grid Config
+  drawMode: 'row-column' | 'radius';
   rows: number;
   columns: number;
+  radius: number;
   hexSize: number;
   orientation: 'flat' | 'pointy';
+  showCoords: boolean;
   
   // Pathfinding Params
   heuristicScale: number;
@@ -67,7 +70,8 @@ interface DemoState {
 
 type Action =
   | { type: 'SET_VIEW_MODE'; payload: '2d' | '3d' }
-  | { type: 'SET_CONFIG'; payload: Partial<Pick<DemoState, 'rows' | 'columns' | 'hexSize' | 'orientation'>> }
+  | { type: 'SET_CONFIG'; payload: Partial<Pick<DemoState, 'drawMode' | 'rows' | 'columns' | 'radius' | 'hexSize' | 'orientation'>> }
+  | { type: 'SET_SHOW_COORDS'; payload: boolean }
   | { type: 'SET_PARAM'; payload: Partial<Pick<DemoState, 'heuristicScale' | 'wantsPartialSolution' | 'shouldIgnoreClosedNodes' | 'maxSearchNodes'>> }
   | { type: 'SET_START'; payload: AxialCoord | null }
   | { type: 'SET_END'; payload: AxialCoord | null }
@@ -80,10 +84,13 @@ type Action =
 
 const INITIAL_STATE: DemoState = {
   viewMode: '2d',
+  drawMode: 'row-column',
   rows: 15,
   columns: 15,
+  radius: 7,
   hexSize: 24,
   orientation: 'flat',
+  showCoords: true,
   
   heuristicScale: 1.0,
   wantsPartialSolution: false,
@@ -107,6 +114,8 @@ function reducer(state: DemoState, action: Action): DemoState {
       return { ...state, viewMode: action.payload };
     case 'SET_CONFIG':
       return { ...state, ...action.payload, start: null, end: null, walls: new Set(), path: [], pathSet: new Set(), visited: new Map(), metrics: null };
+    case 'SET_SHOW_COORDS':
+      return { ...state, showCoords: action.payload };
     case 'SET_PARAM':
       return { ...state, ...action.payload };
     case 'SET_START':
@@ -168,15 +177,24 @@ export default function PathfindingDemo() {
 
   // 1. Init/Recreate Model on Config Change
   useEffect(() => {
-    const config: HexGridConfig = {
-      drawMode: 'baseOnRowColumn',
-      rows: state.rows,
-      columns: state.columns,
-      hexSize: state.hexSize,
-      orientation: state.orientation,
-      mapCenter: { x: 0, y: 0 },
-      defaultTerrain: 'normal'
-    };
+    const config: HexGridConfig = state.drawMode === 'row-column'
+      ? {
+          drawMode: 'baseOnRowColumn',
+          rows: state.rows,
+          columns: state.columns,
+          hexSize: state.hexSize,
+          orientation: state.orientation,
+          mapCenter: { x: 0, y: 0 },
+          defaultTerrain: 'normal'
+        }
+      : {
+          drawMode: 'baseOnRadius',
+          radius: state.radius,
+          hexSize: state.hexSize,
+          orientation: state.orientation,
+          mapCenter: { x: 0, y: 0 },
+          defaultTerrain: 'normal'
+        };
     const newModel = new HexGridModel(config);
     // Sync walls from state to new model if needed, 
     // BUT since walls are stored as coords, we can re-apply them.
@@ -189,7 +207,7 @@ export default function PathfindingDemo() {
     });
     
     setModel(newModel);
-  }, [state.rows, state.columns, state.hexSize, state.orientation]);
+  }, [state.drawMode, state.rows, state.columns, state.radius, state.hexSize, state.orientation]);
 
   // 2. Sync Walls to Model (when walls change)
   useEffect(() => {
@@ -336,13 +354,29 @@ export default function PathfindingDemo() {
         <div className={styles.section}>
             <div className={styles.sectionCard}>
                 <div className={styles.row}>
-                    <label>行数</label>
-                    <input type="number" className={styles.input} value={state.rows} onChange={e => dispatch({type: 'SET_CONFIG', payload: {rows: Number(e.target.value)}})} />
+                    <label>绘制模式</label>
+                    <select className={styles.select} value={state.drawMode} onChange={e => dispatch({type: 'SET_CONFIG', payload: {drawMode: e.target.value as 'row-column' | 'radius'}})}>
+                        <option value="row-column">行列模式</option>
+                        <option value="radius">半径模式</option>
+                    </select>
                 </div>
-                <div className={styles.row}>
-                    <label>列数</label>
-                    <input type="number" className={styles.input} value={state.columns} onChange={e => dispatch({type: 'SET_CONFIG', payload: {columns: Number(e.target.value)}})} />
-                </div>
+                {state.drawMode === 'row-column' ? (
+                    <>
+                        <div className={styles.row}>
+                            <label>行数</label>
+                            <input type="number" className={styles.input} value={state.rows} onChange={e => dispatch({type: 'SET_CONFIG', payload: {rows: Number(e.target.value)}})} />
+                        </div>
+                        <div className={styles.row}>
+                            <label>列数</label>
+                            <input type="number" className={styles.input} value={state.columns} onChange={e => dispatch({type: 'SET_CONFIG', payload: {columns: Number(e.target.value)}})} />
+                        </div>
+                    </>
+                ) : (
+                    <div className={styles.row}>
+                        <label>半径</label>
+                        <input type="number" className={styles.input} value={state.radius} min={1} onChange={e => dispatch({type: 'SET_CONFIG', payload: {radius: Number(e.target.value)}})} />
+                    </div>
+                )}
                 <div className={styles.row}>
                     <label>格子大小</label>
                     <input type="number" className={styles.input} value={state.hexSize} onChange={e => dispatch({type: 'SET_CONFIG', payload: {hexSize: Number(e.target.value)}})} />
@@ -353,6 +387,10 @@ export default function PathfindingDemo() {
                         <option value="flat">平顶</option>
                         <option value="pointy">尖顶</option>
                     </select>
+                </div>
+                <div className={styles.row}>
+                    <label>显示坐标</label>
+                    <input type="checkbox" className={styles.checkbox} checked={state.showCoords} onChange={e => dispatch({type: 'SET_SHOW_COORDS', payload: e.target.checked})} />
                 </div>
             </div>
         </div>
@@ -427,6 +465,7 @@ export default function PathfindingDemo() {
                 pathSet={state.pathSet}
                 visited={state.visited}
                 hover={state.hover}
+                showCoords={state.showCoords}
                 onTileClick={handleTileClick}
                 onTileHover={handleTileHover}
             />
@@ -441,6 +480,7 @@ export default function PathfindingDemo() {
                 pathSet={state.pathSet}
                 visited={state.visited}
                 hover={state.hover}
+                showCoords={state.showCoords}
                 onTileClick={handleTileClick}
                 onTileHover={handleTileHover}
             />

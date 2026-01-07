@@ -18,6 +18,7 @@ interface HexGrid2DProps {
   pathSet: Set<string>; // O(1) lookup for path membership
   visited: Map<string, number>;
   hover: AxialCoord | null;
+  showCoords: boolean;
   onTileClick: (coord: AxialCoord, isRightClick: boolean) => void;
   onTileHover: (coord: AxialCoord | null) => void;
 }
@@ -52,7 +53,7 @@ function drawHex(
   }
 }
 
-export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, hover, onTileClick, onTileHover }: HexGrid2DProps) {
+export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, hover, showCoords, onTileClick, onTileHover }: HexGrid2DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
@@ -144,14 +145,16 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
 
         drawHex(ctx, pos, hexSize - 1, orientation, color, stroke, strokeWidth / zoom);
 
-        // 根据缩放级别决定是否显示坐标文字
-        const effectiveSize = hexSize * zoom;
-        if (effectiveSize >= 20) {
-            ctx.fillStyle = walls.has(key) ? '#78909c' : '#bdbdbd';
-            ctx.font = `${Math.max(8, 10 / zoom)}px monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(`${tile.coord.q},${tile.coord.r}`, pos.x, pos.y);
+        // 根据 showCoords 开关和缩放级别决定是否显示坐标文字
+        if (showCoords) {
+            const effectiveSize = hexSize * zoom;
+            if (effectiveSize >= 20) {
+                ctx.fillStyle = walls.has(key) ? '#78909c' : '#bdbdbd';
+                ctx.font = `${Math.max(8, 10 / zoom)}px monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${tile.coord.q},${tile.coord.r}`, pos.x, pos.y);
+            }
         }
     }
 
@@ -170,7 +173,7 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
         ctx.stroke();
     }
 
-  }, [model, walls, start, end, path, pathSet, visited, hover, canvasSize, zoom, pan]);
+  }, [model, walls, start, end, path, pathSet, visited, hover, showCoords, canvasSize, zoom, pan]);
 
   // 3. 转换屏幕坐标到世界坐标
   const screenToWorld = useCallback((screenX: number, screenY: number): { x: number, y: number } => {

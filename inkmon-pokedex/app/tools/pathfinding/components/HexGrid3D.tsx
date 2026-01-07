@@ -19,17 +19,53 @@ interface HexGrid3DProps {
   pathSet: Set<string>; // O(1) lookup for path membership
   visited: Map<string, number>;
   hover: AxialCoord | null;
+  showCoords: boolean;
   onTileClick: (coord: AxialCoord, isRightClick: boolean) => void;
   onTileHover: (coord: AxialCoord | null) => void;
 }
 
-export function HexGrid3D({ model, walls, start, end, path, pathSet, visited, hover, onTileClick, onTileHover }: HexGrid3DProps) {
+// 创建文字标签 Sprite
+function createTextSprite(text: string): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  const size = 128;
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.beginPath();
+  ctx.roundRect(10, 40, size - 20, 48, 8);
+  ctx.fill();
+
+  ctx.fillStyle = '#475569';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, size / 2, size / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+  });
+
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(20, 20, 1);
+
+  return sprite;
+}
+
+export function HexGrid3D({ model, walls, start, end, path, pathSet, visited, hover, showCoords, onTileClick, onTileHover }: HexGrid3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const meshesRef = useRef<Map<string, THREE.Mesh>>(new Map());
+  const labelsRef = useRef<Map<string, THREE.Sprite>>(new Map());
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
 
@@ -128,7 +164,7 @@ export function HexGrid3D({ model, walls, start, end, path, pathSet, visited, ho
   // Sync Meshes with Model
   useEffect(() => {
     if (!sceneRef.current || !model) return;
-    
+
     // Clear old meshes
     meshesRef.current.forEach(mesh => {
         if (mesh.geometry) mesh.geometry.dispose();
@@ -137,6 +173,14 @@ export function HexGrid3D({ model, walls, start, end, path, pathSet, visited, ho
         sceneRef.current?.remove(mesh);
     });
     meshesRef.current.clear();
+
+    // Clear old labels
+    labelsRef.current.forEach(sprite => {
+        if (sprite.material.map) sprite.material.map.dispose();
+        sprite.material.dispose();
+        sceneRef.current?.remove(sprite);
+    });
+    labelsRef.current.clear();
 
     const hexSize = model.config.hexSize;
     const geometry = new THREE.CylinderGeometry(hexSize - 1, hexSize - 1, 10, 6);
@@ -150,12 +194,26 @@ export function HexGrid3D({ model, walls, start, end, path, pathSet, visited, ho
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(pos.x, 0, pos.y);
         mesh.userData = { coord: tile.coord };
-        
+
         sceneRef.current.add(mesh);
         meshesRef.current.set(hexKey(tile.coord), mesh);
+
+        // Create label sprite
+        const label = createTextSprite(`${tile.coord.q},${tile.coord.r}`);
+        label.position.set(pos.x, 25, pos.y);
+        label.visible = false; // 初始隐藏，由 showCoords 控制
+        sceneRef.current.add(label);
+        labelsRef.current.set(hexKey(tile.coord), label);
     }
 
   }, [model, model.config.rows, model.config.columns, model.config.hexSize, model.config.orientation]);
+
+  // Update label visibility based on showCoords
+  useEffect(() => {
+    labelsRef.current.forEach(label => {
+      label.visible = showCoords;
+    });
+  }, [showCoords]);
 
   // Update Colors
   useEffect(() => {
