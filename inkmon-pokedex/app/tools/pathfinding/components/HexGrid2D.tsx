@@ -57,6 +57,7 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [moveSpeed, setMoveSpeed] = useState(10); // 移动速度 (1-30)
   const isPanningRef = useRef(false);
   const lastPanPosRef = useRef({ x: 0, y: 0 });
 
@@ -285,7 +286,6 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
 
   // 6. WASD 键盘控制平移
   useEffect(() => {
-    const MOVE_SPEED = 30; // 基础移动速度（像素）
     const keysPressed = new Set<string>();
     let animationId: number | null = null;
 
@@ -293,10 +293,10 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
       let dx = 0;
       let dy = 0;
 
-      if (keysPressed.has('w') || keysPressed.has('arrowup')) dy += MOVE_SPEED;
-      if (keysPressed.has('s') || keysPressed.has('arrowdown')) dy -= MOVE_SPEED;
-      if (keysPressed.has('a') || keysPressed.has('arrowleft')) dx += MOVE_SPEED;
-      if (keysPressed.has('d') || keysPressed.has('arrowright')) dx -= MOVE_SPEED;
+      if (keysPressed.has('w') || keysPressed.has('arrowup')) dy += moveSpeed;
+      if (keysPressed.has('s') || keysPressed.has('arrowdown')) dy -= moveSpeed;
+      if (keysPressed.has('a') || keysPressed.has('arrowleft')) dx += moveSpeed;
+      if (keysPressed.has('d') || keysPressed.has('arrowright')) dx -= moveSpeed;
 
       if (dx !== 0 || dy !== 0) {
         setPan(p => ({
@@ -356,7 +356,7 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
         cancelAnimationFrame(animationId);
       }
     };
-  }, [zoom]);
+  }, [zoom, moveSpeed]);
 
   return (
     <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f1f5f9' }}>
@@ -371,20 +371,50 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
           onContextMenu={handleContextMenu}
           style={{ width: '100%', height: '100%', cursor: isPanningRef.current ? 'grabbing' : 'default' }}
       />
-      {/* 缩放指示器 */}
+      {/* 控制面板 */}
       <div style={{
         position: 'absolute',
         bottom: 16,
         right: 16,
-        background: 'rgba(255,255,255,0.9)',
-        padding: '6px 12px',
-        borderRadius: 8,
-        fontSize: 13,
-        color: '#475569',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        pointerEvents: 'none'
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        alignItems: 'flex-end'
       }}>
-        {Math.round(zoom * 100)}%
+        {/* 移动速度控制 */}
+        <div style={{
+          background: 'rgba(255,255,255,0.9)',
+          padding: '8px 12px',
+          borderRadius: 8,
+          fontSize: 13,
+          color: '#475569',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
+          <span style={{ minWidth: 60 }}>速度: {moveSpeed}</span>
+          <input
+            type="range"
+            min={1}
+            max={30}
+            value={moveSpeed}
+            onChange={(e) => setMoveSpeed(Number(e.target.value))}
+            style={{ width: 80, cursor: 'pointer' }}
+          />
+        </div>
+        {/* 缩放指示器 */}
+        <div style={{
+          background: 'rgba(255,255,255,0.9)',
+          padding: '6px 12px',
+          borderRadius: 8,
+          fontSize: 13,
+          color: '#475569',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          pointerEvents: 'none'
+        }}>
+          {Math.round(zoom * 100)}%
+        </div>
       </div>
     </div>
   );
