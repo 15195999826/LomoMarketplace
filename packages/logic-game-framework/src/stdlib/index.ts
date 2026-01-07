@@ -1,8 +1,8 @@
 /**
- * Battle Framework - Standard Library
+ * Logic Game Framework - Standard Library
  *
  * 标准库导出
- * 包含标准实现、预设组件等可选模块
+ * 包含预设组件、Actions、回放录制等可选模块
  *
  * 注意：stdlib 中的内容都是可选的标准实现，
  * 项目可以选择使用、继承或完全自行实现。
@@ -19,9 +19,6 @@ export * from './actions/index.js';
 
 // Components
 export * from './components/index.js';
-
-// Battle（标准战斗实例）
-export * from './battle/index.js';
 
 // Replay（战斗回放录制）
 export * from './replay/index.js';

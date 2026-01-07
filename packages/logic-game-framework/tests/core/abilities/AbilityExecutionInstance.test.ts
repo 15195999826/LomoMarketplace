@@ -43,9 +43,8 @@ function createMockActionWithEvent(type: string, eventKind: string): IAction {
   return {
     type,
     execute(ctx: ExecutionContext): ActionResult {
-      return {
-        events: [{ kind: eventKind }],
-      };
+      ctx.eventCollector.push({ kind: eventKind });
+      return {};
     },
   };
 }

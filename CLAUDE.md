@@ -185,3 +185,4 @@ claude --plugin-dir ./plugins/InkMon
 | `/session-summary [主题]` | 总结当前对话 |
 | `/whats-next` | 查看待办事项和工作建议 |
 | `/track-module <模块名>` | 追踪复杂模块 |
+| `/archive-notes [--dry-run]` | 归档已完成的会话笔记 |

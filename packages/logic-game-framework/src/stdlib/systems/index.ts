@@ -1,4 +1,3 @@
-export { StandardAbilitySystem } from './StandardAbilitySystem.js';
 export {
   ProjectileSystem,
   type ProjectileSystemConfig,
