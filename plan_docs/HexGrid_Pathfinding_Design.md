@@ -1,11 +1,12 @@
 # hex-grid 寻路功能设计方案
 
-> 版本: v0.3
+> 版本: v0.4
 > 日期: 2026-01-07
 > 参考: UE GraphAStar.h, GridPathFindingNavMesh
 > 变更历史:
 >   - v0.2 针对泛型键支持、堆性能优化、接口健壮性进行改进
 >   - v0.3 添加 FloodResult 封装，优化 MinHeap.update 注释
+>   - v0.4 添加 shouldIgnoreClosedNodes / shouldIncludeStartNodeInPath 可选方法
 
 ## 1. 概述
 
@@ -128,6 +129,23 @@ interface IPathFilter<TNodeRef> {
    * 可选：最大代价限制（用于寻找移动范围内的路径）
    */
   getCostLimit?(): number;
+
+  /**
+   * 可选：是否忽略已关闭节点
+   *
+   * - true (默认): 已关闭节点不会被重新访问，标准 A* 行为
+   * - false: 允许重新访问已关闭节点（如果发现更优路径）
+   *          某些特殊图结构可能需要，但会降低性能
+   */
+  shouldIgnoreClosedNodes?(): boolean;
+
+  /**
+   * 可选：返回的路径是否包含起点
+   *
+   * - false (默认): 路径从起点的下一个节点开始
+   * - true: 路径包含起点本身
+   */
+  shouldIncludeStartNodeInPath?(): boolean;
 }
 ```
 
@@ -260,7 +278,7 @@ class GraphAStar<TNodeRef> {
     *   **邻居遍历**:
         *   `neighbors = graph.getNeighbors(current)`
         *   For each `neighbor`:
-            *   若 `neighbor.isClosed`, 跳过.
+            *   若 `filter.shouldIgnoreClosedNodes() !== false && neighbor.isClosed`, 跳过.
             *   若 `!filter.isTraversalAllowed(current, neighbor)`, 跳过.
             *   计算 `newG = current.G + filter.getTraversalCost(...)`.
             *   若 `newG > costLimit`, 跳过.
@@ -274,7 +292,12 @@ class GraphAStar<TNodeRef> {
                 *   若已 Open:
                     *   `openList.update(neighborNode)`.
 
-4.  **收尾**:
+4.  **路径构建**:
+    *   从 End 节点回溯 `parentRef` 直到 Start.
+    *   若 `filter.shouldIncludeStartNodeInPath()` 为 true, 将起点加入路径.
+    *   反转路径数组 (回溯得到的是逆序).
+
+5.  **收尾**:
     *   若循环结束仍未找到 End:
         *   若 `filter.wantsPartialSolution()`: 返回离目标最近(H最小)节点的路径.
         *   否则返回 `GoalUnreachable`.
@@ -495,6 +518,20 @@ class MinHeap<T extends object> {
 | Phase 2 | 集成 | HexGridGraph (key/neighbors), HexPathFilter |
 | Phase 3 | 范围与优化 | floodFrom 实现, 单元测试覆盖各类边界 |
 
-## 8. 调试与可视化
+## 8. 验证与演示 (Validation & Demo)
 
-为了便于调试寻路逻辑，GraphAStar 支持 `onNodeVisited` 回调。应用层可以利用此回调在 UI 上绘制搜索过程（例如把被搜索的格子染成黄色），直观地观察启发函数和代价的影响。
+为了验证算法的正确性与性能，将在 `inkmon-pokedex` 项目中构建一个可视化的调试环境。
+
+*   **位置**: `inkmon-pokedex/app/tools/pathfinding/page.tsx`
+*   **技术**: React + HTML5 Canvas
+*   **功能要求**:
+    1.  **交互式地图**:
+        *   绘制六边形网格。
+        *   左键点击设置/清除障碍物 (Wall)。
+        *   右键点击设置起点 (Start) 和终点 (End)。
+    2.  **可视化反馈**:
+        *   高亮显示最终计算出的路径。
+        *   (Debug) 利用 `onNodeVisited` 实时绘制搜索过的节点（热力图），直观展示 A* 与 Dijkstra 的区别。
+    3.  **实时参数**:
+        *   调整 `Heuristic Scale`。
+        *   显示寻路耗时 (ms) 和 搜索节点数 (Visited Count)。
