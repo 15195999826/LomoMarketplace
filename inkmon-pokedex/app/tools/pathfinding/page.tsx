@@ -60,6 +60,7 @@ interface DemoState {
   
   // Results
   path: AxialCoord[];
+  pathSet: Set<string>; // hexKey set for O(1) lookup
   visited: Map<string, number>; // hexKey -> order
   metrics: Metrics | null;
 }
@@ -73,7 +74,7 @@ type Action =
   | { type: 'TOGGLE_WALL'; payload: AxialCoord }
   | { type: 'CLEAR_WALLS' }
   | { type: 'SET_HOVER'; payload: AxialCoord | null }
-  | { type: 'SET_RESULT'; payload: { path: AxialCoord[]; visited: Map<string, number>; metrics: Metrics } }
+  | { type: 'SET_RESULT'; payload: { path: AxialCoord[]; pathSet: Set<string>; visited: Map<string, number>; metrics: Metrics } }
   | { type: 'RESET_RESULT' }
   | { type: 'RESET_ALL' };
 
@@ -95,6 +96,7 @@ const INITIAL_STATE: DemoState = {
   hover: null,
 
   path: [],
+  pathSet: new Set(),
   visited: new Map(),
   metrics: null,
 };
@@ -104,7 +106,7 @@ function reducer(state: DemoState, action: Action): DemoState {
     case 'SET_VIEW_MODE':
       return { ...state, viewMode: action.payload };
     case 'SET_CONFIG':
-      return { ...state, ...action.payload, start: null, end: null, walls: new Set(), path: [], visited: new Map(), metrics: null };
+      return { ...state, ...action.payload, start: null, end: null, walls: new Set(), path: [], pathSet: new Set(), visited: new Map(), metrics: null };
     case 'SET_PARAM':
       return { ...state, ...action.payload };
     case 'SET_START':
@@ -116,13 +118,14 @@ function reducer(state: DemoState, action: Action): DemoState {
       const newWalls = new Set(state.walls);
       if (newWalls.has(key)) {
         newWalls.delete(key);
+        return { ...state, walls: newWalls };
       } else {
         newWalls.add(key);
-        // If start/end is wall, clear them
-        if (state.start && hexEquals(state.start, action.payload)) state.start = null;
-        if (state.end && hexEquals(state.end, action.payload)) state.end = null;
+        // If start/end is wall, clear them (immutable update)
+        const newStart = (state.start && hexEquals(state.start, action.payload)) ? null : state.start;
+        const newEnd = (state.end && hexEquals(state.end, action.payload)) ? null : state.end;
+        return { ...state, walls: newWalls, start: newStart, end: newEnd };
       }
-      return { ...state, walls: newWalls };
     }
     case 'CLEAR_WALLS':
       return { ...state, walls: new Set() };
@@ -138,7 +141,7 @@ function reducer(state: DemoState, action: Action): DemoState {
     case 'SET_RESULT':
       return { ...state, ...action.payload };
     case 'RESET_RESULT':
-      return { ...state, path: [], visited: new Map(), metrics: null };
+      return { ...state, path: [], pathSet: new Set(), visited: new Map(), metrics: null };
     case 'RESET_ALL':
       return { ...INITIAL_STATE, viewMode: state.viewMode };
     default:
@@ -259,9 +262,12 @@ export default function PathfindingDemo() {
         }
     }
 
+    // Create pathSet for O(1) lookup in render
+    const pathSet = new Set(path.map(hexKey));
+
     dispatch({
         type: 'SET_RESULT',
-        payload: { path, visited, metrics }
+        payload: { path, pathSet, visited, metrics }
     });
   };
 
@@ -418,6 +424,7 @@ export default function PathfindingDemo() {
                 start={state.start}
                 end={state.end}
                 path={state.path}
+                pathSet={state.pathSet}
                 visited={state.visited}
                 hover={state.hover}
                 onTileClick={handleTileClick}
@@ -431,6 +438,7 @@ export default function PathfindingDemo() {
                 start={state.start}
                 end={state.end}
                 path={state.path}
+                pathSet={state.pathSet}
                 visited={state.visited}
                 hover={state.hover}
                 onTileClick={handleTileClick}

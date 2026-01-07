@@ -16,13 +16,14 @@ interface HexGrid3DProps {
   start: AxialCoord | null;
   end: AxialCoord | null;
   path: AxialCoord[];
+  pathSet: Set<string>; // O(1) lookup for path membership
   visited: Map<string, number>;
   hover: AxialCoord | null;
   onTileClick: (coord: AxialCoord, isRightClick: boolean) => void;
   onTileHover: (coord: AxialCoord | null) => void;
 }
 
-export function HexGrid3D({ model, walls, start, end, path, visited, hover, onTileClick, onTileHover }: HexGrid3DProps) {
+export function HexGrid3D({ model, walls, start, end, path, pathSet, visited, hover, onTileClick, onTileHover }: HexGrid3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -184,7 +185,7 @@ export function HexGrid3D({ model, walls, start, end, path, visited, hover, onTi
                 color = 0xef5350; // Red
                 yPos = 5;
                 scaleY = 2;
-            } else if (path.some(p => hexEquals(p, tile.coord))) {
+            } else if (pathSet.has(key)) {
                 color = 0xfff176; // Yellow
                 yPos = 2;
                 scaleY = 1.4;
@@ -205,7 +206,7 @@ export function HexGrid3D({ model, walls, start, end, path, visited, hover, onTi
         mesh.scale.setY(scaleY);
         mesh.position.y = yPos;
     }
-  }, [model, walls, start, end, path, visited, hover]);
+  }, [model, walls, start, end, pathSet, visited, hover]);
 
   // Handlers
   const handlePointer = useCallback((e: React.MouseEvent, type: 'move' | 'click' | 'contextmenu') => {

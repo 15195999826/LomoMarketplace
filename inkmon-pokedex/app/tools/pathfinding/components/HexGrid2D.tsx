@@ -15,6 +15,7 @@ interface HexGrid2DProps {
   start: AxialCoord | null;
   end: AxialCoord | null;
   path: AxialCoord[];
+  pathSet: Set<string>; // O(1) lookup for path membership
   visited: Map<string, number>;
   hover: AxialCoord | null;
   onTileClick: (coord: AxialCoord, isRightClick: boolean) => void;
@@ -51,7 +52,7 @@ function drawHex(
   }
 }
 
-export function HexGrid2D({ model, walls, start, end, path, visited, hover, onTileClick, onTileHover }: HexGrid2DProps) {
+export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, hover, onTileClick, onTileHover }: HexGrid2DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
@@ -124,7 +125,7 @@ export function HexGrid2D({ model, walls, start, end, path, visited, hover, onTi
         } else if (end && hexEquals(end, tile.coord)) {
             color = '#ef5350';
             stroke = '#c62828';
-        } else if (path.some(p => hexEquals(p, tile.coord))) {
+        } else if (pathSet.has(key)) {
             color = '#fff176';
             stroke = '#fbc02d';
         } else if (visited.has(key)) {
@@ -168,7 +169,7 @@ export function HexGrid2D({ model, walls, start, end, path, visited, hover, onTi
         ctx.stroke();
     }
 
-  }, [model, walls, start, end, path, visited, hover, canvasSize, zoom, pan]);
+  }, [model, walls, start, end, path, pathSet, visited, hover, canvasSize, zoom, pan]);
 
   // 3. 转换屏幕坐标到世界坐标
   const screenToWorld = useCallback((screenX: number, screenY: number): { x: number, y: number } => {
@@ -198,30 +199,37 @@ export function HexGrid2D({ model, walls, start, end, path, visited, hover, onTi
     return coord;
   }, [model, screenToWorld]);
 
-  // 4. 滚轮缩放
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
+  // 4. 滚轮缩放 (使用 native event 以支持 passive: false)
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-    const zoomFactor = 1.1;
-    const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
-    const newZoom = Math.min(Math.max(zoom * delta, 0.2), 5); // 限制缩放范围 0.2x - 5x
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
 
-    // 以鼠标位置为中心缩放
-    if (canvasRef.current) {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left - rect.width / 2;
-      const mouseY = e.clientY - rect.top - rect.height / 2;
+      const zoomFactor = 1.1;
+      const delta = e.deltaY > 0 ? 1 / zoomFactor : zoomFactor;
 
-      // 计算新的平移量以保持鼠标位置不变
-      const scale = newZoom / zoom;
-      const newPanX = pan.x - (mouseX / zoom - mouseX / newZoom);
-      const newPanY = pan.y - (mouseY / zoom - mouseY / newZoom);
+      setZoom(prevZoom => {
+        const newZoom = Math.min(Math.max(prevZoom * delta, 0.2), 5);
 
-      setPan({ x: newPanX, y: newPanY });
-    }
+        // 以鼠标位置为中心缩放
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left - rect.width / 2;
+        const mouseY = e.clientY - rect.top - rect.height / 2;
 
-    setZoom(newZoom);
-  }, [zoom, pan]);
+        setPan(prevPan => ({
+          x: prevPan.x - (mouseX / prevZoom - mouseX / newZoom),
+          y: prevPan.y - (mouseY / prevZoom - mouseY / newZoom)
+        }));
+
+        return newZoom;
+      });
+    };
+
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, []);
 
   // 5. 鼠标中键拖拽平移
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -275,6 +283,81 @@ export function HexGrid2D({ model, walls, start, end, path, visited, hover, onTi
     setPan({ x: 0, y: 0 });
   }, []);
 
+  // 6. WASD 键盘控制平移
+  useEffect(() => {
+    const MOVE_SPEED = 30; // 基础移动速度（像素）
+    const keysPressed = new Set<string>();
+    let animationId: number | null = null;
+
+    const updatePan = () => {
+      let dx = 0;
+      let dy = 0;
+
+      if (keysPressed.has('w') || keysPressed.has('arrowup')) dy += MOVE_SPEED;
+      if (keysPressed.has('s') || keysPressed.has('arrowdown')) dy -= MOVE_SPEED;
+      if (keysPressed.has('a') || keysPressed.has('arrowleft')) dx += MOVE_SPEED;
+      if (keysPressed.has('d') || keysPressed.has('arrowright')) dx -= MOVE_SPEED;
+
+      if (dx !== 0 || dy !== 0) {
+        setPan(p => ({
+          x: p.x + dx / zoom,
+          y: p.y + dy / zoom
+        }));
+      }
+
+      if (keysPressed.size > 0) {
+        animationId = requestAnimationFrame(updatePan);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+        // 避免在输入框中触发
+        if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
+
+        e.preventDefault();
+        if (!keysPressed.has(key)) {
+          keysPressed.add(key);
+          if (keysPressed.size === 1) {
+            animationId = requestAnimationFrame(updatePan);
+          }
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      keysPressed.delete(key);
+      if (keysPressed.size === 0 && animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    };
+
+    // 失去焦点时清除所有按键状态
+    const handleBlur = () => {
+      keysPressed.clear();
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [zoom]);
+
   return (
     <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f1f5f9' }}>
       <canvas
@@ -286,7 +369,6 @@ export function HexGrid2D({ model, walls, start, end, path, visited, hover, onTi
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
           onContextMenu={handleContextMenu}
-          onWheel={handleWheel}
           style={{ width: '100%', height: '100%', cursor: isPanningRef.current ? 'grabbing' : 'default' }}
       />
       {/* 缩放指示器 */}
