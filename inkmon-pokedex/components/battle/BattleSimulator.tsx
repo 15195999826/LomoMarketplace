@@ -26,6 +26,7 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
   const [teamB, setTeamB] = useState<TeamState>([null, null, null]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<{ team: 'A' | 'B'; index: number } | null>(null);
+  const [deterministicMode, setDeterministicMode] = useState(true); // 默认开启，便于验证对照
   const [battle, setBattle] = useState<BattleState>({
     status: "idle",
     replay: null,
@@ -115,7 +116,7 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
         body: JSON.stringify({
           teamA: selectedByTeamA,
           teamB: selectedByTeamB,
-          config: { deterministicMode: false },
+          config: { deterministicMode },
         }),
       });
 
@@ -184,6 +185,14 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
             >
               {battle.status === "loading" ? "⏳ 战斗中..." : "⚔️ 开始战斗"}
             </button>
+            <label className={styles.deterministicToggle}>
+              <input
+                type="checkbox"
+                checked={deterministicMode}
+                onChange={(e) => setDeterministicMode(e.target.checked)}
+              />
+              <span>固定随机种子</span>
+            </label>
           </div>
 
           {/* 队伍 B */}

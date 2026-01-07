@@ -61,6 +61,12 @@
   color: var(--text-secondary, #a0a0a0);
 }
 
+.frameIndexHint {
+  font-size: 0.7rem;
+  color: var(--text-tertiary, #666);
+  margin-left: 0.25rem;
+}
+
 .speedControls {
   display: flex;
   gap: 0.25rem;

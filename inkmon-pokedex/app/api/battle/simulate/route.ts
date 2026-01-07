@@ -177,6 +177,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     // 获取 replay
     const replay = battle.getReplay();
 
+    // 轻量级数据完整性校验
+    if (replay.version !== "2.0") {
+      console.warn(
+        `[Battle API] Replay version mismatch: expected "2.0", got "${replay.version}"`,
+      );
+    }
+
     // 生成日志
     const log = ReplayLogPrinter.print(replay);
 

@@ -147,6 +147,28 @@
   cursor: not-allowed;
 }
 
+/* 固定随机种子选项 */
+.deterministicToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.75rem;
+  color: var(--accent);
+  cursor: pointer;
+  user-select: none;
+}
+
+.deterministicToggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--ink-black);
+  cursor: pointer;
+}
+
+.deterministicToggle span {
+  white-space: nowrap;
+}
+
 /* 战斗结果 */
 .resultSection {
   background: var(--paper-light);

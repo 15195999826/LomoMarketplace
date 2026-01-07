@@ -223,7 +223,10 @@ export function BattleReplayPlayer({ replay, log }: BattleReplayPlayerProps) {
         </button>
 
         <span className={styles.frameInfo}>
-          帧 {state.currentFrameIndex + 1} / {replay.timeline.length}
+          帧 {state.currentFrame} / {summary.totalFrames}
+          <span className={styles.frameIndexHint}>
+            ({state.currentFrameIndex + 1}/{replay.timeline.length})
+          </span>
         </span>
 
         <div className={styles.speedControls}>
