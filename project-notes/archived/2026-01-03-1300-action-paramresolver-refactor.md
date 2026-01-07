@@ -57,9 +57,9 @@ new DamageAction({ damage: 100 })
 
 ## Todo Items
 
-- [ ] 提交本次改动
-- [ ] 更新框架文档，说明新的 Action 参数模式
-- [ ] 考虑为常用 TargetSelector 提供预定义实现（abilityOwner, currentTarget 等）
+- [x] 提交本次改动 ✅ 已提交
+- [ ] 更新框架文档，说明新的 Action 参数模式（低优先级）
+- [ ] 考虑为常用 TargetSelector 提供预定义实现（低优先级）
 
 ## Notes
 

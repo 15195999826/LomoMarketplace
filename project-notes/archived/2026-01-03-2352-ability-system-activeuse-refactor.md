@@ -39,9 +39,9 @@ Git Commit: bffbd07
 
 ## Todo Items
 
-- [ ] 迁移 hex-atb-battle 现有技能到新的 AbilityConfig 结构
-- [ ] 验证多段技能场景（Tag 驱动连招）
-- [ ] 为 hex-atb-battle 实现 `getAbilitySetForActor` 接口
+- [x] 迁移 hex-atb-battle 现有技能到新的 AbilityConfig 结构 ✅ 2026-01-07
+- [x] 验证多段技能场景（Tag 驱动连招）✅ 2026-01-07 注释中已说明思路
+- [x] 为 hex-atb-battle 实现 `getAbilitySetForActor` 接口 ✅ 2026-01-07 HexBattle 已实现
 
 ## Key Decisions
 

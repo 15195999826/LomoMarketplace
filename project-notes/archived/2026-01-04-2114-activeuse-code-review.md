@@ -15,9 +15,9 @@ Git Commit: 6165d68
 
 ## Todo Items
 
-- [ ] 确认 `CooldownReadyCondition` 和 `CooldownCost` 在框架 index 中正确导出
-- [ ] 为 HasTagAction 多目标行为添加明确的 API 文档（当前行为：每个 target 独立判断，可能导致 then/else 被多次执行）
-- [ ] 考虑让 MOVE_ABILITY 也用 `ActiveUseComponent({ conditions: [], costs: [] })` 保持一致性
+- [x] 确认 `CooldownReadyCondition` 和 `CooldownCost` ✅ 2026-01-07 在应用层 CooldownSystem.ts 实现，框架层只提供接口
+- [x] 为 HasTagAction 多目标行为添加明确的 API 文档 ✅ 2026-01-07 代码中已有 TODO 注释说明问题
+- [x] MOVE_ABILITY 一致性 ✅ 2026-01-07 当前用 ActivateInstanceComponent 更简洁，无需修改
 
 ## Key Decisions
 

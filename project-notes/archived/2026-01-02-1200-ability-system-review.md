@@ -29,9 +29,9 @@ Git Commit: 0a0ed37
   - 明确说明不收集事件，适用于瞬发被动技能
   - 需要事件收集时使用 ActivateInstanceComponent
 - [x] 文档说明 `flushEvents` vs `getCollectedEvents` ✅ 2026-01-02
-- [ ] 考虑实现 `StackModifierComponent` 解决层数变化时 Modifier 不自动更新的问题
-- [ ] 完善序列化/反序列化机制（多数 Component 的 deserialize 不完整）
-- [ ] 考虑将全局 TimelineRegistry 改为依赖注入方式
+- [x] StackModifierComponent ❌ 2026-01-07 不实现 - 层数与 Modifier 设计上无直接关联，暂无需求
+- [x] 完善序列化/反序列化机制 ❌ 2026-01-07 不实现 - 暂不在实现范围内，等有存档/网络同步需求再做
+- [x] 全局 TimelineRegistry 改为依赖注入 ✅ 2026-01-07 已支持 setTimelineRegistry()
 
 ## Key Decisions
 

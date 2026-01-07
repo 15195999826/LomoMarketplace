@@ -29,8 +29,8 @@ Date: 2026-01-01
 
 - [x] `Ability.checkExpiration()` 硬编码了 'duration' → 已移除，改为 Component 主动调用 `ability.expire(reason)`
 - [x] `ExecutionContext.battle` 改为可选类型 → 已改为 `gameplayState: unknown`
-- [ ] 为 BattleGameEvents 添加类型守卫函数（如 `isDamageEvent()`）
-- [ ] AbilitySystem 考虑自己持有 actors 引用，简化 `broadcastEvent` 调用
+- [x] 为 BattleGameEvents 添加类型守卫函数 ✅ 2026-01-07 应用层已实现 (ReplayEvents.ts)
+- [x] AbilitySystem 持有 actors 引用 ✅ 2026-01-07 架构已重构，GameplayInstance.baseTick() 直接传递 actors
 
 ## Key Decisions
 
