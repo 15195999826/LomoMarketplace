@@ -24,6 +24,7 @@ import type {
   DeathEvent,
   BattleEndEvent,
 } from "./events/index.js";
+import { ReplayFileManager } from "./replay/index.js";
 
 // ============================================================
 // 配置
@@ -60,13 +61,19 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 console.log("=".repeat(60));
 console.log("Auto Turn-Based Battle - Framework Demo");
-console.log("回合制自走棋战斗演示（事件驱动 + 数据驱动技能系统）");
+console.log("回合制自走棋战斗演示（事件驱动 + 数据驱动技能 + 回放录制）");
 console.log("=".repeat(60));
 console.log("");
 
 // 显示技能注册表信息
 console.log(`📦 技能注册表: ${SkillRegistry.count} 个技能已注册`);
 console.log(`   - ${SkillRegistry.getAllIds().join(", ")}`);
+console.log("");
+
+// 生成随机种子（或使用固定种子进行复现）
+const battleSeed = Math.floor(Math.random() * 2147483647);
+console.log(`🎲 随机数种子: ${battleSeed}`);
+console.log("   (保存此种子可复现相同战斗)");
 console.log("");
 
 // 初始化 GameWorld
@@ -83,8 +90,15 @@ const battle = world.createInstance(
       maxRounds: 50,
       enableLog: true,
       verboseLog: true,
+      seed: battleSeed,
+      enableReplay: true,
+      replayDirectory: "./Replays",
     }),
 );
+
+console.log(`📼 回放录制: 已启用`);
+console.log(`   保存目录: ./Replays`);
+console.log("");
 
 // ============================================================
 // 配置队伍
@@ -224,6 +238,27 @@ if (aliveB.length > 0) {
   for (const unit of aliveB) {
     console.log(`   - ${unit.displayName}: HP ${unit.hp}/${unit.maxHp}`);
   }
+}
+
+console.log("");
+
+// 显示回放文件信息
+console.log("=".repeat(60));
+console.log("📼 回放文件");
+console.log("=".repeat(60));
+const replayManager = new ReplayFileManager("./Replays");
+const replayFiles = replayManager.listReplaysSync();
+if (replayFiles.length > 0) {
+  console.log(`   共 ${replayFiles.length} 个回放文件:`);
+  for (const file of replayFiles.slice(0, 5)) {
+    const sizeKB = (file.size / 1024).toFixed(1);
+    console.log(`   - ${file.filename} (${sizeKB} KB)`);
+  }
+  if (replayFiles.length > 5) {
+    console.log(`   ... 还有 ${replayFiles.length - 5} 个文件`);
+  }
+} else {
+  console.log("   (无回放文件)");
 }
 
 console.log("");

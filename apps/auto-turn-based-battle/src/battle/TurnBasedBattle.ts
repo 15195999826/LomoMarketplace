@@ -58,6 +58,15 @@ import {
   type ITargetResolver,
 } from "../skills/index.js";
 
+// 回放系统
+import {
+  BattleReplayRecorder,
+  createBattleReplayRecorder,
+  ReplayFileManager,
+  createReplayFileManager,
+  type IBattleReplay,
+} from "../replay/index.js";
+
 /**
  * 回合制战斗配置
  */
@@ -70,6 +79,10 @@ export interface TurnBasedBattleConfig {
   verboseLog: boolean;
   /** 随机数种子（用于确定性测试） */
   seed?: number;
+  /** 是否启用回放录制 */
+  enableReplay?: boolean;
+  /** 回放保存目录 */
+  replayDirectory?: string;
 }
 
 /**
@@ -79,6 +92,8 @@ const DEFAULT_CONFIG: TurnBasedBattleConfig = {
   maxRounds: 100,
   enableLog: true,
   verboseLog: true,
+  enableReplay: true,
+  replayDirectory: "./Replays",
 };
 
 /**
@@ -124,6 +139,17 @@ export class TurnBasedBattle extends GameplayInstance {
   /** 目标解析器（实现 ITargetResolver） */
   private _targetResolver: ITargetResolver;
 
+  // ========== 回放系统 ==========
+
+  /** 回放录制器 */
+  private _replayRecorder: BattleReplayRecorder | null = null;
+
+  /** 回放文件管理器 */
+  private _replayFileManager: ReplayFileManager | null = null;
+
+  /** 随机数种子 */
+  private _seed: number;
+
   // ========== 队伍管理 ==========
 
   /** 队伍 A（玩家/teamId=0） */
@@ -143,6 +169,9 @@ export class TurnBasedBattle extends GameplayInstance {
     });
     this._ai = createSimpleAI(this._config.seed);
 
+    // 生成或使用提供的种子
+    this._seed = this._config.seed ?? Math.floor(Math.random() * 2147483647);
+
     // 创建事件总线
     this._eventBus = createBattleEventBus();
 
@@ -157,6 +186,21 @@ export class TurnBasedBattle extends GameplayInstance {
 
     // 注册日志监听器
     this.setupEventListeners();
+
+    // 初始化回放系统
+    if (this._config.enableReplay) {
+      this._replayRecorder = createBattleReplayRecorder({
+        battleId: this.id,
+        seed: this._seed,
+        maxRounds: this._config.maxRounds,
+        tickInterval: 100,
+        gameVersion: "1.0.0",
+      });
+
+      this._replayFileManager = createReplayFileManager(
+        this._config.replayDirectory!,
+      );
+    }
   }
 
   /**
@@ -285,6 +329,14 @@ export class TurnBasedBattle extends GameplayInstance {
     return this._eventBus;
   }
 
+  get seed(): number {
+    return this._seed;
+  }
+
+  get replayRecorder(): BattleReplayRecorder | null {
+    return this._replayRecorder;
+  }
+
   // ========== 单位管理 ==========
 
   /**
@@ -352,6 +404,12 @@ export class TurnBasedBattle extends GameplayInstance {
       this._logger.error("战斗无法开始：队伍为空");
       this.end();
       return;
+    }
+
+    // 开始回放录制
+    if (this._replayRecorder) {
+      const allUnits = [...this._teamA, ...this._teamB];
+      this._replayRecorder.startRecording(allUnits);
     }
 
     // 开始战斗
@@ -584,6 +642,14 @@ export class TurnBasedBattle extends GameplayInstance {
     // 日志输出
     this._logger.roundStart(this._context.round, sortedUnits);
 
+    // 回放：记录回合开始
+    if (this._replayRecorder) {
+      this._replayRecorder.beginRound(
+        this._context.round,
+        sortedUnits.map((u) => u.id),
+      );
+    }
+
     this.completeSignal(WaitSignal.WaitGeneralPerformEnd);
   }
 
@@ -635,6 +701,11 @@ export class TurnBasedBattle extends GameplayInstance {
     if (isStunned) {
       this._logger.characterSkipTurn(character, "眩晕");
       this.eventCollector.push(createSkipTurnEvent(characterId, "眩晕"));
+
+      // 回放：记录跳过的行动
+      if (this._replayRecorder) {
+        this._replayRecorder.recordSkippedTurn(characterId, "眩晕");
+      }
     }
 
     // 完成等待（无动画）
@@ -731,6 +802,12 @@ export class TurnBasedBattle extends GameplayInstance {
 
     this._logger.roundEnd(this._context.round, aliveA, aliveB);
 
+    // 回放：结束回合
+    if (this._replayRecorder) {
+      const allUnits = [...this._teamA, ...this._teamB];
+      this._replayRecorder.endRound(allUnits);
+    }
+
     this.completeSignal(WaitSignal.WaitGeneralPerformEnd);
   }
 
@@ -759,8 +836,64 @@ export class TurnBasedBattle extends GameplayInstance {
       this._context.round,
     );
 
+    // 保存回放
+    this.saveReplay();
+
     // 结束实例
     this.end();
+  }
+
+  /**
+   * 保存回放文件
+   */
+  private saveReplay(): void {
+    if (!this._replayRecorder || !this._replayFileManager) {
+      return;
+    }
+
+    try {
+      const resultMap: Record<
+        string,
+        "Victory" | "Defeat" | "Draw" | "Unknown"
+      > = {
+        Victory: "Victory",
+        Defeat: "Defeat",
+        Draw: "Draw",
+        None: "Unknown",
+      };
+
+      const replay = this._replayRecorder.stopRecording(
+        resultMap[this._context.battleResult] ?? "Unknown",
+        this._context.winnerTeamId,
+      );
+
+      const filename = this._replayFileManager.saveReplaySync(replay);
+      this._logger.info(`📼 回放已保存: ${filename}`);
+    } catch (error) {
+      this._logger.error(`保存回放失败: ${error}`);
+    }
+  }
+
+  /**
+   * 获取回放数据（不保存文件）
+   */
+  getReplayData(): IBattleReplay | null {
+    if (!this._replayRecorder) {
+      return null;
+    }
+
+    const resultMap: Record<string, "Victory" | "Defeat" | "Draw" | "Unknown"> =
+      {
+        Victory: "Victory",
+        Defeat: "Defeat",
+        Draw: "Draw",
+        None: "Unknown",
+      };
+
+    return this._replayRecorder.stopRecording(
+      resultMap[this._context.battleResult] ?? "Unknown",
+      this._context.winnerTeamId,
+    );
   }
 
   // ========== AI 决策 ==========
@@ -837,6 +970,9 @@ export class TurnBasedBattle extends GameplayInstance {
       this._context.currentCommand ? "" : "无命令",
     );
 
+    // 记录执行前的事件数量，用于收集本次行动产生的事件
+    const eventCountBefore = this.eventCollector.count;
+
     switch (command.type) {
       case "ability":
         this.executeAbility(executor, command);
@@ -849,6 +985,28 @@ export class TurnBasedBattle extends GameplayInstance {
       case "idle":
         this.executeIdle(executor);
         break;
+    }
+
+    // 回放：记录本次行动
+    if (this._replayRecorder) {
+      // 收集本次行动产生的事件
+      const allEvents = this.eventCollector.collect();
+      const turnEvents = allEvents.slice(eventCountBefore) as BattleEvent[];
+
+      // 获取 AI 决策信息（如果有）
+      const currentCommand = this._context.currentCommand;
+      const aiReason = currentCommand?.customData?.aiReason as
+        | string
+        | undefined;
+      const aiScore = currentCommand?.customData?.aiScore as number | undefined;
+
+      this._replayRecorder.recordTurn(
+        executor.id,
+        command,
+        turnEvents,
+        aiReason,
+        aiScore,
+      );
     }
   }
 
