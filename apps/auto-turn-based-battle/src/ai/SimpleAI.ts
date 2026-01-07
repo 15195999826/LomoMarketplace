@@ -7,14 +7,13 @@
  * - 选择最优目标
  */
 
-import type { BattleUnit, GridPosition } from '../actors/BattleUnit.js';
-import type { BattleCommand } from '../battle/BattleContext.js';
+import type { BattleUnit, GridPosition } from "../actors/BattleUnit.js";
+import type { BattleCommand } from "../battle/BattleContext.js";
 import {
   type SkillType,
   SKILL_CONFIGS,
-  UNIT_CLASS_CONFIGS,
   getSkillEffectiveRange,
-} from '../config/UnitConfig.js';
+} from "../config/UnitConfig.js";
 
 /**
  * AI 决策结果
@@ -61,30 +60,30 @@ export class SimpleAI {
   makeDecision(
     unit: BattleUnit,
     allies: BattleUnit[],
-    enemies: BattleUnit[]
+    enemies: BattleUnit[],
   ): AIDecisionResult {
     // 过滤掉自己和死亡单位
     const aliveAllies = allies.filter(
-      (a) => a.id !== unit.id && a.isActive && !a.isDead
+      (a) => a.id !== unit.id && a.isActive && !a.isDead,
     );
     const aliveEnemies = enemies.filter((e) => e.isActive && !e.isDead);
 
     // 如果没有敌人，待机
     if (aliveEnemies.length === 0) {
-      return this.createIdleDecision(unit, '没有存活的敌人');
+      return this.createIdleDecision(unit, "没有存活的敌人");
     }
 
     // 获取可用行动点
     const availableAP = unit.actionPoint;
     if (availableAP <= 0) {
-      return this.createIdleDecision(unit, '行动点耗尽');
+      return this.createIdleDecision(unit, "行动点耗尽");
     }
 
     // 评估所有可能的行动
     const decisions: AIDecisionResult[] = [];
 
     // 1. 检查治疗（如果是治疗职业）
-    if (unit.defaultSkill === 'Heal') {
+    if (unit.defaultSkill === "Heal") {
       const healDecision = this.evaluateHeal(unit, aliveAllies);
       if (healDecision) {
         decisions.push(healDecision);
@@ -104,7 +103,7 @@ export class SimpleAI {
     }
 
     // 4. 待机作为兜底
-    decisions.push(this.createIdleDecision(unit, '没有更好的选择'));
+    decisions.push(this.createIdleDecision(unit, "没有更好的选择"));
 
     // 选择得分最高的决策
     decisions.sort((a, b) => b.score - a.score);
@@ -116,17 +115,21 @@ export class SimpleAI {
    */
   private evaluateHeal(
     unit: BattleUnit,
-    allies: BattleUnit[]
+    allies: BattleUnit[],
   ): AIDecisionResult | null {
-    const healConfig = SKILL_CONFIGS['Heal'];
-    const healRange = getSkillEffectiveRange('Heal', unit.attackRange, unit.moveRange);
+    const healConfig = SKILL_CONFIGS["Heal"];
+    const healRange = getSkillEffectiveRange(
+      "Heal",
+      unit.attackRange,
+      unit.moveRange,
+    );
     const healCost = healConfig.actionPointCost;
 
     // 检查是否能使用治疗
     if (!unit.hasEnoughActionPoint(healCost)) {
       return null;
     }
-    if (!unit.isSkillReady('Heal')) {
+    if (!unit.isSkillReady("Heal")) {
       return null;
     }
 
@@ -151,9 +154,9 @@ export class SimpleAI {
 
     return {
       command: {
-        type: 'ability',
+        type: "ability",
         executorId: unit.id,
-        abilityId: 'Heal',
+        abilityId: "Heal",
         targetId: target.id,
       },
       reason: `治疗 ${target.displayName}（HP: ${(target.hpPercent * 100).toFixed(0)}%）`,
@@ -166,14 +169,18 @@ export class SimpleAI {
    */
   private evaluateAttack(
     unit: BattleUnit,
-    enemies: BattleUnit[]
+    enemies: BattleUnit[],
   ): AIDecisionResult | null {
     // 获取可用技能（优先职业技能，其次普攻）
     const skills: SkillType[] = [];
 
     // 检查职业技能
     const classSkill = unit.defaultSkill;
-    if (classSkill !== 'Heal' && classSkill !== 'Move' && classSkill !== 'Idle') {
+    if (
+      classSkill !== "Heal" &&
+      classSkill !== "Move" &&
+      classSkill !== "Idle"
+    ) {
       if (unit.isSkillReady(classSkill)) {
         const config = SKILL_CONFIGS[classSkill];
         if (unit.hasEnoughActionPoint(config.actionPointCost)) {
@@ -183,9 +190,9 @@ export class SimpleAI {
     }
 
     // 普通攻击作为备选
-    const normalAttackConfig = SKILL_CONFIGS['NormalAttack'];
+    const normalAttackConfig = SKILL_CONFIGS["NormalAttack"];
     if (unit.hasEnoughActionPoint(normalAttackConfig.actionPointCost)) {
-      skills.push('NormalAttack');
+      skills.push("NormalAttack");
     }
 
     if (skills.length === 0) {
@@ -197,7 +204,11 @@ export class SimpleAI {
 
     for (const skill of skills) {
       const config = SKILL_CONFIGS[skill];
-      const range = getSkillEffectiveRange(skill, unit.attackRange, unit.moveRange);
+      const range = getSkillEffectiveRange(
+        skill,
+        unit.attackRange,
+        unit.moveRange,
+      );
 
       // 评估所有敌人
       const evaluations = this.evaluateTargets(unit, enemies, range);
@@ -213,14 +224,14 @@ export class SimpleAI {
 
       // 计算决策得分
       // 职业技能比普攻得分高，低血量目标得分高
-      const skillBonus = skill !== 'NormalAttack' ? 20 : 0;
+      const skillBonus = skill !== "NormalAttack" ? 20 : 0;
       const damageBonus = config.damageMultiplier * 10;
       const score = 50 + skillBonus + damageBonus + bestTarget.score;
 
       if (!bestResult || score > bestResult.score) {
         bestResult = {
           command: {
-            type: 'ability',
+            type: "ability",
             executorId: unit.id,
             abilityId: skill,
             targetId: bestTarget.target.id,
@@ -240,9 +251,9 @@ export class SimpleAI {
   private evaluateMove(
     unit: BattleUnit,
     enemies: BattleUnit[],
-    allies: BattleUnit[]
+    allies: BattleUnit[],
   ): AIDecisionResult | null {
-    const moveConfig = SKILL_CONFIGS['Move'];
+    const moveConfig = SKILL_CONFIGS["Move"];
 
     // 检查是否能移动
     if (!unit.hasEnoughActionPoint(moveConfig.actionPointCost)) {
@@ -253,11 +264,7 @@ export class SimpleAI {
     }
 
     // 找到最近的敌人
-    const targetEvaluations = this.evaluateTargets(
-      unit,
-      enemies,
-      Infinity
-    );
+    const targetEvaluations = this.evaluateTargets(unit, enemies, Infinity);
 
     if (targetEvaluations.length === 0) {
       return null;
@@ -282,11 +289,14 @@ export class SimpleAI {
       unit.gridPosition,
       primaryTarget.gridPosition,
       moveRange,
-      attackRange
+      attackRange,
     );
 
     // 如果无法移动到更好的位置，返回 null
-    const newDistance = this.manhattanDistance(targetPos, primaryTarget.gridPosition);
+    const newDistance = this.manhattanDistance(
+      targetPos,
+      primaryTarget.gridPosition,
+    );
     if (newDistance >= currentDistance) {
       return null;
     }
@@ -297,9 +307,9 @@ export class SimpleAI {
 
     return {
       command: {
-        type: 'move',
+        type: "move",
         executorId: unit.id,
-        abilityId: 'Move',
+        abilityId: "Move",
         targetPosition: targetPos,
       },
       reason: `移动接近 ${primaryTarget.displayName}（距离 ${currentDistance} -> ${newDistance}）`,
@@ -313,7 +323,7 @@ export class SimpleAI {
   private evaluateTargets(
     unit: BattleUnit,
     targets: BattleUnit[],
-    range: number
+    range: number,
   ): TargetEvaluation[] {
     return targets.map((target) => {
       const distance = unit.distanceTo(target);
@@ -340,7 +350,7 @@ export class SimpleAI {
     from: GridPosition,
     to: GridPosition,
     moveRange: number,
-    attackRange: number
+    attackRange: number,
   ): GridPosition {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -378,12 +388,15 @@ export class SimpleAI {
   /**
    * 创建待机决策
    */
-  private createIdleDecision(unit: BattleUnit, reason: string): AIDecisionResult {
+  private createIdleDecision(
+    unit: BattleUnit,
+    reason: string,
+  ): AIDecisionResult {
     return {
       command: {
-        type: 'idle',
+        type: "idle",
         executorId: unit.id,
-        abilityId: 'Idle',
+        abilityId: "Idle",
       },
       reason,
       score: 0,

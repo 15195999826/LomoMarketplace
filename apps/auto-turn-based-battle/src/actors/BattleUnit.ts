@@ -5,6 +5,18 @@
  * - 行动点系统（每回合可执行多次行动）
  * - 精力系统（移动消耗精力）
  * - 技能冷却管理
+ *
+ * ## 精力系统设计说明
+ *
+ * 精力系统采用 "总量 - 已消耗 = 可用" 的模式：
+ * - `stamina`: 精力总量（固定值，由职业决定）
+ * - `staminaCost`: 本回合已消耗的精力
+ * - `availableStamina`: 剩余可用精力 = stamina - staminaCost
+ *
+ * 这种设计与 HP 系统（直接减少）不同，原因是：
+ * 1. 精力每回合自动重置，需要追踪"本回合消耗"
+ * 2. 便于实现"精力恢复"buff（直接减少 staminaCost）
+ * 3. 与 UE 原版 TurnBasedAutoChessInstance 保持一致
  */
 
 import {
@@ -14,7 +26,7 @@ import {
   defineAttributes,
   type AbilitySet,
   createAbilitySet,
-} from '@lomo/logic-game-framework';
+} from "@lomo/logic-game-framework";
 
 import {
   type UnitClass,
@@ -24,7 +36,7 @@ import {
   UNIT_CLASS_CONFIGS,
   SKILL_CONFIGS,
   getClassDefaultStats,
-} from '../config/UnitConfig.js';
+} from "../config/UnitConfig.js";
 
 /**
  * 位置坐标（简单的格子坐标）
@@ -38,7 +50,7 @@ export interface GridPosition {
  * 战斗单位
  */
 export class BattleUnit extends Actor {
-  readonly type = 'BattleUnit';
+  readonly type = "BattleUnit";
 
   /** 单位职业 */
   readonly unitClass: UnitClass;
@@ -52,6 +64,9 @@ export class BattleUnit extends Actor {
   /** 队伍 ID（0 = 玩家，1 = 敌方） */
   private _teamId: number = 0;
 
+  /** 死亡回调函数列表 */
+  private _onDeathCallbacks: Array<(unit: BattleUnit) => void> = [];
+
   /** 格子位置 */
   private _gridPosition: GridPosition = { x: 0, y: 0 };
 
@@ -59,13 +74,13 @@ export class BattleUnit extends Actor {
   private _skillCooldowns: Map<SkillType, number> = new Map();
 
   /** 移动技能 Ability ID */
-  private _moveAbilityId: string = '';
+  private _moveAbilityId: string = "";
 
   /** 待机技能 Ability ID */
-  private _idleAbilityId: string = '';
+  private _idleAbilityId: string = "";
 
   /** 职业技能 Ability ID */
-  private _classSkillAbilityId: string = '';
+  private _classSkillAbilityId: string = "";
 
   constructor(unitClass: UnitClass, name?: string) {
     super();
@@ -84,7 +99,10 @@ export class BattleUnit extends Actor {
     this.applyStats(stats);
 
     // 创建能力集
-    this.abilitySet = createAbilitySet(this.toRef(), this.attributeSet._modifierTarget);
+    this.abilitySet = createAbilitySet(
+      this.toRef(),
+      this.attributeSet._modifierTarget,
+    );
 
     // 初始化技能（目前简化为标记，实际技能逻辑在 Battle 中处理）
     this.initializeSkills();
@@ -116,10 +134,10 @@ export class BattleUnit extends Actor {
   private initializeSkills(): void {
     // 移动技能（所有单位都有）
     // 这里简化实现，实际技能效果在 Battle 层处理
-    this._moveAbilityId = 'move';
+    this._moveAbilityId = "move";
 
     // 待机技能
-    this._idleAbilityId = 'idle';
+    this._idleAbilityId = "idle";
 
     // 职业技能
     const classConfig = UNIT_CLASS_CONFIGS[this.unitClass];
@@ -315,9 +333,13 @@ export class BattleUnit extends Actor {
   }
 
   // ========== 精力管理 ==========
+  // 注意：精力系统采用 "stamina - staminaCost = availableStamina" 模式
+  // 详见文件顶部的设计说明
 
   /**
    * 消耗精力
+   *
+   * 实际上是增加 staminaCost，而非减少 stamina
    * @returns 是否成功消耗
    */
   consumeStamina(cost: number): boolean {
@@ -407,11 +429,41 @@ export class BattleUnit extends Actor {
     this.attributeSet.setHpBase(currentHp - actualDamage);
 
     // 检查死亡
-    if (this.attributeSet.hp <= 0) {
-      this.onDeath();
+    if (this.attributeSet.hp <= 0 && !this.isDead) {
+      this.handleDeath();
     }
 
     return actualDamage;
+  }
+
+  /**
+   * 处理死亡逻辑
+   *
+   * 内部方法，设置状态并触发回调
+   */
+  private handleDeath(): void {
+    this.onDeath();
+    // 触发所有死亡回调
+    for (const callback of this._onDeathCallbacks) {
+      callback(this);
+    }
+  }
+
+  /**
+   * 注册死亡回调
+   *
+   * 用于外部监听死亡事件（如 BattleContext 同步状态）
+   * @param callback 死亡时调用的函数
+   * @returns 取消注册的函数
+   */
+  onDeathCallback(callback: (unit: BattleUnit) => void): () => void {
+    this._onDeathCallbacks.push(callback);
+    return () => {
+      const index = this._onDeathCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this._onDeathCallbacks.splice(index, 1);
+      }
+    };
   }
 
   /**
@@ -453,7 +505,7 @@ export class BattleUnit extends Actor {
   }
 
   /** 获取攻击类型 */
-  get attackType(): 'melee' | 'ranged' {
+  get attackType(): "melee" | "ranged" {
     return UNIT_CLASS_CONFIGS[this.unitClass].attackType;
   }
 

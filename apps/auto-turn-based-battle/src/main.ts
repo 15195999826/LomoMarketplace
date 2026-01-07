@@ -80,25 +80,27 @@ const battle = world.createInstance(
 // ============================================================
 
 // 队伍 A（玩家方）- 左侧
+// 配置说明：法师在前排，敌人聚集在一起，方便测试 AOE 技能（火球术）
 const teamAConfig: Array<{
   class: UnitClass;
   name: string;
   pos: { x: number; y: number };
 }> = [
-  { class: "Warrior", name: "战士-阿尔法", pos: { x: 1, y: 2 } },
+  { class: "Mage", name: "法师-阿尔法", pos: { x: 2, y: 2 } }, // 法师在前，速度90
   { class: "Archer", name: "弓箭手-贝塔", pos: { x: 0, y: 1 } },
   { class: "Priest", name: "牧师-伽马", pos: { x: 0, y: 3 } },
 ];
 
 // 队伍 B（敌方）- 右侧
+// 配置说明：敌人聚集在一起（相邻格子），方便测试 AOE 伤害
 const teamBConfig: Array<{
   class: UnitClass;
   name: string;
   pos: { x: number; y: number };
 }> = [
-  { class: "Knight", name: "骑士-德尔塔", pos: { x: 5, y: 2 } },
-  { class: "Mage", name: "法师-艾普西隆", pos: { x: 6, y: 1 } },
-  { class: "Assassin", name: "刺客-泽塔", pos: { x: 6, y: 3 } },
+  { class: "Warrior", name: "战士-德尔塔", pos: { x: 5, y: 2 } }, // 中心位置
+  { class: "Warrior", name: "战士-艾普西隆", pos: { x: 5, y: 3 } }, // 相邻（AOE 半径 1）
+  { class: "Archer", name: "弓箭手-泽塔", pos: { x: 6, y: 2 } }, // 相邻（AOE 半径 1）
 ];
 
 // 创建并添加单位

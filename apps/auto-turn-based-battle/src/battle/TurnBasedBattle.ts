@@ -12,23 +12,23 @@
 import {
   GameplayInstance,
   type GameEventBase,
-} from '@lomo/logic-game-framework';
+} from "@lomo/logic-game-framework";
 
-import { BattleUnit, type GridPosition } from '../actors/BattleUnit.js';
-import { BattleContext, type BattleCommand } from './BattleContext.js';
+import { BattleUnit } from "../actors/BattleUnit.js";
+import { BattleContext, type BattleCommand } from "./BattleContext.js";
 import {
   BattleStage,
   StageStatus,
   WaitSignal,
   BattleResult,
-} from './BattleStage.js';
-import { BattleLogger, createBattleLogger, LogLevel } from '../logger/BattleLogger.js';
-import { SimpleAI, createSimpleAI, type AIDecisionResult } from '../ai/SimpleAI.js';
+} from "./BattleStage.js";
 import {
-  SKILL_CONFIGS,
-  type SkillType,
-  getSkillEffectiveRange,
-} from '../config/UnitConfig.js';
+  BattleLogger,
+  createBattleLogger,
+  LogLevel,
+} from "../logger/BattleLogger.js";
+import { SimpleAI, createSimpleAI } from "../ai/SimpleAI.js";
+import { SKILL_CONFIGS, type SkillType } from "../config/UnitConfig.js";
 
 /**
  * 回合制战斗配置
@@ -57,7 +57,7 @@ const DEFAULT_CONFIG: TurnBasedBattleConfig = {
  * 回合制战斗实例
  */
 export class TurnBasedBattle extends GameplayInstance {
-  readonly type = 'TurnBasedBattle';
+  readonly type = "TurnBasedBattle";
 
   // ========== 配置 ==========
 
@@ -78,9 +78,6 @@ export class TurnBasedBattle extends GameplayInstance {
 
   /** 战斗上下文 */
   private _context: BattleContext;
-
-  /** 当前执行的命令 */
-  private _currentCommand: BattleCommand | null = null;
 
   // ========== 组件 ==========
 
@@ -150,6 +147,8 @@ export class TurnBasedBattle extends GameplayInstance {
     this._teamA.push(unit);
     this.actors.push(unit);
     this._context.registerCharacter(unit.id, 0);
+    // 注册死亡回调，自动同步到 BattleContext
+    this.registerDeathCallback(unit);
   }
 
   /**
@@ -160,6 +159,19 @@ export class TurnBasedBattle extends GameplayInstance {
     this._teamB.push(unit);
     this.actors.push(unit);
     this._context.registerCharacter(unit.id, 1);
+    // 注册死亡回调，自动同步到 BattleContext
+    this.registerDeathCallback(unit);
+  }
+
+  /**
+   * 注册单位死亡回调
+   *
+   * 当单位死亡时，自动更新 BattleContext 状态
+   */
+  private registerDeathCallback(unit: BattleUnit): void {
+    unit.onDeathCallback((deadUnit) => {
+      this._context.handleCharacterDeath(deadUnit.id);
+    });
   }
 
   /**
@@ -173,9 +185,7 @@ export class TurnBasedBattle extends GameplayInstance {
    * 获取所有存活单位
    */
   getAliveUnits(): BattleUnit[] {
-    return this.actors.filter(
-      (a) => a.isActive && !a.isDead
-    ) as BattleUnit[];
+    return this.actors.filter((a) => a.isActive && !a.isDead) as BattleUnit[];
   }
 
   /**
@@ -191,7 +201,7 @@ export class TurnBasedBattle extends GameplayInstance {
   protected override onStart(): void {
     // 检查队伍
     if (this._teamA.length === 0 || this._teamB.length === 0) {
-      this._logger.error('战斗无法开始：队伍为空');
+      this._logger.error("战斗无法开始：队伍为空");
       this.end();
       return;
     }
@@ -201,7 +211,7 @@ export class TurnBasedBattle extends GameplayInstance {
   }
 
   protected override onEnd(): void {
-    this._logger.info('战斗实例已结束');
+    this._logger.info("战斗实例已结束");
   }
 
   // ========== 主循环 ==========
@@ -443,7 +453,7 @@ export class TurnBasedBattle extends GameplayInstance {
     this._context.setCachedStunState(isStunned);
 
     if (isStunned) {
-      this._logger.characterSkipTurn(character, '眩晕');
+      this._logger.characterSkipTurn(character, "眩晕");
     }
 
     // 完成等待（无动画）
@@ -544,7 +554,7 @@ export class TurnBasedBattle extends GameplayInstance {
     this._logger.battleEnd(
       this._context.battleResult,
       this._context.winnerTeamId,
-      this._context.round
+      this._context.round,
     );
 
     // 结束实例
@@ -622,19 +632,19 @@ export class TurnBasedBattle extends GameplayInstance {
     this._logger.characterAction(
       executor,
       command,
-      this._context.currentCommand ? '' : '无命令'
+      this._context.currentCommand ? "" : "无命令",
     );
 
     switch (command.type) {
-      case 'ability':
+      case "ability":
         this.executeAbility(executor, command);
         break;
 
-      case 'move':
+      case "move":
         this.executeMove(executor, command);
         break;
 
-      case 'idle':
+      case "idle":
         this.executeIdle(executor);
         break;
     }
@@ -644,7 +654,7 @@ export class TurnBasedBattle extends GameplayInstance {
    * 执行技能
    */
   private executeAbility(executor: BattleUnit, command: BattleCommand): void {
-    const skillType = (command.abilityId as SkillType) || 'NormalAttack';
+    const skillType = (command.abilityId as SkillType) || "NormalAttack";
     const skillConfig = SKILL_CONFIGS[skillType];
 
     if (!skillConfig) {
@@ -675,18 +685,30 @@ export class TurnBasedBattle extends GameplayInstance {
     // 执行技能效果
     if (skillConfig.isHeal && target) {
       // 治疗
-      const healAmount = Math.floor(executor.atk * skillConfig.damageMultiplier);
+      const healAmount = Math.floor(
+        executor.atk * skillConfig.damageMultiplier,
+      );
       const actualHeal = target.heal(healAmount);
       this._logger.heal(executor, target, actualHeal, target.hp);
-    } else if (target && skillConfig.damageMultiplier > 0) {
-      // 伤害
-      this.applyDamage(executor, target, skillType);
+    } else if (skillConfig.damageMultiplier > 0) {
+      // 伤害技能
+      if (skillConfig.isAoe && target) {
+        // AOE 技能：以目标为中心，对范围内所有敌人造成伤害
+        this.applyAoeDamage(executor, target, skillType, skillConfig.aoeRadius);
+      } else if (target) {
+        // 单体技能
+        this.applyDamage(executor, target, skillType);
+      }
     }
 
     // 触发冷却
     executor.triggerCooldown(skillType);
     if (skillConfig.cooldown > 0) {
-      this._logger.cooldownTriggered(executor, skillConfig.name, skillConfig.cooldown);
+      this._logger.cooldownTriggered(
+        executor,
+        skillConfig.name,
+        skillConfig.cooldown,
+      );
     }
   }
 
@@ -696,7 +718,7 @@ export class TurnBasedBattle extends GameplayInstance {
   private applyDamage(
     source: BattleUnit,
     target: BattleUnit,
-    skillType: SkillType
+    skillType: SkillType,
   ): void {
     const config = SKILL_CONFIGS[skillType];
 
@@ -719,11 +741,57 @@ export class TurnBasedBattle extends GameplayInstance {
     // 日志
     this._logger.damage(source, target, actualDamage, isCrit, target.hp);
 
-    // 检查死亡
+    // 检查死亡（死亡处理通过回调自动同步到 BattleContext）
     if (target.isDead) {
       this._logger.death(target, source);
-      this._context.handleCharacterDeath(target.id);
     }
+  }
+
+  /**
+   * 应用 AOE 伤害
+   *
+   * 以目标为中心，对范围内所有敌人造成伤害
+   */
+  private applyAoeDamage(
+    source: BattleUnit,
+    primaryTarget: BattleUnit,
+    skillType: SkillType,
+    radius: number,
+  ): void {
+    // 获取所有敌人
+    const enemies =
+      source.teamId === 0
+        ? this.getTeamAliveUnits(1)
+        : this.getTeamAliveUnits(0);
+
+    // 找出范围内的目标（以 primaryTarget 位置为中心）
+    const targetsInRange = enemies.filter((enemy) => {
+      const distance = this.calculateDistance(
+        primaryTarget.gridPosition,
+        enemy.gridPosition,
+      );
+      return distance <= radius;
+    });
+
+    // 对所有范围内目标造成伤害
+    for (const target of targetsInRange) {
+      this.applyDamage(source, target, skillType);
+    }
+
+    // 如果主目标不在范围列表中（理论上应该在），单独处理
+    if (!targetsInRange.includes(primaryTarget) && !primaryTarget.isDead) {
+      this.applyDamage(source, primaryTarget, skillType);
+    }
+  }
+
+  /**
+   * 计算两点间的曼哈顿距离
+   */
+  private calculateDistance(
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ): number {
+    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
   }
 
   /**
@@ -734,7 +802,7 @@ export class TurnBasedBattle extends GameplayInstance {
       return;
     }
 
-    const moveConfig = SKILL_CONFIGS['Move'];
+    const moveConfig = SKILL_CONFIGS["Move"];
 
     // 消耗行动点
     if (!executor.consumeActionPoint(moveConfig.actionPointCost)) {
@@ -783,7 +851,7 @@ export class TurnBasedBattle extends GameplayInstance {
 
     if (this._stageStatus !== StageStatus.Idle) {
       this._logger.warn(
-        `无法切换阶段: 当前状态为 ${this._stageStatus}，需要 Idle`
+        `无法切换阶段: 当前状态为 ${this._stageStatus}，需要 Idle`,
       );
       return;
     }
