@@ -378,7 +378,7 @@ export default function PathfindingDemo() {
                     </div>
                 )}
                 <div className={styles.row}>
-                    <label>格子大小</label>
+                    <label title="六边形中心到顶点的距离（像素）">六边形半径</label>
                     <input type="number" className={styles.input} value={state.hexSize} onChange={e => dispatch({type: 'SET_CONFIG', payload: {hexSize: Number(e.target.value)}})} />
                 </div>
                 <div className={styles.row}>

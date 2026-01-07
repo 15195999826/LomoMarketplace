@@ -58,7 +58,7 @@ export function HexGrid2D({ model, walls, start, end, path, pathSet, visited, ho
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [moveSpeed, setMoveSpeed] = useState(10); // 移动速度 (1-30)
+  const [moveSpeed, setMoveSpeed] = useState(5); // 移动速度 (1-30)
   const isPanningRef = useRef(false);
   const lastPanPosRef = useRef({ x: 0, y: 0 });
 
