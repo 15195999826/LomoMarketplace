@@ -18,6 +18,12 @@ import { TurnBasedBattleGameWorld } from "./world/index.js";
 import { TurnBasedBattle } from "./battle/index.js";
 import { BattleUnit } from "./actors/index.js";
 import type { UnitClass } from "./config/index.js";
+import { SkillRegistry } from "./skills/index.js";
+import type {
+  DamageEvent,
+  DeathEvent,
+  BattleEndEvent,
+} from "./events/index.js";
 
 // ============================================================
 // 配置
@@ -54,8 +60,13 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 console.log("=".repeat(60));
 console.log("Auto Turn-Based Battle - Framework Demo");
-console.log("回合制自走棋战斗演示");
+console.log("回合制自走棋战斗演示（事件驱动 + 数据驱动技能系统）");
 console.log("=".repeat(60));
+console.log("");
+
+// 显示技能注册表信息
+console.log(`📦 技能注册表: ${SkillRegistry.count} 个技能已注册`);
+console.log(`   - ${SkillRegistry.getAllIds().join(", ")}`);
 console.log("");
 
 // 初始化 GameWorld
@@ -121,6 +132,45 @@ console.log(`   🔴 队伍 B: ${teamBConfig.length} 个单位`);
 console.log("");
 
 // ============================================================
+// 注册事件监听器（展示事件驱动架构）
+// ============================================================
+
+console.log("📡 注册事件监听器...");
+
+// 统计数据
+const battleStats = {
+  totalDamage: 0,
+  totalHealing: 0,
+  critCount: 0,
+  killCount: 0,
+};
+
+// 监听伤害事件（用于统计）
+battle.eventBus.on("battle.damage", (event: DamageEvent) => {
+  battleStats.totalDamage += event.damage;
+  if (event.isCrit) {
+    battleStats.critCount++;
+  }
+});
+
+// 监听死亡事件（用于统计）
+battle.eventBus.on("battle.death", (event: DeathEvent) => {
+  battleStats.killCount++;
+});
+
+// 监听战斗结束事件
+battle.eventBus.once("battle.end", (event: BattleEndEvent) => {
+  console.log("");
+  console.log("📈 事件统计（由 EventBus 收集）:");
+  console.log(`   - 总伤害: ${battleStats.totalDamage}`);
+  console.log(`   - 暴击次数: ${battleStats.critCount}`);
+  console.log(`   - 击杀数: ${battleStats.killCount}`);
+});
+
+console.log("   ✅ 已注册 damage/death/end 事件监听器");
+console.log("");
+
+// ============================================================
 // 开始战斗
 // ============================================================
 
@@ -146,7 +196,7 @@ while (world.hasRunningInstances) {
 
 console.log("");
 console.log("=".repeat(60));
-console.log("📊 战斗统计");
+console.log("📊 战斗结果");
 console.log("=".repeat(60));
 console.log(`   总回合数: ${battle.round}`);
 console.log(`   战斗结果: ${battle.battleResult}`);

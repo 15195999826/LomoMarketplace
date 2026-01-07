@@ -30,6 +30,34 @@ import {
 import { SimpleAI, createSimpleAI } from "../ai/SimpleAI.js";
 import { SKILL_CONFIGS, type SkillType } from "../config/UnitConfig.js";
 
+// 事件系统
+import {
+  BattleEventBus,
+  createBattleEventBus,
+  createBattleStartEvent,
+  createBattleEndEvent,
+  createRoundStartEvent,
+  createRoundEndEvent,
+  createTurnStartEvent,
+  createTurnEndEvent,
+  createSkipTurnEvent,
+  createMoveEvent,
+  type BattleEvent,
+  type DamageEvent,
+  type HealEvent,
+  type DeathEvent,
+  type SkillUseEvent,
+  type CooldownEvent,
+} from "../events/index.js";
+
+// 技能系统
+import {
+  SkillExecutor,
+  createSkillExecutor,
+  SkillRegistry,
+  type ITargetResolver,
+} from "../skills/index.js";
+
 /**
  * 回合制战斗配置
  */
@@ -87,6 +115,15 @@ export class TurnBasedBattle extends GameplayInstance {
   /** AI 决策系统 */
   private _ai: SimpleAI;
 
+  /** 事件总线 */
+  private _eventBus: BattleEventBus;
+
+  /** 技能执行器 */
+  private _skillExecutor: SkillExecutor;
+
+  /** 目标解析器（实现 ITargetResolver） */
+  private _targetResolver: ITargetResolver;
+
   // ========== 队伍管理 ==========
 
   /** 队伍 A（玩家/teamId=0） */
@@ -105,7 +142,114 @@ export class TurnBasedBattle extends GameplayInstance {
       minLevel: this._config.verboseLog ? LogLevel.Debug : LogLevel.Info,
     });
     this._ai = createSimpleAI(this._config.seed);
+
+    // 创建事件总线
+    this._eventBus = createBattleEventBus();
+
+    // 创建目标解析器
+    this._targetResolver = this.createTargetResolver();
+
+    // 创建技能执行器
+    this._skillExecutor = createSkillExecutor(
+      this.eventCollector,
+      this._targetResolver,
+    );
+
+    // 注册日志监听器
+    this.setupEventListeners();
   }
+
+  /**
+   * 创建目标解析器
+   */
+  private createTargetResolver(): ITargetResolver {
+    return {
+      getEnemies: (source: BattleUnit) => {
+        return source.teamId === 0
+          ? this.getTeamAliveUnits(1)
+          : this.getTeamAliveUnits(0);
+      },
+
+      getAllies: (source: BattleUnit) => {
+        return source.teamId === 0
+          ? this.getTeamAliveUnits(0)
+          : this.getTeamAliveUnits(1);
+      },
+
+      getUnitsInRange: (
+        center: BattleUnit,
+        radius: number,
+        candidates: BattleUnit[],
+      ) => {
+        return candidates.filter((unit) => {
+          const distance = this.calculateDistance(
+            center.gridPosition,
+            unit.gridPosition,
+          );
+          return distance <= radius;
+        });
+      },
+
+      getDistance: (a: BattleUnit, b: BattleUnit) => {
+        return this.calculateDistance(a.gridPosition, b.gridPosition);
+      },
+    };
+  }
+
+  /**
+   * 设置事件监听器
+   *
+   * 将事件转发给日志系统
+   */
+  private setupEventListeners(): void {
+    // 监听伤害事件
+    this._eventBus.on("battle.damage", (event: DamageEvent) => {
+      const source = this.getUnit(event.sourceId);
+      const target = this.getUnit(event.targetId);
+      if (source && target) {
+        this._logger.damage(
+          source,
+          target,
+          event.damage,
+          event.isCrit,
+          event.remainingHp,
+        );
+      }
+    });
+
+    // 监听治疗事件
+    this._eventBus.on("battle.heal", (event: HealEvent) => {
+      const source = this.getUnit(event.sourceId);
+      const target = this.getUnit(event.targetId);
+      if (source && target) {
+        this._logger.heal(source, target, event.amount, event.currentHp);
+      }
+    });
+
+    // 监听死亡事件
+    this._eventBus.on("battle.death", (event: DeathEvent) => {
+      const unit = this.getUnit(event.unitId);
+      const killer = event.killerId ? this.getUnit(event.killerId) : undefined;
+      if (unit) {
+        this._logger.death(unit, killer);
+      }
+    });
+
+    // 监听技能使用事件
+    this._eventBus.on("battle.skillUse", (event: SkillUseEvent) => {
+      // 日志在 characterAction 中处理，这里可以扩展其他功能
+    });
+
+    // 监听冷却事件
+    this._eventBus.on("battle.cooldown", (event: CooldownEvent) => {
+      const unit = this.getUnit(event.unitId);
+      if (unit) {
+        this._logger.cooldownTriggered(unit, event.skillName, event.cooldown);
+      }
+    });
+  }
+
+  // ========== 属性访问 ==========
 
   // ========== 属性访问 ==========
 
@@ -135,6 +279,10 @@ export class TurnBasedBattle extends GameplayInstance {
 
   get battleResult(): BattleResult {
     return this._context.battleResult;
+  }
+
+  get eventBus(): BattleEventBus {
+    return this._eventBus;
   }
 
   // ========== 单位管理 ==========
@@ -239,7 +387,11 @@ export class TurnBasedBattle extends GameplayInstance {
         break;
     }
 
-    return this.eventCollector.flush();
+    // 分发收集到的事件给监听器
+    const events = this.eventCollector.flush();
+    this._eventBus.dispatch(events);
+
+    return events;
   }
 
   /**
@@ -369,6 +521,15 @@ export class TurnBasedBattle extends GameplayInstance {
   private onGameStart(): void {
     this._logger.battleStart(this._teamA, this._teamB);
 
+    // 发出战斗开始事件
+    this.eventCollector.push(
+      createBattleStartEvent(
+        this.id,
+        this._teamA.map((u) => u.id),
+        this._teamB.map((u) => u.id),
+      ),
+    );
+
     // 启动等待（这里可以等待开场动画等）
     this.startPending(WaitSignal.WaitGeneralPerformEnd);
 
@@ -412,6 +573,14 @@ export class TurnBasedBattle extends GameplayInstance {
       unit.onRoundStart();
     }
 
+    // 发出回合开始事件
+    this.eventCollector.push(
+      createRoundStartEvent(
+        this._context.round,
+        sortedUnits.map((u) => u.id),
+      ),
+    );
+
     // 日志输出
     this._logger.roundStart(this._context.round, sortedUnits);
 
@@ -442,6 +611,17 @@ export class TurnBasedBattle extends GameplayInstance {
     // 触发获得回合事件
     character.onGetTurn();
 
+    // 发出行动开始事件
+    this.eventCollector.push(
+      createTurnStartEvent(
+        character.id,
+        character.hp,
+        character.maxHp,
+        character.actionPoint,
+        character.maxActionPoint,
+      ),
+    );
+
     // 日志
     this._logger.characterGetTurn(character);
 
@@ -454,6 +634,7 @@ export class TurnBasedBattle extends GameplayInstance {
 
     if (isStunned) {
       this._logger.characterSkipTurn(character, "眩晕");
+      this.eventCollector.push(createSkipTurnEvent(characterId, "眩晕"));
     }
 
     // 完成等待（无动画）
@@ -526,6 +707,7 @@ export class TurnBasedBattle extends GameplayInstance {
       if (character && !character.isDead) {
         character.onEndTurn();
         this._logger.characterEndTurn(character);
+        this.eventCollector.push(createTurnEndEvent(characterId));
       }
     }
 
@@ -542,6 +724,11 @@ export class TurnBasedBattle extends GameplayInstance {
     const aliveA = this.getTeamAliveUnits(0).length;
     const aliveB = this.getTeamAliveUnits(1).length;
 
+    // 发出回合结束事件
+    this.eventCollector.push(
+      createRoundEndEvent(this._context.round, aliveA, aliveB),
+    );
+
     this._logger.roundEnd(this._context.round, aliveA, aliveB);
 
     this.completeSignal(WaitSignal.WaitGeneralPerformEnd);
@@ -551,6 +738,21 @@ export class TurnBasedBattle extends GameplayInstance {
    * 游戏结束
    */
   private onGameOver(): void {
+    // 发出战斗结束事件
+    const resultMap: Record<string, "Victory" | "Defeat" | "Draw"> = {
+      Victory: "Victory",
+      Defeat: "Defeat",
+      Draw: "Draw",
+    };
+    this.eventCollector.push(
+      createBattleEndEvent(
+        this.id,
+        resultMap[this._context.battleResult] ?? "Draw",
+        this._context.winnerTeamId,
+        this._context.round,
+      ),
+    );
+
     this._logger.battleEnd(
       this._context.battleResult,
       this._context.winnerTeamId,
@@ -651,9 +853,39 @@ export class TurnBasedBattle extends GameplayInstance {
   }
 
   /**
-   * 执行技能
+   * 执行技能（使用 SkillExecutor）
    */
   private executeAbility(executor: BattleUnit, command: BattleCommand): void {
+    const skillId = command.abilityId || "NormalAttack";
+
+    // 尝试从 SkillRegistry 获取技能定义
+    const skillDef = SkillRegistry.get(skillId);
+
+    if (skillDef) {
+      // 使用新的技能系统
+      let target: BattleUnit | undefined;
+      if (command.targetId) {
+        target = this.getUnit(command.targetId);
+      }
+
+      const result = this._skillExecutor.execute(skillDef, executor, target);
+
+      if (!result.success) {
+        this._logger.debug(`技能执行失败: ${skillId}`);
+      }
+    } else {
+      // 回退到旧的硬编码逻辑（兼容性）
+      this.executeAbilityLegacy(executor, command);
+    }
+  }
+
+  /**
+   * 旧版技能执行（兼容性保留）
+   */
+  private executeAbilityLegacy(
+    executor: BattleUnit,
+    command: BattleCommand,
+  ): void {
     const skillType = (command.abilityId as SkillType) || "NormalAttack";
     const skillConfig = SKILL_CONFIGS[skillType];
 
@@ -693,11 +925,14 @@ export class TurnBasedBattle extends GameplayInstance {
     } else if (skillConfig.damageMultiplier > 0) {
       // 伤害技能
       if (skillConfig.isAoe && target) {
-        // AOE 技能：以目标为中心，对范围内所有敌人造成伤害
-        this.applyAoeDamage(executor, target, skillType, skillConfig.aoeRadius);
+        this.applyAoeDamageLegacy(
+          executor,
+          target,
+          skillType,
+          skillConfig.aoeRadius,
+        );
       } else if (target) {
-        // 单体技能
-        this.applyDamage(executor, target, skillType);
+        this.applyDamageLegacy(executor, target, skillType);
       }
     }
 
@@ -713,9 +948,9 @@ export class TurnBasedBattle extends GameplayInstance {
   }
 
   /**
-   * 应用伤害
+   * 旧版伤害计算（兼容性保留）
    */
-  private applyDamage(
+  private applyDamageLegacy(
     source: BattleUnit,
     target: BattleUnit,
     skillType: SkillType,
@@ -731,7 +966,7 @@ export class TurnBasedBattle extends GameplayInstance {
       damage = Math.floor(damage * source.critDamage);
     }
 
-    // 减伤计算（简化：防御力直接减少伤害）
+    // 减伤计算
     const reduction = Math.floor(target.def * 0.5);
     damage = Math.max(1, damage - reduction);
 
@@ -741,30 +976,25 @@ export class TurnBasedBattle extends GameplayInstance {
     // 日志
     this._logger.damage(source, target, actualDamage, isCrit, target.hp);
 
-    // 检查死亡（死亡处理通过回调自动同步到 BattleContext）
     if (target.isDead) {
       this._logger.death(target, source);
     }
   }
 
   /**
-   * 应用 AOE 伤害
-   *
-   * 以目标为中心，对范围内所有敌人造成伤害
+   * 旧版 AOE 伤害（兼容性保留）
    */
-  private applyAoeDamage(
+  private applyAoeDamageLegacy(
     source: BattleUnit,
     primaryTarget: BattleUnit,
     skillType: SkillType,
     radius: number,
   ): void {
-    // 获取所有敌人
     const enemies =
       source.teamId === 0
         ? this.getTeamAliveUnits(1)
         : this.getTeamAliveUnits(0);
 
-    // 找出范围内的目标（以 primaryTarget 位置为中心）
     const targetsInRange = enemies.filter((enemy) => {
       const distance = this.calculateDistance(
         primaryTarget.gridPosition,
@@ -773,14 +1003,12 @@ export class TurnBasedBattle extends GameplayInstance {
       return distance <= radius;
     });
 
-    // 对所有范围内目标造成伤害
     for (const target of targetsInRange) {
-      this.applyDamage(source, target, skillType);
+      this.applyDamageLegacy(source, target, skillType);
     }
 
-    // 如果主目标不在范围列表中（理论上应该在），单独处理
     if (!targetsInRange.includes(primaryTarget) && !primaryTarget.isDead) {
-      this.applyDamage(source, primaryTarget, skillType);
+      this.applyDamageLegacy(source, primaryTarget, skillType);
     }
   }
 
@@ -823,6 +1051,11 @@ export class TurnBasedBattle extends GameplayInstance {
 
     // 更新位置
     executor.setGridPosition(command.targetPosition);
+
+    // 发出移动事件
+    this.eventCollector.push(
+      createMoveEvent(executor.id, oldPos, command.targetPosition),
+    );
 
     // 日志
     this._logger.moveComplete(executor, oldPos, command.targetPosition);
