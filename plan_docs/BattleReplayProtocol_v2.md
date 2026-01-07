@@ -630,14 +630,22 @@ Actor [enemy_1] "哥布林" @ hex(3,2)
 === End of Replay ===
 ```
 
-### Phase 3: 正式项目层 (@inkmon/battle)
+### Phase 3: 正式项目层 (@inkmon/battle) ✅ 已完成
 
 **目标**：将验证通过的方案移植到正式项目
 
 **任务清单**：
-- [ ] 3.1 定义 InkMon 特有事件类型
-- [ ] 3.2 集成 BattleRecorder
-- [ ] 3.3 导出 replay 相关类型供 pokedex 使用
+- [x] 3.1 定义 InkMon 特有事件类型
+  - `events/ReplayEvents.ts` - 完整的 InkMon 回放事件（DamageEvent、MoveEvent、SkillUseEvent 等）
+  - 支持类型相克信息（effectiveness、typeMultiplier、isSTAB）
+- [x] 3.2 集成 BattleRecorder
+  - `InkMonBattle.ts` - 新的战斗实例类，整合 BattleRecorder
+  - `InkMonActor.ts` - 实现 IRecordableActor 接口
+  - `actions/DamageAction.ts` - 支持类型相克的伤害 Action
+  - `actions/HealAction.ts` - 治疗 Action
+- [x] 3.3 导出 replay 相关类型供 pokedex 使用
+  - `index.ts` 导出 IBattleRecord、BattleRecorder、ReplayLogPrinter
+  - 导出所有 InkMon 特有事件类型
 
 ### Phase 4: Web 验证 (inkmon-pokedex)
 
