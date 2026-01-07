@@ -75,3 +75,22 @@ export {
   type HexGridConfig,
   HexGridModel,
 } from './HexGridModel.js';
+
+// 寻路模块
+export {
+  // 类型
+  type IGraph,
+  type IPathFilter,
+  type PathInfo,
+  type SearchNode,
+  type FloodResult,
+  type GraphAStarOptions,
+  type HexPathFilterOptions,
+  PathfindingResult,
+  // 核心类
+  MinHeap,
+  GraphAStar,
+  // 六边形网格集成
+  HexGridGraph,
+  HexPathFilter,
+} from './pathfinding/index.js';
