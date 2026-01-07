@@ -386,18 +386,16 @@ export const SKILL_CONFIGS: Record<SkillType, SkillConfig> = {
  */
 export function getClassDefaultStats(unitClass: UnitClass): UnitStats {
   const config = UNIT_CLASS_CONFIGS[unitClass];
-  const defaults: UnitStats = {} as UnitStats;
-
-  // 先填充默认值
-  for (const [key, def] of Object.entries(UNIT_ATTRIBUTES)) {
-    defaults[key as keyof UnitStats] = def.baseValue;
-  }
+  const defaults: UnitStats = {
+    hp: 100, maxHp: 100, atk: 50, def: 30, speed: 100,
+    actionPoint: 2, maxActionPoint: 2, stamina: 3, maxStamina: 3,
+    staminaCost: 0, critRate: 0.05, critDamage: 1.5,
+    moveRange: 3, attackRange: 1,
+  };
 
   // 覆盖职业特定值
   for (const [key, value] of Object.entries(config.stats)) {
-    if (value !== undefined) {
-      defaults[key as keyof UnitStats] = value;
-    }
+    (defaults as any)[key] = value;
   }
 
   return defaults;
