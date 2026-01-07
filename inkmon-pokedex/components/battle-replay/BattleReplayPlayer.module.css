@@ -1,0 +1,291 @@
+/* BattleReplayPlayer 样式 */
+
+.player {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary, #1a1a2e);
+  border-radius: 12px;
+  color: var(--text-primary, #e0e0e0);
+}
+
+/* 摘要信息 */
+.summary {
+  padding: 0.75rem 1rem;
+  background: var(--bg-tertiary, #16213e);
+  border-radius: 8px;
+}
+
+.summary h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.summaryGrid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #a0a0a0);
+}
+
+/* 控制栏 */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-tertiary, #16213e);
+  border-radius: 8px;
+}
+
+.controlBtn {
+  padding: 0.5rem 0.75rem;
+  font-size: 1.2rem;
+  background: var(--bg-primary, #0f0f23);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.controlBtn:hover {
+  background: var(--accent-color, #3a86ff);
+  color: white;
+}
+
+.frameInfo {
+  margin: 0 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #a0a0a0);
+}
+
+.speedControls {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.speedBtn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  background: var(--bg-primary, #0f0f23);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.speedBtn:hover,
+.speedBtn.active {
+  background: var(--accent-color, #3a86ff);
+  color: white;
+}
+
+/* 进度条 */
+.progressContainer {
+  position: relative;
+  height: 8px;
+  background: var(--bg-tertiary, #16213e);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressSlider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #3a86ff, #8338ec);
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+/* 主面板 */
+.mainPanel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .mainPanel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Actor 状态面板 */
+.actorsPanel {
+  padding: 0.75rem;
+  background: var(--bg-tertiary, #16213e);
+  border-radius: 8px;
+}
+
+.actorsPanel h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+}
+
+.teamsContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.teamSection h5 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid;
+}
+
+.teamAHeader {
+  border-color: #4caf50 !important;
+  color: #4caf50;
+}
+
+.teamBHeader {
+  border-color: #f44336 !important;
+  color: #f44336;
+}
+
+/* Actor 卡片 */
+.actorCard {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: var(--bg-primary, #0f0f23);
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.actorCard.teamA {
+  border-left-color: #4caf50;
+}
+
+.actorCard.teamB {
+  border-left-color: #f44336;
+}
+
+.actorCard.dead {
+  opacity: 0.5;
+  background: #2a2a2a;
+}
+
+.actorCard.active {
+  box-shadow: 0 0 8px var(--accent-color, #3a86ff);
+}
+
+.actorName {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.actorHp {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #a0a0a0);
+}
+
+.hpBar {
+  height: 4px;
+  background: var(--bg-tertiary, #16213e);
+  border-radius: 2px;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.hpFill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  transition: width 0.2s;
+}
+
+.actorPos {
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #666);
+  margin-top: 0.25rem;
+}
+
+/* 事件面板 */
+.eventsPanel {
+  padding: 0.75rem;
+  background: var(--bg-tertiary, #16213e);
+  border-radius: 8px;
+}
+
+.eventsPanel h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+}
+
+.eventsList {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.eventItem {
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+  background: var(--bg-primary, #0f0f23);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.noEvents {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-tertiary, #666);
+}
+
+/* 战斗结果 */
+.battleResult {
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3a86ff20, #8338ec20);
+  border-radius: 8px;
+  border: 1px solid var(--accent-color, #3a86ff);
+}
+
+/* 日志区域 */
+.logSection {
+  margin-top: 0.5rem;
+}
+
+.logToggle {
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--bg-tertiary, #16213e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.9rem;
+}
+
+.logToggle:hover {
+  background: var(--bg-primary, #0f0f23);
+}
+
+.logContent {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: var(--bg-primary, #0f0f23);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  max-height: 400px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

@@ -2,8 +2,10 @@
 
 import { useState, useCallback, useMemo } from "react";
 import type { InkMonListItem } from "@inkmon/core";
+import type { IBattleRecord } from "@inkmon/battle";
 import { TeamSlot } from "./TeamSlot";
 import { InkMonPicker } from "./InkMonPicker";
+import { BattleReplayPlayer } from "../battle-replay";
 import styles from "./BattleSimulator.module.css";
 
 interface BattleSimulatorProps {
@@ -12,12 +14,24 @@ interface BattleSimulatorProps {
 
 type TeamState = (InkMonListItem | null)[];
 
+interface BattleState {
+  status: "idle" | "loading" | "success" | "error";
+  replay: IBattleRecord | null;
+  log: string | null;
+  error: string | null;
+}
+
 export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
   const [teamA, setTeamA] = useState<TeamState>([null, null, null]);
   const [teamB, setTeamB] = useState<TeamState>([null, null, null]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeSlot, setActiveSlot] = useState<{ team: 'A' | 'B'; index: number } | null>(null);
-  const [battleResult, setBattleResult] = useState<string | null>(null);
+  const [battle, setBattle] = useState<BattleState>({
+    status: "idle",
+    replay: null,
+    log: null,
+    error: null,
+  });
 
   // 获取已选择的 InkMon 名称
   const selectedByTeamA = useMemo(
@@ -69,7 +83,7 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
 
     setPickerOpen(false);
     setActiveSlot(null);
-    setBattleResult(null);
+    setBattle({ status: "idle", replay: null, log: null, error: null });
   }, [activeSlot]);
 
   // 移除 InkMon
@@ -87,25 +101,48 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
         return newTeam;
       });
     }
-    setBattleResult(null);
+    setBattle({ status: "idle", replay: null, log: null, error: null });
   };
 
-  // 模拟战斗 (简单对比)
-  const handleBattle = () => {
-    const powerA = teamAStats.totalHp + teamAStats.totalAtk + teamAStats.totalDef;
-    const powerB = teamBStats.totalHp + teamBStats.totalAtk + teamBStats.totalDef;
+  // 运行战斗模拟
+  const handleBattle = async () => {
+    setBattle({ status: "loading", replay: null, log: null, error: null });
 
-    // 加入一点随机性
-    const randomFactor = 0.9 + Math.random() * 0.2;
-    const adjustedPowerA = powerA * randomFactor;
-    const adjustedPowerB = powerB * (2 - randomFactor);
+    try {
+      const response = await fetch("/api/battle/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teamA: selectedByTeamA,
+          teamB: selectedByTeamB,
+          config: { deterministicMode: false },
+        }),
+      });
 
-    if (Math.abs(adjustedPowerA - adjustedPowerB) < 10) {
-      setBattleResult("势均力敌！这场战斗将会非常激烈！");
-    } else if (adjustedPowerA > adjustedPowerB) {
-      setBattleResult(`队伍 A 获胜！总战力 ${powerA} vs ${powerB}`);
-    } else {
-      setBattleResult(`队伍 B 获胜！总战力 ${powerB} vs ${powerA}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setBattle({
+          status: "success",
+          replay: data.replay,
+          log: data.log ?? null,
+          error: null,
+        });
+      } else {
+        setBattle({
+          status: "error",
+          replay: null,
+          log: null,
+          error: data.error ?? "战斗模拟失败",
+        });
+      }
+    } catch (err) {
+      setBattle({
+        status: "error",
+        replay: null,
+        log: null,
+        error: err instanceof Error ? err.message : "网络错误",
+      });
     }
   };
 
@@ -143,9 +180,9 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
             <button
               className={styles.battleButton}
               onClick={handleBattle}
-              disabled={!canBattle}
+              disabled={!canBattle || battle.status === "loading"}
             >
-              ⚔️ 开始战斗
+              {battle.status === "loading" ? "⏳ 战斗中..." : "⚔️ 开始战斗"}
             </button>
           </div>
 
@@ -173,11 +210,18 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
         </div>
       </div>
 
-      {/* 战斗结果 */}
-      {battleResult && (
+      {/* 战斗结果 - Replay Player */}
+      {battle.status === "success" && battle.replay && (
         <div className={styles.resultSection}>
-          <h3 className={styles.resultTitle}>🎯 战斗结果</h3>
-          <p className={styles.resultMessage}>{battleResult}</p>
+          <BattleReplayPlayer replay={battle.replay} log={battle.log ?? undefined} />
+        </div>
+      )}
+
+      {/* 错误信息 */}
+      {battle.status === "error" && (
+        <div className={styles.resultSection}>
+          <h3 className={styles.resultTitle}>❌ 战斗失败</h3>
+          <p className={styles.resultMessage}>{battle.error}</p>
         </div>
       )}
 

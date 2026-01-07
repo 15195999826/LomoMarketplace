@@ -85,6 +85,9 @@ importers:
 
   inkmon-pokedex:
     dependencies:
+      '@inkmon/battle':
+        specifier: workspace:*
+        version: link:../packages/inkmon-battle
       '@inkmon/core':
         specifier: workspace:*
         version: link:../packages/inkmon-core
