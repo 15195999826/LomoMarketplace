@@ -1,0 +1,20 @@
+{
+  "name": "auto-turn-based-battle",
+  "version": "0.1.0",
+  "description": "Auto Turn-Based Battle Game using logic-game-framework - Framework validation project",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "build": "tsc",
+    "run:built": "node dist/main.js"
+  },
+  "dependencies": {
+    "@lomo/logic-game-framework": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.2"
+  }
+}
