@@ -1,8 +1,8 @@
 # 逻辑表演分离的技能系统设计
 
-> 文档版本：v0.15 (AbilityExecutionInstance)
+> 文档版本：v0.16 (ActiveUseComponent + Condition/Cost)
 > 创建日期：2025-12-27
-> 更新日期：2026-01-02
+> 更新日期：2026-01-07
 > 目标：设计一套可二次开发的、逻辑表演分离的战斗框架
 
 **相关文档**：
@@ -58,37 +58,49 @@
 | AbilitySet | 能力容器，管理 grant/revoke/event ✅ NEW | 可继承扩展 |
 | Ability | 能力实例容器 | 可继承扩展 |
 | AbilityComponent | 能力功能模块接口 | 必须实现接口 |
-| GameEventBase | 事件基础接口（kind + logicTime）✅ NEW | 游戏自定义具体类型 |
+| GameEventBase | 事件基础接口（只有 kind）✅ v0.16 简化 | 游戏自定义具体类型 |
 | Action | 效果执行单元接口 | 必须实现接口 |
-| BattleEvent | 表演层事件信封结构 | payload类型可扩展 |
+| EventCollector | 事件收集器 | 收集 GameEvent 输出 |
+| Condition | 条件检查接口 ✅ v0.16 | 用于 ActiveUseComponent |
+| Cost | 消耗接口 ✅ v0.16 | 用于 ActiveUseComponent |
+| TagContainer | Tag 管理容器 ✅ v0.16 | 可独立使用或被 AbilitySet 持有 |
 
 ### 2.3 标准库提供（StdLib）
 
 | 模块 | 内容 | 说明 |
 |------|------|------|
-| **StandardAbilitySystem** | 标准能力系统 ✅ v0.10 | System 的标准实现，项目可自行实现 |
-| **StandardBattleInstance** | 标准战斗实例 ✅ v0.10 | GameplayInstance 的标准实现 |
-| 标准Action | Damage, Heal, AddBuff, Move, Knockback... | 覆盖常见战斗效果 |
-| 标准Component | TimeDuration, Stack, StatModifier... | 覆盖常见能力行为 |
-| GameEventComponent | 事件驱动的 Action 执行器 | 唯一触发 Action 的组件 |
-| 标准Attribute | HP, MaxHP, ATK, DEF, Speed... | 作为示例，游戏可自定义 |
-| BattleUnit | 战斗单位 | Actor的标准实现 |
+| 标准 Component | TimeDurationComponent, StatModifierComponent, TagComponent, StackComponent | 常用能力组件 ✅ v0.16 |
+| 触发器 Component | NoInstanceComponent, ActivateInstanceComponent, ActiveUseComponent | 事件触发组件 ✅ v0.16 |
+| 标准 Condition | HasTagCondition, NoTagCondition, TagStacksCondition | 常用条件实现 ✅ v0.16 |
+| 标准 Cost | CooldownCost, ConsumeTagCost, AddTagCost | 常用消耗实现 ✅ v0.16 |
+| 标准 Action | LaunchProjectileAction | 投射物 Action（示例） |
+| 标准 Attribute | StandardAttributes | HP, MaxHP, ATK, DEF... 作为示例 |
+| 回放系统 | BattleRecorder, ReplayLogPrinter | 战斗回放和日志 |
+| ProjectileSystem | 投射物系统 | 管理投射物 Actor 的 System |
 
 **标准实现说明**：stdlib 中的实现都是可选的，项目可以：
 - 直接使用
 - 继承扩展
 - 基于 core 完全自行实现
 
-### 2.4 示例代码（examples/）✅ NEW
+**v0.16 移除**：
+- ~~StandardAbilitySystem~~：项目直接实现 System 或使用 examples 中的示例
+- ~~StandardBattleInstance~~：项目直接实现 GameplayInstance
+
+### 2.4 示例代码（examples/）✅ NEW → ✅ v0.16
 
 | 模块 | 内容 | 说明 |
 |------|------|------|
 | events/BattleGameEvents.ts | DamageEvent, DeathEvent... | 游戏事件类型示例 |
-| events/ActionTriggerFactories.ts | createEventTrigger | 触发器工厂示例 |
-| abilities/AbilityTags.ts | RPG/MOBA/回合制标签 | 标签定义示例 |
-| abilities/ActiveSkillComponent.ts | 主动技能组件 | CD/Cost/激活流程示例 |
+| abilities/Conditions.ts | HasTagCondition, NoTagCondition... | 条件实现示例 ✅ v0.16 |
+| abilities/Costs.ts | CooldownCost, ConsumeTagCost... | 消耗实现示例 ✅ v0.16 |
+| abilities/AbilityConfigExamples.ts | 完整技能配置示例 | ActiveUseComponent + Timeline ✅ v0.16 |
 
 **设计原则**：框架层不定义具体的标签、事件类型、组件实现，由游戏自定义。示例代码供参考。
+
+**v0.16 移除**：
+- ~~ActionTriggerFactories.ts~~ → 触发器工厂已内置在 NoInstanceComponent 中
+- ~~ActiveSkillComponent.ts~~ → 被 ActiveUseComponent 替代
 
 ### 2.5 框架不管（由游戏层实现）
 
@@ -320,7 +332,7 @@ class AbilitySet<T extends AttributesConfig> {
 ├──────────────────────┼──────────────────────────────────────┤
 │  onTick(dt)          │  receiveEvent(event)                 │
 │  onApply(ctx)        │                                      │
-│  onRemove(ctx)       │  → GameEventComponent 响应            │
+│  onRemove(ctx)       │  → NoInstanceComponent / ActivateInstanceComponent 响应 ✅ v0.16 │
 ├──────────────────────┼──────────────────────────────────────┤
 │  用于标准组件：            │  用于被动技能：                        │
 │  - TimeDurationComponent │  - 受伤时反击                         │
@@ -332,7 +344,7 @@ class AbilitySet<T extends AttributesConfig> {
 **设计理由**：
 - 时间驱动（tick）和事件驱动（receiveEvent）分离
 - 标准组件使用内部 Hook，不需要关心业务事件
-- GameEventComponent 专门负责业务事件 → Action 执行
+- NoInstanceComponent / ActivateInstanceComponent 专门负责业务事件 → Action 执行 ✅ v0.16
 
 ### 4.5.3 AbilityComponent 设计
 
@@ -360,8 +372,11 @@ interface IAbilityComponent {
 |-----------|------|-----------|
 | TimeDurationComponent | 基于时间的持续时间 | onTick |
 | StatModifierComponent | 属性修改 | onApply, onRemove |
-| GameEventComponent | 事件驱动执行 Action | onEvent |
+| TagComponent | 随 Ability 生命周期管理 Tag | onApply, onRemove ✅ v0.16 |
+| NoInstanceComponent | 瞬发效果触发器（无实例） | onEvent ✅ v0.16 |
 | ActivateInstanceComponent | 创建 Timeline 执行实例 | onEvent ✅ v0.15 |
+| ActiveUseComponent | 主动使用入口（条件+消耗+创建实例） | onEvent ✅ v0.16 |
+| PreEventComponent | Pre 阶段事件处理器 | onApply, onRemove, onEvent |
 | StackComponent | 层数管理 | onApply |
 | CooldownComponent | 冷却时间 | onTick |
 
@@ -369,11 +384,12 @@ interface IAbilityComponent {
 
 | 类型 | 组成 |
 |------|------|
-| 瞬发主动技能 | Ability + [GameEventComponent(监听 inputAction)] |
-| Timeline主动技能 | Ability + [ActivateInstanceComponent(监听 inputAction, 配置 tagActions)] ✅ v0.15 |
-| 被动技能 | Ability + [GameEventComponent(监听 damage/death)] |
-| 持续Buff | Ability + [TimeDuration, StatModifier] |
-| 可叠加Buff | Ability + [TimeDuration, Stack, StatModifier] |
+| 瞬发主动技能 | Ability + [ActiveUseComponent(条件, 消耗, 无 Timeline)] ✅ v0.16 |
+| Timeline主动技能 | Ability + [ActiveUseComponent(条件, 消耗, timelineId, tagActions)] ✅ v0.16 |
+| 被动技能（瞬发） | Ability + [NoInstanceComponent(监听 damage/death)] ✅ v0.16 |
+| 被动技能（Timeline） | Ability + [ActivateInstanceComponent(监听 damage/death, tagActions)] |
+| 持续Buff | Ability + [TimeDuration, StatModifier, TagComponent] ✅ v0.16 |
+| 可叠加Buff | Ability + [TimeDuration, Stack, StatModifier, TagComponent] ✅ v0.16 |
 
 ### 4.5.4 Unity 风格 Component 查询 ✅ v0.11
 
@@ -465,42 +481,460 @@ type AbilityRevokedCallback = (
 - **只记录首个原因**：多个 Component 可能同时触发过期
 - **reason 类型为 string**：允许项目自定义过期原因
 
-### 4.6 StandardAbilitySystem（标准能力系统）✅ v0.10
+### 4.5.6 主动使用组件架构 ✅ v0.16
 
-StandardAbilitySystem 是 **stdlib 提供的标准实现**，简化为**事件广播器**。
+v0.16 引入了三层 Component 架构，明确了触发器的职责分离：
+
+| Component | 职责 | 创建实例 | 条件检查 | 消耗扣除 | 典型用途 |
+|-----------|------|---------|---------|---------|---------|
+| **NoInstanceComponent** | 瞬发触发器 | ❌ | ❌ | ❌ | 被动反伤、触发治疗 |
+| **ActivateInstanceComponent** | Timeline 触发器 | ✅ | ❌ | ❌ | 被动技能 Timeline、DoT |
+| **ActiveUseComponent** | 主动使用入口 | ✅ | ✅ | ✅ | 主动技能释放 |
+
+**架构图**：
+```
+┌────────────────────────────────────────────────────────────┐
+│               ActiveUseComponent (主动技能)                 │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  1. 检查 Conditions（冷却、Tag、资源等）              │  │
+│  │  2. 支付 Costs（进入冷却、消耗资源、添加 Tag）         │  │
+│  │  3. 继承自 ActivateInstanceComponent                 │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                          ↓ 继承                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │       ActivateInstanceComponent (Timeline 触发器)     │  │
+│  │  • 创建 AbilityExecutionInstance                      │  │
+│  │  • 配置 tagActions                                    │  │
+│  └──────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│           NoInstanceComponent (瞬发触发器)                  │
+│  • 直接执行 Action 链                                       │
+│  • 不创建 ExecutionInstance                                │
+│  • 事件不收集（临时 EventCollector）                        │
+└────────────────────────────────────────────────────────────┘
+```
+
+#### NoInstanceComponent - 瞬发触发器
+
+**用途**：响应游戏事件直接执行 Action，适用于**瞬发效果**。
+
+**特点**：
+- ❌ 不创建 ExecutionInstance
+- ❌ 不使用 Timeline
+- ❌ Action 产生的事件不收集（临时 EventCollector 执行后丢弃）
+- ✅ 响应速度快，开销小
+
+**使用示例**：
+```typescript
+// 被动技能：受到伤害时反伤（瞬发，不需要事件收集）
+const thornArmor: AbilityConfig = {
+  configId: 'passive_thorn',
+  components: [
+    new NoInstanceComponent({
+      triggers: [
+        { eventKind: 'damage', filter: (e, ctx) => e.target.id === ctx.owner.id },
+      ],
+      actions: [new ReflectDamageAction({ percent: 0.1 })],
+    }),
+  ],
+};
+```
+
+**⚠️ 注意**：如需收集事件用于表演层展示，请使用 **ActivateInstanceComponent**。
+
+#### ActivateInstanceComponent - Timeline 触发器
+
+**用途**：响应游戏事件创建 ExecutionInstance，按 Timeline 推进执行 Action。
+
+**特点**：
+- ✅ 创建 ExecutionInstance
+- ✅ 使用 Timeline 驱动
+- ✅ 事件可收集和 flush
+- ✅ 支持多实例并行（脱手技能）
+
+**使用示例**：
+```typescript
+// 被动技能：击杀时播放胜利动画并回血
+const triumphBuff: AbilityConfig = {
+  configId: 'passive_triumph',
+  components: [
+    new ActivateInstanceComponent({
+      triggers: [{ eventKind: 'death', filter: (e, ctx) => e.killer?.id === ctx.owner.id }],
+      timelineId: 'anim_triumph',
+      tagActions: {
+        'start': [new PlayAnimationAction()],
+        'heal': [new HealAction({ value: 50 })],
+      },
+    }),
+  ],
+};
+```
+
+#### ActiveUseComponent - 主动使用入口
+
+**用途**：主动技能的激活入口，包含条件检查和消耗扣除。
+
+**特点**：
+- ✅ 继承自 ActivateInstanceComponent（创建 Timeline 实例）
+- ✅ 默认监听 `AbilityActivateEvent`，自动匹配 `abilityInstanceId`
+- ✅ 支持 `conditions` 条件检查
+- ✅ 支持 `costs` 消耗扣除
+- ✅ 支持自定义触发器（如需监听其他事件）
+
+**使用示例**：
+```typescript
+// 主动技能（最简配置）
+const fireball: AbilityConfig = {
+  configId: 'skill_fireball',
+  activeUseComponents: [
+    // 不需要填 triggers，默认监听 AbilityActivateEvent
+    new ActiveUseComponent({
+      conditions: [new CooldownReadyCondition()],
+      costs: [new CooldownCost(5000)],
+      timelineId: 'anim_fireball',
+      tagActions: {
+        'cast': [new PlayAnimationAction()],
+        'hit': [new DamageAction({ damage: 100 })],
+      },
+    }),
+  ],
+};
+
+// 瞬发主动技能（无 Timeline）
+const instantHeal: AbilityConfig = {
+  configId: 'skill_instant_heal',
+  activeUseComponents: [
+    new ActiveUseComponent({
+      conditions: [],
+      costs: [new CooldownCost(3000)],
+      // 不填 timelineId，直接在事件响应中执行 Action
+      // 需要自定义触发器执行瞬发逻辑
+    }),
+  ],
+  components: [
+    // 实际效果通过 NoInstanceComponent 实现
+    new NoInstanceComponent({
+      triggers: [{ eventKind: 'abilityActivate' }],
+      actions: [new HealAction({ value: 50 })],
+    }),
+  ],
+};
+```
+
+#### AbilityConfig 结构（v0.16 更新）
 
 ```typescript
-// stdlib/systems/StandardAbilitySystem.ts
-class StandardAbilitySystem extends System {
-    // Tick 分发
-    tick(actors: Actor[], dt: number): void {
-        for (const actor of actors) {
-            if (hasAbilitySet(actor)) {
-                actor.abilitySet.tick(dt);
-            }
-        }
-    }
+type AbilityConfig = {
+  configId: string;
+  /** 主动使用组件列表（可选） - 支持实例或工厂函数 */
+  activeUseComponents?: ComponentInput<ActiveUseComponent>[];
+  /** 效果组件列表（可选） - 支持实例或工厂函数 */
+  components?: ComponentInput<IAbilityComponent>[];
+  displayName?: string;
+  description?: string;
+  icon?: string;
+  tags?: string[];
+};
 
-    // 事件广播（gameplayState 由调用方传入）
-    broadcastEvent(event: GameEventBase, actors: Actor[], gameplayState: unknown): void {
-        for (const actor of actors) {
-            if (hasAbilitySet(actor)) {
-                actor.abilitySet.receiveEvent(event, gameplayState);
-            }
-        }
-    }
+// 支持工厂函数，避免共享实例
+type ComponentInput<T> = T | ComponentFactory<T>;
+type ComponentFactory<T> = () => T;
+
+// 使用示例（工厂模式 - 推荐）
+const abilityConfig: AbilityConfig = {
+  configId: 'skill_fireball',
+  activeUseComponents: [
+    () => new ActiveUseComponent({ ... }),  // 工厂函数
+  ],
+  components: [
+    () => new TimeDurationComponent({ time: 10000 }),  // 工厂函数
+    () => new StatModifierComponent({ ... }),
+  ],
+};
+```
+
+### 4.5.7 Condition 接口 ✅ v0.16
+
+Condition 用于检查技能是否可以释放的条件。ActiveUseComponent 在激活前会检查所有 conditions。
+
+**接口定义**：
+```typescript
+interface Condition {
+  readonly type: string;
+  check(ctx: ConditionContext): boolean;
+  getFailReason?(ctx: ConditionContext): string;  // 可选，用于 UI 提示
+}
+
+type ConditionContext = {
+  readonly owner: ActorRef;
+  readonly abilitySet: AbilitySet;
+  readonly ability: IAbilityForComponent;
+  readonly gameplayState: unknown;
+};
+```
+
+**常用实现**：
+
+| Condition | 说明 | 使用场景 |
+|-----------|------|---------|
+| `HasTagCondition(tag)` | 要求拥有指定 Tag | 连招检查、状态检查 |
+| `NoTagCondition(tag)` | 要求没有指定 Tag | 冷却检查、互斥检查 |
+| `TagStacksCondition(tag, minStacks)` | 要求 Tag 层数达到指定值 | 连击点检查 |
+| `AllConditions(conditions[])` | 所有条件都满足 | 组合条件 |
+| `AnyCondition(conditions[])` | 任意条件满足 | 选择条件 |
+
+**使用示例**：
+```typescript
+// 冷却检查
+new ActiveUseComponent({
+  conditions: [new NoTagCondition('cooldown:fireball')],
+  // ...
+});
+
+// 连招检查
+new ActiveUseComponent({
+  conditions: [new HasTagCondition('combo_stage_1')],
+  // ...
+});
+
+// 连击点检查
+new ActiveUseComponent({
+  conditions: [new TagStacksCondition('combo_point', 5)],
+  // ...
+});
+```
+
+### 4.5.8 Cost 接口 ✅ v0.16
+
+Cost 用于技能释放时扣除资源。ActiveUseComponent 在激活时会依次执行所有 costs。
+
+**接口定义**：
+```typescript
+interface Cost {
+  readonly type: string;
+  canPay(ctx: CostContext): boolean;
+  pay(ctx: CostContext): void;
+  getFailReason?(ctx: CostContext): string;  // 可选，用于 UI 提示
+}
+
+type CostContext = {
+  readonly owner: ActorRef;
+  readonly abilitySet: AbilitySet;
+  readonly ability: IAbilityForComponent;
+  readonly gameplayState: unknown;
+  readonly logicTime: number;
+};
+```
+
+**Tag 来源规则**：
+- **添加 Tag**：有 duration → AutoDurationTag，无 duration → LooseTag
+- **消耗/移除 Tag**：只操作 LooseTag（ComponentTag 和 AutoDurationTag 不可消耗）
+
+**常用实现**：
+
+| Cost | 说明 | Tag 来源 |
+|------|------|---------|
+| `CooldownCost(duration)` | 添加冷却 Tag | AutoDurationTag（自动过期） |
+| `ConsumeTagCost(tag, stacks)` | 消耗 Tag 层数 | 只消耗 LooseTag |
+| `RemoveTagCost(tag)` | 移除 Tag（全部） | 只移除 LooseTag |
+| `AddTagCost(tag, { duration?, stacks? })` | 添加 Tag | 有 duration → AutoDurationTag，无 → LooseTag |
+
+**使用示例**：
+```typescript
+// 冷却消耗（AutoDurationTag，自动过期）
+new ActiveUseComponent({
+  costs: [new CooldownCost(5000)],  // 5秒冷却
+  // ...
+});
+
+// 消耗连击点（LooseTag）
+new ActiveUseComponent({
+  costs: [new ConsumeTagCost('combo_point', 3)],  // 消耗3层连击点
+  // ...
+});
+
+// 添加连招窗口（AutoDurationTag，1秒后自动过期）
+// 通常放在 tagActions 的 end Tag 中
+tagActions: {
+  end: [new ApplyTagAction({ tag: 'combo_stage_1', duration: 1000 })],
+}
+
+// 添加充能状态（LooseTag，需手动移除）
+new ActiveUseComponent({
+  costs: [new AddTagCost('charging', { stacks: 1 })],
+  // ...
+});
+```
+
+### 4.5.9 TagContainer - 独立的 Tag 管理容器 ✅ v0.16
+
+TagContainer 是独立的 Tag 管理组件，从 AbilitySet 中提取出来，可以独立使用也可以被 AbilitySet 持有。
+
+**设计原则**：
+- **单一职责**：只管理 Tag，不关心 Ability
+- **可独立使用**：不需要 Ability 的场景也能用 Tag（如环境物体状态标记）
+- **三层 Tag 来源分离**：便于追踪和调试
+
+**三种 Tag 来源**：
+
+| 来源 | 特点 | 典型用途 |
+|------|------|---------|
+| **Loose Tags** | 手动添加/移除，永不自动过期 | 冷却回合数、状态标记 |
+| **Auto Duration Tags** | 每层独立计时，tick 时自动清理 | 持续时间 Buff |
+| **Component Tags** | 随外部生命周期管理（如 Ability） | Ability 附加的 Tag（debuff、poison 等） |
+
+**核心 API**：
+
+```typescript
+class TagContainer {
+  // Loose Tag 管理
+  addLooseTag(tag: string, stacks?: number): void;
+  removeLooseTag(tag: string, stacks?: number): boolean;
+  hasLooseTag(tag: string): boolean;
+  getLooseTagStacks(tag: string): number;
+
+  // Auto Duration Tag 管理
+  addAutoDurationTag(tag: string, duration: number): void;
+
+  // Component Tag 管理（内部使用，由 TagComponent 调用）
+  _addComponentTags(componentId: string, tags: Record<string, number>): void;
+  _removeComponentTags(componentId: string): void;
+
+  // 聚合查询（所有来源的总和）
+  hasTag(tag: string): boolean;
+  getTagStacks(tag: string): number;
+  getAllTags(): Map<string, number>;
+
+  // Tick 驱动（更新逻辑时间，清理过期的 AutoDurationTag）
+  tick(dt: number, logicTime?: number): void;
+
+  // 回调
+  onTagChanged(callback: TagChangedCallback): () => void;
 }
 ```
 
-| 职责 | 说明 |
-|------|------|
-| Tick 分发 | 驱动所有 Actor 的 AbilitySet.tick() |
-| 事件广播 | 将 GameEvent 广播到所有 AbilitySet |
+**使用示例**：
 
-**设计说明**：
-- 这是 **stdlib 中的标准实现**，项目可以完全自行实现 System
-- `gameplayState: unknown` 由调用方传入，可以是实例引用或快照
-- Ability 的生命周期（grant/revoke）由 AbilitySet 管理
+```typescript
+// 独立使用（环境物体）
+const envTags = createTagContainer({ ownerId: 'env_object_1' });
+envTags.addLooseTag('interactive', 1);
+envTags.addAutoDurationTag('highlighted', 3000);  // 3秒后自动消失
+
+// 被 AbilitySet 持有（代理方法）
+class AbilitySet {
+  readonly tagContainer: TagContainer;
+
+  // 代理 Loose Tag 方法
+  addLooseTag(tag: string, stacks?: number): void {
+    this.tagContainer.addLooseTag(tag, stacks);
+  }
+
+  // 代理 Auto Duration Tag 方法
+  addAutoDurationTag(tag: string, duration: number): void {
+    this.tagContainer.addAutoDurationTag(tag, duration);
+  }
+
+  // 代理查询方法
+  hasTag(tag: string): boolean {
+    return this.tagContainer.hasTag(tag);
+  }
+}
+```
+
+### 4.5.10 TagComponent - Tag 生命周期管理 ✅ v0.16
+
+TagComponent 随 Ability 生命周期管理 Tag，属于 **ComponentTags** 类型（第三种 Tag 来源）。
+
+**使用场景**：
+- Buff 带有标签（debuff、poison、dot 等）
+- 技能激活时临时添加状态（charging、casting 等）
+
+**使用示例**：
+
+```typescript
+// Buff 带有 Tag（支持层数）
+const poisonBuff: AbilityConfig = {
+  configId: 'buff_poison',
+  components: [
+    () => new TagComponent({ tags: { debuff: 1, poison: 3, dot: 1 } }),
+    () => new TimeDurationComponent({ time: 10000 }),
+    () => new StatModifierComponent({ ... }),
+  ],
+};
+
+// 检查 Tag
+if (abilitySet.hasTag('poison')) {
+  // 目标有毒
+  const poisonStacks = abilitySet.getTagStacks('poison');  // 3
+}
+
+// 技能激活时临时添加状态
+const chargeSkill: AbilityConfig = {
+  configId: 'skill_charge',
+  components: [
+    () => new TagComponent({ tags: { charging: 1 } }),
+  ],
+};
+```
+
+**生命周期**：
+- `onApply`: Ability grant 时添加 Tag
+- `onRemove`: Ability revoke/expire 时移除 Tag
+
+**内部实现**：
+```typescript
+class TagComponent extends BaseAbilityComponent {
+  onApply(context: ComponentLifecycleContext): void {
+    context.abilitySet._addComponentTags(context.ability.id, this.tags);
+  }
+
+  onRemove(context: ComponentLifecycleContext): void {
+    context.abilitySet._removeComponentTags(context.ability.id);
+  }
+}
+```
+
+### 4.6 ~~StandardAbilitySystem（标准能力系统）~~ ❌ 已移除 v0.16
+
+**v0.16 变更**：StandardAbilitySystem 和 StandardBattleInstance 已从 stdlib 中移除。
+
+**原因**：
+- 框架层简化为接口和基类，不提供具体的 System 和 GameplayInstance 实现
+- 项目应根据自身需求直接实现 System 和 GameplayInstance
+- 示例代码移至 `examples/` 目录供参考
+
+**替代方案**：
+- 参考 `apps/hex-atb-battle/` 中的完整示例实现
+- 直接继承 `System` 和 `GameplayInstance` 基类
+- 根据项目需求（回合制/ATB/实时）实现流程控制
+
+**迁移指南**：
+```typescript
+// v0.10 之前：使用 StandardAbilitySystem
+import { StandardAbilitySystem } from '@lomo/logic-game-framework/stdlib';
+
+// v0.16：项目自行实现
+class MyAbilitySystem extends System {
+  tick(actors: Actor[], dt: number): void {
+    for (const actor of actors) {
+      if (hasAbilitySet(actor)) {
+        actor.abilitySet.tick(dt);
+      }
+    }
+  }
+
+  broadcastEvent(event: GameEventBase, actors: Actor[], gameplayState: unknown): void {
+    for (const actor of actors) {
+      if (hasAbilitySet(actor)) {
+        actor.abilitySet.receiveEvent(event, gameplayState);
+      }
+    }
+  }
+}
+```
 
 ### 4.7 事件策略：避免事件订阅
 
@@ -541,17 +975,21 @@ class BattleInstance {
 }
 ```
 
-### 4.7.1 GameEvent 统一事件模型 ✅ v0.12
+### 4.7.1 GameEvent 统一事件模型 ✅ v0.12 → v0.16 简化
 
 **GameEvent** 是框架的**统一事件类型**，用于：
 - Ability 系统内部分发，触发被动技能
 - 通过 EventCollector 输出给表演层
 
+**v0.16 简化**：
+- ❌ 移除 `logicTime` 字段（由游戏自定义添加或从 gameplayState 获取）
+- ✅ 新增标准事件类型：`AbilityActivateEvent`（ActiveUseComponent 默认监听）
+- ✅ 新增框架层事件：`ActorSpawnedEvent`, `AttributeChangedEvent`, `AbilityGrantedEvent` 等（用于录制）
+
 ```typescript
 // 框架只提供基础接口约束
 interface GameEventBase {
-    readonly kind: string;       // 事件类型标识
-    readonly logicTime: number;  // 逻辑时间戳
+    readonly kind: string;  // 事件类型标识
     readonly [key: string]: unknown;  // 允许扩展
 }
 ```
@@ -564,94 +1002,139 @@ interface GameEventBase {
 | 游戏自定义 | 具体事件类型由游戏定义（damage, heal 等） |
 | 双重用途 | 既触发被动技能，又输出给表演层 |
 | 简化架构 | 减少概念负担，Action 直接 emit 事件 |
+| 最小约束 | 只要求 `kind`，其他字段完全自由 ✅ v0.16 |
 
 **框架设计原则**：
-- 框架**不**对事件结构做假设（不预定义 source/target）
+- 框架**不**对事件结构做假设（不预定义 source/target/logicTime）
 - 具体事件类型由游戏自定义
 - 示例代码放在 `examples/events/` 目录
+
+**标准事件类型（v0.16）**：
+
+```typescript
+// AbilityActivateEvent - 标准 Ability 激活事件
+interface AbilityActivateEvent extends GameEventBase {
+  readonly kind: 'abilityActivate';
+  readonly abilityInstanceId: string;  // Ability 实例 ID（不是 configId）
+  readonly sourceId: string;           // 发起激活的 Actor ID
+  // 项目可通过交叉类型扩展：AbilityActivateEvent & { target: ActorRef }
+}
+
+// 框架层录制事件（用于战斗回放）
+type FrameworkEvent =
+  | ActorSpawnedEvent         // Actor 生成
+  | ActorDestroyedEvent       // Actor 销毁
+  | AttributeChangedEvent     // 属性变化
+  | AbilityGrantedEvent       // Ability 获得
+  | AbilityRemovedEvent       // Ability 移除
+  | AbilityActivatedEvent     // Ability 激活完成（过去时态）
+  | TagChangedEvent;          // Tag 变化
+```
 
 **游戏自定义事件示例**：
 
 ```typescript
-// examples/events/BattleGameEvents.ts
+// 游戏自定义事件（可选包含 logicTime）
 type DamageGameEvent = GameEventBase & {
     kind: 'damage';
     source: ActorRef;
     target: ActorRef;
     damage: number;
     isCritical: boolean;
+    logicTime?: number;  // 可选，项目自行决定
 };
 
 type DeathGameEvent = GameEventBase & {
     kind: 'death';
     unit: ActorRef;
     killer?: ActorRef;
+    logicTime?: number;
 };
 
 // 游戏的事件联合类型
-type MyGameEvent = DamageGameEvent | DeathGameEvent | TurnStartGameEvent;
+type MyGameEvent =
+  | AbilityActivateEvent  // 标准激活事件
+  | DamageGameEvent
+  | DeathGameEvent
+  | TurnStartGameEvent;
 ```
 
-### 4.7.2 GameEventComponent（统一事件模型）✅ NEW
+### 4.7.2 NoInstanceComponent / ActivateInstanceComponent ✅ v0.16
 
-**GameEventComponent** 是框架中**唯一**触发 Action 执行的组件。
+**v0.16 变更**：GameEventComponent 已拆分为 NoInstanceComponent 和 ActivateInstanceComponent。
 
-**核心设计思想**：所有 Action 执行都是事件驱动的
+**核心设计思想**：所有 Action 执行都是事件驱动的，根据是否需要 Timeline 分为两类：
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    GameEvent（统一入口）                     │
-├─────────────────────────────────────────────────────────────┤
-│  主动技能：InputActionEvent                                 │
-│    - 玩家选择技能和目标                                     │
-│    - 战斗系统创建 { kind: 'inputAction', abilityId, ... }   │
-│    - 广播事件，技能的 GameEventComponent 匹配并执行         │
-├─────────────────────────────────────────────────────────────┤
-│  被动技能：DamageEvent / DeathEvent / TurnStartEvent ...    │
-│    - 游戏逻辑产生事件                                       │
-│    - 广播事件，被动技能的 GameEventComponent 匹配并执行     │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         GameEvent（统一入口）                         │
+├─────────────────────────────────────────────────────────────────────┤
+│  瞬发效果：NoInstanceComponent                                       │
+│    - 直接执行 Action，不创建 ExecutionInstance                        │
+│    - 事件不收集（临时 EventCollector）                               │
+│    - 适用于：反伤、触发治疗、状态检查                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  Timeline 效果：ActivateInstanceComponent / ActiveUseComponent       │
+│    - 创建 ExecutionInstance                                          │
+│    - 按 Timeline 推进执行 Action                                      │
+│    - 事件可收集（用于表演层）                                         │
+│    - 适用于：有动画的技能、DoT、脱手技能                             │
+└─────────────────────────────────────────────────────────────────────┘
                               ↓
-                    GameEventComponent.onEvent()
+            NoInstanceComponent.onEvent()  或  ActivateInstanceComponent.onEvent()
                               ↓
-                      执行 Action 链
+                        执行 Action 链 / 创建 ExecutionInstance
 ```
+
+#### NoInstanceComponent - 瞬发触发器
 
 **使用示例**：
 
 ```typescript
-// 火球术：主动技能
-const fireball = new Ability({
-    configId: 'skill_fireball',
-    tags: ['active', 'fire'],
-    components: [
-        new GameEventComponent([{
-            eventKind: 'inputAction',
-            filter: (event, ctx) => event.abilityId === ctx.ability.configId,
-            actions: [new DamageAction({ damage: 50, element: 'fire' })],
-        }]),
-    ],
-}, caster.toRef());
+// 荆棘护甲：被动技能（受伤时反伤）- 瞬发效果
+const thornArmor: AbilityConfig = {
+  configId: 'passive_thorn',
+  tags: ['passive'],
+  components: [
+    new NoInstanceComponent({
+      triggers: [
+        { eventKind: 'damage', filter: (e, ctx) => e.target.id === ctx.owner.id },
+      ],
+      actions: [new ReflectDamageAction({ percent: 0.1 })],
+    }),
+  ],
+};
+```
 
-// 荆棘护甲：被动技能（受伤时反弹）
-const thornArmor = new Ability({
-    configId: 'passive_thorn',
-    tags: ['passive'],
-    components: [
-        new GameEventComponent([{
-            eventKind: 'damage',
-            filter: (event, ctx) => event.target.id === ctx.owner.id,
-            actions: [new ReflectDamageAction({ percent: 0.1 })],
-        }]),
-    ],
-}, hero.toRef());
+#### ActivateInstanceComponent / ActiveUseComponent - Timeline 触发器
+
+**使用示例**：
+
+```typescript
+// 火球术：主动技能（Timeline 驱动）
+const fireball: AbilityConfig = {
+  configId: 'skill_fireball',
+  tags: ['active', 'fire'],
+  activeUseComponents: [
+    new ActiveUseComponent({
+      conditions: [new NoTagCondition('cooldown:fireball')],
+      costs: [new CooldownCost(5000)],
+      timelineId: 'anim_fireball',
+      tagActions: {
+        'cast': [new PlayAnimationAction()],
+        'hit': [new DamageAction({ damage: 50, element: 'fire' })],
+      },
+    }),
+  ],
+};
 ```
 
 **这种设计的优势**：
-1. **统一模型**：主动/被动技能都通过事件触发，Action 执行方式一致
-2. **解耦**：战斗系统只负责发事件，不关心技能具体怎么执行
-3. **可扩展**：可以实现"当有人使用技能时"的响应（如反制、打断）
-4. **可记录**：所有操作都是事件，方便回放/录像/网络同步
+1. **职责分离**：瞬发效果和 Timeline 效果使用不同的组件
+2. **性能优化**：瞬发效果不需要创建 ExecutionInstance，开销更小
+3. **事件收集**：Timeline 效果可以收集事件用于表演层展示
+4. **可扩展**：可以实现"当有人使用技能时"的响应（如反制、打断）
+5. **可记录**：所有操作都是事件，方便回放/录像/网络同步
 
 ### 4.8 时间模型
 
@@ -779,7 +1262,7 @@ const timeline = registry.get('anim_fireball');
 // v0.14: Action.bindToTag() - 已移除
 // v0.15: 使用 tagActions 配置
 new ActivateInstanceComponent({
-    triggers: [{ eventKind: 'inputAction' }],
+    triggers: [{ eventKind: 'abilityActivate' }],  // 标准激活事件 ✅ v0.16
     timelineId: 'anim_fireball',
     tagActions: {
         'cast': [new PlayAnimationAction()],
@@ -809,7 +1292,7 @@ type ExecutionContext = {
 **设计原则**：
 - 框架只定义数据结构和执行实例机制
 - 调度策略（串行/并行、等待动画等）由项目层实现
-- 无时间轴的 Ability = 瞬时触发（使用 GameEventComponent）
+- 无时间轴的 Ability = 瞬时触发（使用 NoInstanceComponent）✅ v0.16
 - 有时间轴的 Ability = 使用 ActivateInstanceComponent 创建执行实例
 
 ### 4.11 关键接口定义（概念级）
@@ -1976,19 +2459,19 @@ interface BattleSaveData {
 8. **AbilitySet 双层触发机制**（v0.9）：
    - `AbilitySet` 能力容器（grant/revoke/tick/receiveEvent）
    - `GameEventBase` 事件基础接口（框架层）
-   - `GameEventComponent` 事件驱动的 Action 执行器（StdLib）
+   - `GameEventComponent` 事件驱动的 Action 执行器（StdLib）→ ✅ v0.16 拆分为 NoInstanceComponent / ActivateInstanceComponent
    - `Ability` 重构（Component 构造时注入，不可变）
-   - 双层触发：内部 Hook（tick/activate/deactivate）+ 事件响应（onEvent）
+   - 双层触发：内部 Hook（tick/apply/remove）+ 事件响应（onEvent）
 9. **框架层简化**（v0.9）：
    - 移除 `AbilityTags`（移至 examples）
    - 移除具体事件类型（移至 examples）
    - 移除便捷工厂函数（移至 examples）
-   - `ActionComponent` 重命名为 `GameEventComponent`
+   - `ActionComponent` 重命名为 `GameEventComponent`→ ✅ v0.16 拆分为 NoInstanceComponent / ActivateInstanceComponent
 10. **gameplayState + 标准实现重命名**（v0.10）：
     - `ExecutionContext.battle` → `gameplayState: unknown`
     - 事件传递链加入 gameplayState 参数
-    - `AbilitySystem` → `StandardAbilitySystem`（移至 stdlib/systems/）
-    - `BattleInstance` → `StandardBattleInstance`（重命名文件）
+    - `AbilitySystem` → `StandardAbilitySystem`（移至 stdlib/systems/）→ ✅ v0.16 移除
+    - `BattleInstance` → `StandardBattleInstance`（重命名文件）→ ✅ v0.16 移除
     - Core 只保留接口和基类，具体实现在 stdlib
 11. **Unity 风格 getComponent + 过期机制重构**（v0.11）：
     - `getComponent(type: string)` → `getComponent(ctor: ComponentConstructor<T>)`
@@ -2028,6 +2511,35 @@ interface BattleSaveData {
       - Component Hook：`onActivate/onDeactivate` → `onApply/onRemove`
       - 移除 `Action.bindToTag()`，改用 `tagActions` 配置
     - 新增 `TimelineSkillComponent` 示例（CD + 资源 + Timeline 的完整技能）
+16. **主动使用组件架构 + Condition/Cost 系统**（v0.16）：
+    - 新增 `ActiveUseComponent`：继承 `ActivateInstanceComponent`，添加条件和消耗检查
+      - 默认监听 `AbilityActivateEvent`，自动匹配 `abilityInstanceId`
+      - 支持自定义触发器
+      - 在激活前检查 `conditions` 和 `costs`
+    - 新增 `NoInstanceComponent`：无实例触发器组件，用于瞬发效果
+      - 直接执行 Action，不创建 ExecutionInstance
+      - 事件不收集（临时 EventCollector 执行后丢弃）
+    - `ActivateInstanceComponent` 职责简化：只负责创建执行实例，不包含条件/消耗
+    - **AbilityConfig 结构变更**：
+      - `activeUseComponents?: ComponentInput<ActiveUseComponent>[]` - 主动使用入口
+      - `components?: ComponentInput<IAbilityComponent>[]` - 效果组件
+      - 支持工厂函数：`ComponentInput<T> = T | ComponentFactory<T>`
+    - **Condition 接口**：条件检查接口（`check`, `getFailReason`）
+      - 常用实现：`HasTagCondition`, `NoTagCondition`, `TagStacksCondition`
+    - **Cost 接口**：消耗接口（`canPay`, `pay`, `getFailReason`）
+      - 常用实现：`ConsumeTagCost`, `AddTagCost`, `RemoveTagCost`
+    - **TagContainer 独立**：
+      - Tag 管理从 AbilitySet 独立到 TagContainer
+      - 三种 Tag 来源：Loose Tags、Auto Duration Tags、Component Tags
+      - AbilitySet 持有并代理 TagContainer 方法
+    - **TagComponent**：随 Ability 生命周期管理 Tag（onApply/onRemove）
+    - **GameEventBase 简化**：
+      - 只保留 `kind: string`，移除 `logicTime` 字段
+      - 新增标准事件类型：`AbilityActivateEvent`（框架层标准激活事件）
+      - 新增录制用框架事件：`ActorSpawnedEvent`, `AttributeChangedEvent`, `AbilityGrantedEvent` 等
+    - **移除 StandardAbilitySystem 和 StandardBattleInstance**：
+      - stdlib 中移除标准实现，仅保留示例代码
+      - 框架层简化为接口和基类
 
 ### 待实现
 
@@ -2074,13 +2586,21 @@ interface BattleSaveData {
 | Modifier | GameplayModifier | 属性修改器 |
 | Action | GameplayAbility中的逻辑单元 | 最小执行单元 |
 | GameEvent | - | 统一事件类型（内部触发+表演输出）✅ v0.12 |
-| GameEventComponent | - | 事件驱动的 Action 执行器 |
+| ~~GameEventComponent~~ | ~~事件驱动的 Action 执行器~~ | ✅ v0.16 拆分为 NoInstanceComponent / ActivateInstanceComponent |
 | TimelineAsset | AnimMontage | 时间序列资产 ✅ v0.14 |
 | TimelineRegistry | - | 时间轴注册表（存储和查找 TimelineAsset）✅ v0.14 |
 | ~~bindToTag~~ | ~~AnimNotify~~ | ~~Action 绑定到时间轴 Tag~~ ✅ v0.14 → v0.15 移除 |
 | tagActions | - | Tag → Actions 映射配置 ✅ v0.15 |
 | AbilityExecutionInstance | - | 单次技能执行实例，管理 Timeline 推进 ✅ v0.15 |
 | ActivateInstanceComponent | - | 创建执行实例的组件 ✅ v0.15 |
+| ActiveUseComponent | - | 主动使用组件（条件+消耗+创建实例）✅ v0.16 |
+| NoInstanceComponent | - | 无实例触发器组件（瞬发效果）✅ v0.16 |
+| Condition | - | 条件接口（check, getFailReason）✅ v0.16 |
+| Cost | - | 消耗接口（canPay, pay, getFailReason）✅ v0.16 |
+| TagContainer | - | 独立的 Tag 管理容器 ✅ v0.16 |
+| TagComponent | - | 随 Ability 生命周期管理 Tag 的组件 ✅ v0.16 |
+| ComponentInput | - | 组件输入类型（支持实例或工厂函数）✅ v0.16 |
+| AbilityActivateEvent | - | 标准 Ability 激活事件 ✅ v0.16 |
 | EventCollector | - | 通用事件收集器 ✅ v0.12 |
 | eventChain | - | 事件链（追溯触发历史）✅ v0.13 |
 | getCurrentEvent | - | 获取当前触发事件（eventChain 最后一个）✅ v0.13 |
@@ -2097,7 +2617,7 @@ interface BattleSaveData {
 | Actor | 游戏实体，OOP设计 |
 | AbilitySet | 能力容器，持有 Ability 列表 ✅ NEW |
 | Ability | 能力实例，EC设计，状态：`pending → granted → expired` ✅ v0.15 |
-| AbilityComponent | 能力组件（TimeDuration、StatModifier、GameEventComponent等） |
+| AbilityComponent | 能力组件（TimeDuration、StatModifier、NoInstanceComponent等） |
 | AbilityExecutionInstance | 单次技能执行实例，管理 Timeline 推进 ✅ v0.15 |
 
 ### C. 属性系统术语
