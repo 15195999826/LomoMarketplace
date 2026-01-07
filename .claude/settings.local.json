@@ -66,7 +66,11 @@
       "Bash(git worktree:*)",
       "Bash(git branch:*)",
       "Bash(git stash pop:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__wait_for",
+      "mcp__chrome-devtools__take_screenshot"
     ]
   },
   "enableAllProjectMcpServers": true,
