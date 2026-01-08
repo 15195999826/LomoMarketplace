@@ -151,8 +151,9 @@ export interface IAbilityComponent {
    * @param event 游戏事件
    * @param context 组件生命周期上下文
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
+   * @returns 是否被触发（true 表示该 Component 响应了此事件）
    */
-  onEvent?(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void;
+  onEvent?(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): boolean | void;
 
   // ═══════ 序列化 ═══════
 

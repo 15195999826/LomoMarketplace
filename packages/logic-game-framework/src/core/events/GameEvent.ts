@@ -171,6 +171,7 @@ export const ATTRIBUTE_CHANGED_EVENT = 'attributeChanged' as const;
 export const ABILITY_GRANTED_EVENT = 'abilityGranted' as const;
 export const ABILITY_REMOVED_EVENT = 'abilityRemoved' as const;
 export const ABILITY_ACTIVATED_EVENT = 'abilityActivated' as const;
+export const ABILITY_TRIGGERED_EVENT = 'abilityTriggered' as const;
 export const TAG_CHANGED_EVENT = 'tagChanged' as const;
 
 // ========== Actor 生命周期事件 ==========
@@ -291,6 +292,28 @@ export interface TagChangedEvent extends GameEventBase {
   readonly newCount: number;
 }
 
+// ========== Ability 触发事件 ==========
+
+/**
+ * Ability 触发事件
+ *
+ * 当 Ability 收到事件且有 Component 被触发时产生。
+ * 用于记录 Ability 的事件响应情况。
+ */
+export interface AbilityTriggeredEvent extends GameEventBase {
+  readonly kind: typeof ABILITY_TRIGGERED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** Ability 实例 ID */
+  readonly abilityInstanceId: string;
+  /** Ability 配置 ID */
+  readonly abilityConfigId: string;
+  /** 触发的原始事件 kind */
+  readonly triggerEventKind: string;
+  /** 被触发的 Component 类型列表 */
+  readonly triggeredComponents: readonly string[];
+}
+
 // ========== 框架层事件联合类型 ==========
 
 /**
@@ -303,6 +326,7 @@ export type FrameworkEvent =
   | AbilityGrantedEvent
   | AbilityRemovedEvent
   | AbilityActivatedEvent
+  | AbilityTriggeredEvent
   | TagChangedEvent;
 
 // ========== 工厂函数 ==========
@@ -417,6 +441,26 @@ export function createTagChangedEvent(
   };
 }
 
+/**
+ * 创建 Ability 触发事件
+ */
+export function createAbilityTriggeredEvent(
+  actorId: string,
+  abilityInstanceId: string,
+  abilityConfigId: string,
+  triggerEventKind: string,
+  triggeredComponents: readonly string[]
+): AbilityTriggeredEvent {
+  return {
+    kind: ABILITY_TRIGGERED_EVENT,
+    actorId,
+    abilityInstanceId,
+    abilityConfigId,
+    triggerEventKind,
+    triggeredComponents,
+  };
+}
+
 // ========== 框架事件 Type Guards ==========
 
 /**
@@ -466,4 +510,11 @@ export function isAbilityActivatedEvent(event: GameEventBase): event is AbilityA
  */
 export function isTagChangedEvent(event: GameEventBase): event is TagChangedEvent {
   return event.kind === TAG_CHANGED_EVENT;
+}
+
+/**
+ * 检查事件是否为 AbilityTriggeredEvent
+ */
+export function isAbilityTriggeredEvent(event: GameEventBase): event is AbilityTriggeredEvent {
+  return event.kind === ABILITY_TRIGGERED_EVENT;
 }

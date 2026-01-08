@@ -183,18 +183,17 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
     event: GameEventBase,
     context: ComponentLifecycleContext,
     gameplayState: unknown
-  ): void {
+  ): boolean {
     // 检查是否是使用Ability的事件
     if (!this.checkTriggers(event, context)) {
-      return;
+      return false;
     }
 
     // 尝试获取 AbilitySet（需要从 gameplayState 中获取）
     const abilitySet = this.getAbilitySet(context, gameplayState);
     if (!abilitySet) {
       // 无法获取 AbilitySet，直接激活（跳过条件/消耗检查）
-      this.activateWithoutChecks(event, context, gameplayState);
-      return;
+      return this.activateWithoutChecks(event, context, gameplayState);
     }
 
     const logicTime = this.getLogicTime(event, gameplayState);
@@ -209,7 +208,7 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
 
     // 检查所有条件
     if (!this.checkConditions(conditionCtx)) {
-      return; // 条件不满足，不激活
+      return false; // 条件不满足，不激活
     }
 
     // 构建消耗上下文
@@ -223,14 +222,14 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
 
     // 检查所有消耗是否可支付
     if (!this.checkCosts(costCtx)) {
-      return; // 消耗不足，不激活
+      return false; // 消耗不足，不激活
     }
 
     // 支付所有消耗
     this.payCosts(costCtx);
 
     // 激活执行实例（触发器已检查过，直接激活）
-    this.activateWithoutChecks(event, context, gameplayState);
+    return this.activateWithoutChecks(event, context, gameplayState);
   }
 
   /**
@@ -240,9 +239,9 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
     event: GameEventBase,
     context: ComponentLifecycleContext,
     gameplayState: unknown
-  ): void {
+  ): boolean {
     // 调用父类的 onEvent，但触发器已检查过，会通过
-    super.onEvent(event, context, gameplayState);
+    return super.onEvent(event, context, gameplayState);
   }
 
   /**

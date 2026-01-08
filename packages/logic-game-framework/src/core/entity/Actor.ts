@@ -36,6 +36,12 @@ export abstract class Actor {
   /** 显示名称 */
   protected _displayName?: string;
 
+  /** onSpawn 回调列表 */
+  private _onSpawnCallbacks: Array<() => void> = [];
+
+  /** onDespawn 回调列表 */
+  private _onDespawnCallbacks: Array<() => void> = [];
+
   /**
    * 唯一标识符（延迟初始化）
    * 首次访问时通过 IdGenerator 生成，格式：type_N
@@ -103,6 +109,10 @@ export abstract class Actor {
    */
   onSpawn(): void {
     this._state = 'active';
+    // 触发所有 onSpawn 回调
+    for (const callback of this._onSpawnCallbacks) {
+      callback();
+    }
   }
 
   /**
@@ -110,6 +120,38 @@ export abstract class Actor {
    */
   onDespawn(): void {
     this._state = 'removed';
+    // 触发所有 onDespawn 回调
+    for (const callback of this._onDespawnCallbacks) {
+      callback();
+    }
+  }
+
+  /**
+   * 订阅 onSpawn 事件
+   * @returns 取消订阅函数
+   */
+  addSpawnListener(callback: () => void): () => void {
+    this._onSpawnCallbacks.push(callback);
+    return () => {
+      const index = this._onSpawnCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this._onSpawnCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * 订阅 onDespawn 事件
+   * @returns 取消订阅函数
+   */
+  addDespawnListener(callback: () => void): () => void {
+    this._onDespawnCallbacks.push(callback);
+    return () => {
+      const index = this._onDespawnCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this._onDespawnCallbacks.splice(index, 1);
+      }
+    };
   }
 
   /**

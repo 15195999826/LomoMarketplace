@@ -11,8 +11,8 @@
  * 参见 defineAttributes.test.ts
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { RawAttributeSet } from '../../../src/core/attributes/AttributeSet.js';
 import {
-  RawAttributeSet,
   createAddBaseModifier,
   createMulBaseModifier,
   createAddFinalModifier,

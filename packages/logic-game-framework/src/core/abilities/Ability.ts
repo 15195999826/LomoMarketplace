@@ -140,6 +140,9 @@ export class Ability implements IAbilityForComponent {
   /** 执行实例列表 */
   private executionInstances: AbilityExecutionInstance[] = [];
 
+  /** 事件触发回调列表 */
+  private _onTriggeredCallbacks: Array<(event: GameEventBase, triggeredComponents: string[]) => void> = [];
+
   /**
    * 构造函数
    *
@@ -324,6 +327,7 @@ export class Ability implements IAbilityForComponent {
     });
 
     this.executionInstances.push(instance);
+
     return instance;
   }
 
@@ -359,19 +363,52 @@ export class Ability implements IAbilityForComponent {
    * @param event 游戏事件
    * @param context 组件生命周期上下文
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
+   * @returns 被触发的 Component 类型列表
    */
-  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
-    if (this._state === 'expired') return;
+  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): string[] {
+    if (this._state === 'expired') return [];
+
+    const triggeredComponents: string[] = [];
 
     for (const component of this.components) {
       if (component.state === 'active' && component.onEvent) {
         try {
-          component.onEvent(event, context, gameplayState);
+          const triggered = component.onEvent(event, context, gameplayState);
+          if (triggered) {
+            triggeredComponents.push(component.type);
+          }
         } catch (error) {
           getLogger().error(`Component event error: ${component.type}`, { error, event: event.kind });
         }
       }
     }
+
+    // 如果有 Component 被触发，调用回调
+    if (triggeredComponents.length > 0) {
+      for (const callback of this._onTriggeredCallbacks) {
+        callback(event, triggeredComponents);
+      }
+    }
+
+    return triggeredComponents;
+  }
+
+  /**
+   * 订阅 Ability 事件触发
+   *
+   * 当 Ability 收到事件且有 Component 被触发时调用回调。
+   *
+   * @param callback 回调函数，接收触发事件和被触发的 Component 类型列表
+   * @returns 取消订阅函数
+   */
+  addTriggeredListener(callback: (event: GameEventBase, triggeredComponents: string[]) => void): () => void {
+    this._onTriggeredCallbacks.push(callback);
+    return () => {
+      const index = this._onTriggeredCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this._onTriggeredCallbacks.splice(index, 1);
+      }
+    };
   }
 
   // ========== 生命周期 ==========

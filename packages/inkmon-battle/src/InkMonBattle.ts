@@ -25,6 +25,7 @@ import {
   Actor,
   type ExecutionContext,
   getTimelineRegistry,
+  type ActorRef,
 } from "@lomo/logic-game-framework";
 
 import {
@@ -78,6 +79,23 @@ function logMessage(message: string): void {
 
 /** 战斗结果 */
 export type BattleResult = "ongoing" | "teamA_win" | "teamB_win" | "draw";
+
+/** AI 决策结果 */
+type ActionDecision = {
+  type: "move" | "attack";
+  /** 要激活的 Ability 实例 ID */
+  abilityInstanceId: string;
+  /** 目标 Actor（攻击用） */
+  target?: ActorRef;
+  /** 目标坐标（移动用） */
+  targetCoord?: AxialCoord;
+  /** 技能属性（攻击用） */
+  element?: Element;
+  /** 技能威力（攻击用） */
+  power?: number;
+  /** 伤害类型（攻击用） */
+  damageCategory?: "physical" | "special";
+};
 
 /** 战斗配置 */
 export interface InkMonBattleConfig {
@@ -844,6 +862,12 @@ export class InkMonBattle
     // 收集本帧事件
     const frameEvents = this.eventCollector.flush();
 
+    // 调试：打印事件数量和类型
+    if (frameEvents.length > 0) {
+      const eventKinds = frameEvents.map(e => e.kind).join(', ');
+      logMessage(`  [Tick ${this._tickCount}] 收集到 ${frameEvents.length} 个事件: ${eventKinds}`);
+    }
+
     // 录制
     this._recorder.recordFrame(this._tickCount, frameEvents);
 
@@ -871,19 +895,34 @@ export class InkMonBattle
     // 日志
     this.logger.turnStart(actor.displayName, actor.hp, actor.maxHp);
 
-    // AI 决策：优先攻击，否则移动，否则跳过
-    const targets = this.getAttackableTargets(actor);
-    if (targets.length > 0) {
-      // 攻击
-      const target = this.selectBestTarget(actor, targets);
-      const element = actor.getElements()[0] ?? "fire";
-      this.executeAttack(actor, target, 60, element, "physical");
-    } else {
-      // 尝试移动向敌人靠近
-      const moved = this.tryMoveTowardsEnemy(actor);
-      if (!moved) {
-        this.executeSkip(actor);
+    // AI 决策
+    const decision = this.decideAction(actor);
+
+    // 创建事件并广播给 AbilitySet
+    const event = createActionUseEvent(
+      decision.abilityInstanceId,
+      actor.id,
+      {
+        target: decision.target,
+        targetCoord: decision.targetCoord,
+        element: decision.element,
+        power: decision.power,
+        damageCategory: decision.damageCategory,
       }
+    );
+
+    // 广播给该角色的 AbilitySet（触发 Ability）
+    actor.abilitySet.receiveEvent(event, this);
+
+    // 驱动 Timeline 执行（立即执行所有 tag actions）
+    // 注意：Timeline 是异步的，需要推进足够的时间让所有 Action 执行完
+    const maxTimelineDuration = 1500; // 最长 Timeline 是 1500ms
+    this.driveAbilityExecutions(actor, maxTimelineDuration);
+
+    // 立即收集并记录本回合产生的所有事件
+    const turnEvents = this.eventCollector.flush();
+    if (turnEvents.length > 0) {
+      this._recorder.recordFrame(this._tickCount, turnEvents);
     }
 
     // 结束回合
@@ -891,27 +930,64 @@ export class InkMonBattle
   }
 
   /**
-   * 选择最佳攻击目标（优先低血量）
+   * AI 决策（优先攻击，否则移动）
    */
-  private selectBestTarget(
-    _attacker: InkMonActor,
-    targets: InkMonActor[],
-  ): InkMonActor {
-    // 简单策略：选择血量最低的
-    return targets.reduce((best, current) =>
-      current.hp < best.hp ? current : best
-    );
+  private decideAction(actor: InkMonActor): ActionDecision {
+    // 查找攻击目标
+    const targets = this.getAttackableTargets(actor);
+
+    if (targets.length > 0) {
+      // 有可攻击目标 -> 攻击
+      const target = this.selectBestTarget(actor, targets);
+      const element = actor.getElements()[0] ?? "fire";
+
+      // 查找普通攻击 Ability
+      const attackAbility = actor.findAbilityByConfigId(ABILITY_CONFIG_ID.BASIC_ATTACK);
+      if (!attackAbility) {
+        throw new Error(`Actor ${actor.id} missing basic attack ability`);
+      }
+
+      return {
+        type: "attack",
+        abilityInstanceId: attackAbility.id,
+        target: target.toRef(),
+        element,
+        power: 60,
+        damageCategory: "physical",
+      };
+    } else {
+      // 无可攻击目标 -> 尝试移动
+      const moveTarget = this.findMoveTarget(actor);
+
+      // 查找移动 Ability
+      const moveAbility = actor.findAbilityByConfigId(ABILITY_CONFIG_ID.MOVE);
+      if (!moveAbility) {
+        throw new Error(`Actor ${actor.id} missing move ability`);
+      }
+
+      return {
+        type: "move",
+        abilityInstanceId: moveAbility.id,
+        targetCoord: moveTarget,
+      };
+    }
   }
 
   /**
-   * 尝试向敌人移动
+   * 寻找移动目标（向最近的敌人靠近）
    */
-  private tryMoveTowardsEnemy(actor: InkMonActor): boolean {
+  private findMoveTarget(actor: InkMonActor): AxialCoord {
     const pos = actor.hexPosition;
-    if (!pos) return false;
+    if (!pos) {
+      // 无位置，返回原地
+      return axial(0, 0);
+    }
 
     const enemies = this.aliveActors.filter((a) => a.team !== actor.team);
-    if (enemies.length === 0) return false;
+    if (enemies.length === 0) {
+      // 无敌人，返回原地
+      return pos;
+    }
 
     // 找最近的敌人
     let nearestEnemy: InkMonActor | undefined;
@@ -927,11 +1003,15 @@ export class InkMonBattle
       }
     }
 
-    if (!nearestEnemy || !nearestEnemy.hexPosition) return false;
+    if (!nearestEnemy || !nearestEnemy.hexPosition) {
+      return pos;
+    }
 
     // 找可移动的格子
     const movable = this.getMovablePositions(actor);
-    if (movable.length === 0) return false;
+    if (movable.length === 0) {
+      return pos;
+    }
 
     // 选择最靠近敌人的格子
     let bestPos = movable[0];
@@ -944,13 +1024,25 @@ export class InkMonBattle
       }
     }
 
-    // 只有更近才移动
+    // 只有更近才移动，否则原地
     if (bestDist < nearestDist) {
-      this.executeMove(actor, bestPos);
-      return true;
+      return bestPos;
     }
 
-    return false;
+    return pos;
+  }
+
+  /**
+   * 选择最佳攻击目标（优先低血量）
+   */
+  private selectBestTarget(
+    _attacker: InkMonActor,
+    targets: InkMonActor[],
+  ): InkMonActor {
+    // 简单策略：选择血量最低的
+    return targets.reduce((best, current) =>
+      current.hp < best.hp ? current : best
+    );
   }
 
   /**

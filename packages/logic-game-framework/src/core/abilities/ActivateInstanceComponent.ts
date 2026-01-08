@@ -120,12 +120,15 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
    *
    * 匹配条件后创建 ExecutionInstance
    */
-  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): boolean {
     const shouldActivate = this.checkTriggers(event, context);
 
     if (shouldActivate) {
       this.activateExecution(event, context, gameplayState);
+      return true;
     }
+
+    return false;
   }
 
   /**

@@ -17,7 +17,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "debug:test": "tsx debugReplay/run-battle-test.ts"
   },
   "dependencies": {
     "@lomo/logic-game-framework": "workspace:*",

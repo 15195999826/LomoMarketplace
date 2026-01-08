@@ -4,6 +4,8 @@
  * 执行单位在六边形网格上的移动。
  * 目标由 targetSelector 决定（谁要移动），
  * 坐标由 targetCoord 参数决定（移动到哪里）。
+ *
+ * **重要**：此 Action 会真正修改游戏状态（更新网格占用）
  */
 
 import {
@@ -18,13 +20,9 @@ import {
 
 import type { AxialCoord } from '@lomo/hex-grid';
 import { createMoveEvent } from '../events/ReplayEvents.js';
+import type { InkMonBattle } from '../InkMonBattle.js';
 
 // ========== 类型定义 ==========
-
-/** 带有位置查询能力的游戏状态 */
-interface GameplayStateWithPosition {
-  getActorPosition(actorId: string): AxialCoord | undefined;
-}
 
 /**
  * MoveAction 参数
@@ -40,18 +38,6 @@ export interface MoveActionParams extends BaseActionParams {
 function logMessage(message: string): void {
   (globalThis as { console?: { log: (msg: string) => void } }).console?.log(
     message
-  );
-}
-
-/**
- * 检查对象是否有 getActorPosition 方法
- */
-function hasGetActorPosition(obj: unknown): obj is GameplayStateWithPosition {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'getActorPosition' in obj &&
-    typeof (obj as GameplayStateWithPosition).getActorPosition === 'function'
   );
 }
 
@@ -82,14 +68,27 @@ export class MoveAction extends BaseAction<MoveActionParams> {
     // 解析目标坐标
     const targetCoord = resolveParam(this.params.targetCoord, ctx);
 
+    // 获取 InkMonBattle 实例
+    const battle = ctx.gameplayState as InkMonBattle;
+
     const allEvents = targets.map((target) => {
-      // 获取 Actor 当前位置
-      let fromHex: AxialCoord = { q: 0, r: 0 };
-      if (hasGetActorPosition(ctx.gameplayState)) {
-        const pos = ctx.gameplayState.getActorPosition(target.id);
-        if (pos) {
-          fromHex = pos;
-        }
+      // 获取 Actor
+      const actor = battle.getUnit(target.id);
+      if (!actor) {
+        logMessage(`  [MoveAction] Actor ${target.id} not found`);
+        return ctx.eventCollector.push(
+          createMoveEvent(target.id, { q: 0, r: 0 }, targetCoord ?? { q: 0, r: 0 })
+        );
+      }
+
+      // 获取当前位置
+      const fromHex = actor.hexPosition ?? { q: 0, r: 0 };
+
+      // 执行移动逻辑（更新网格）
+      if (actor.hexPosition && targetCoord) {
+        battle.grid.removeOccupant(actor.hexPosition);
+        battle.grid.placeOccupant(targetCoord, { id: actor.id });
+        actor.setPosition(targetCoord);
       }
 
       logMessage(

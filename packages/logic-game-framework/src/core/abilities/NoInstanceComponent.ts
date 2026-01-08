@@ -125,12 +125,15 @@ export class NoInstanceComponent extends BaseAbilityComponent {
    *
    * 根据 triggerMode 检查触发器，匹配后执行 Action 链
    */
-  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): boolean {
     const shouldExecute = this.checkTriggers(event, context);
 
     if (shouldExecute) {
       this.executeActions(event, context, gameplayState);
+      return true;
     }
+
+    return false;
   }
 
   /**

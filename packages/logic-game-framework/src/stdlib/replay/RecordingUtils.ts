@@ -14,8 +14,9 @@
  * ## 可用函数
  *
  * - `recordAttributeChanges` - 订阅属性变化
- * - `recordAbilitySetChanges` - 订阅 Ability 生命周期和 Tag 变化
+ * - `recordAbilitySetChanges` - 订阅 Ability 生命周期、事件触发和 Tag 变化
  * - `recordTagChanges` - 单独订阅 Tag 变化（已包含在 recordAbilitySetChanges 中）
+ * - `recordActorLifecycle` - 订阅 Actor 生命周期（生成/销毁）
  *
  * @example
  * ```typescript
@@ -24,6 +25,7 @@
  *     return [
  *       recordAttributeChanges(this.attributeSet, ctx),
  *       ...recordAbilitySetChanges(this.abilitySet, ctx),
+ *       ...recordActorLifecycle(this, ctx),
  *     ];
  *   }
  * }
@@ -32,12 +34,18 @@
 
 import type { AttributeChangeListener } from '../../core/attributes/AttributeSet.js';
 import type { AbilitySet } from '../../core/abilities/AbilitySet.js';
+import type { Ability } from '../../core/abilities/Ability.js';
 import type { IRecordingContext } from './ReplayTypes.js';
+import type { Actor } from '../../core/entity/Actor.js';
+import type { GameEventBase } from '../../core/events/GameEvent.js';
 import {
   createAttributeChangedEvent,
   createAbilityGrantedEvent,
   createAbilityRemovedEvent,
   createTagChangedEvent,
+  createActorSpawnedEvent,
+  createActorDestroyedEvent,
+  createAbilityTriggeredEvent,
 } from '../../core/events/GameEvent.js';
 
 /**
@@ -102,8 +110,15 @@ export function recordAttributeChanges(
 /**
  * 订阅 AbilitySet 的 Ability 生命周期变化
  *
- * 监听 Ability 的获得和移除，自动转换为对应事件。
+ * 监听 Ability 的获得、移除和事件触发，自动转换为对应事件。
  * 同时自动订阅 Tag 变化（通过 AbilitySet 代理的 TagContainer）。
+ *
+ * ## 订阅内容
+ *
+ * - **abilityGranted**: Ability 被授予时
+ * - **abilityRemoved**: Ability 被移除时
+ * - **abilityTriggered**: Ability 收到事件且有 Component 被触发时
+ * - **tagChanged**: Tag 层数变化时
  *
  * @param abilitySet AbilitySet 实例
  * @param ctx 录像上下文
@@ -124,29 +139,73 @@ export function recordAbilitySetChanges(
 ): (() => void)[] {
   const unsubscribes: (() => void)[] = [];
 
+  // 存储每个 Ability 的触发事件订阅取消函数
+  const abilityTriggerUnsubscribes = new Map<string, () => void>();
+
+  // 为单个 Ability 订阅触发事件
+  const subscribeAbilityTriggered = (ability: Ability): void => {
+    const unsubscribe = ability.addTriggeredListener((event, triggeredComponents) => {
+      ctx.pushEvent(
+        createAbilityTriggeredEvent(
+          ctx.actorId,
+          ability.id,
+          ability.configId,
+          event.kind,
+          triggeredComponents
+        )
+      );
+    });
+    abilityTriggerUnsubscribes.set(ability.id, unsubscribe);
+  };
+
+  // 为已存在的 Ability 订阅触发事件
+  for (const ability of abilitySet.getAbilities()) {
+    subscribeAbilityTriggered(ability);
+  }
+
   // 订阅 Ability 获得
   unsubscribes.push(
     abilitySet.onAbilityGranted((ability) => {
+      // 记录 Ability 获得事件
       ctx.pushEvent(
         createAbilityGrantedEvent(ctx.actorId, {
           instanceId: ability.id,
           configId: ability.configId,
         })
       );
+
+      // 为新 Ability 订阅触发事件
+      subscribeAbilityTriggered(ability);
     })
   );
 
   // 订阅 Ability 移除
   unsubscribes.push(
     abilitySet.onAbilityRevoked((ability) => {
+      // 记录 Ability 移除事件
       ctx.pushEvent(
         createAbilityRemovedEvent(ctx.actorId, ability.id)
       );
+
+      // 清理该 Ability 的触发事件订阅
+      const unsubscribe = abilityTriggerUnsubscribes.get(ability.id);
+      if (unsubscribe) {
+        unsubscribe();
+        abilityTriggerUnsubscribes.delete(ability.id);
+      }
     })
   );
 
   // 订阅 Tag 变化
   unsubscribes.push(recordTagChanges(abilitySet, ctx));
+
+  // 添加清理所有 Ability 触发订阅的函数
+  unsubscribes.push(() => {
+    for (const unsubscribe of abilityTriggerUnsubscribes.values()) {
+      unsubscribe();
+    }
+    abilityTriggerUnsubscribes.clear();
+  });
 
   return unsubscribes;
 }
@@ -196,4 +255,51 @@ export function recordTagChanges(
       )
     );
   });
+}
+
+/**
+ * 订阅 Actor 生命周期事件
+ *
+ * 监听 Actor 的生成和销毁，自动转换为对应事件。
+ *
+ * @param actor Actor 实例
+ * @param ctx 录像上下文
+ * @returns 取消订阅函数数组
+ *
+ * @example
+ * ```typescript
+ * setupRecording(ctx: IRecordingContext) {
+ *   return [
+ *     recordAttributeChanges(this.attributeSet, ctx),
+ *     ...recordAbilitySetChanges(this.abilitySet, ctx),
+ *     ...recordActorLifecycle(this, ctx),
+ *   ];
+ * }
+ * ```
+ */
+export function recordActorLifecycle(
+  actor: Actor,
+  ctx: IRecordingContext
+): (() => void)[] {
+  const unsubscribes: (() => void)[] = [];
+
+  // 订阅 Actor 生成事件
+  unsubscribes.push(
+    actor.addSpawnListener(() => {
+      ctx.pushEvent(
+        createActorSpawnedEvent(actor)
+      );
+    })
+  );
+
+  // 订阅 Actor 销毁事件
+  unsubscribes.push(
+    actor.addDespawnListener(() => {
+      ctx.pushEvent(
+        createActorDestroyedEvent(ctx.actorId)
+      );
+    })
+  );
+
+  return unsubscribes;
 }
