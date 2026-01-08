@@ -2,7 +2,10 @@
  * Battle Replay Types - Web 端播放状态类型定义
  */
 
-import type { IBattleRecord, IActorInitData, IFrameData } from "@inkmon/battle";
+import type { IBattleRecord, IActorInitData, IFrameData, GameEventBase } from "@inkmon/battle";
+
+// 重新导出 GameEventBase（来自 @lomo/logic-game-framework）
+export type { GameEventBase };
 
 // ========== Actor State ==========
 
@@ -124,8 +127,8 @@ export interface ReplayPlayerState {
   speed: 0.5 | 1 | 2 | 4;
   /** 所有 Actor 的当前状态 */
   actors: Map<string, ActorState>;
-  /** 当前帧的事件 */
-  currentEvents: unknown[];
+  /** 当前帧的事件（来自 IBattleRecord.timeline[].events） */
+  currentEvents: GameEventBase[];
   /** 战斗结果 */
   battleResult: string | null;
   /** 当前回合号 */

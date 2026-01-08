@@ -2,124 +2,96 @@
  * Battle Replay Reducer - 纯函数处理帧事件
  *
  * 将 replay 数据转换为可渲染的状态
+ *
+ * ## 设计原则
+ *
+ * 1. **状态更新**：只通过框架事件更新 Actor 状态
+ *    - AttributeChangedEvent: 更新属性（HP、MP 等）
+ *    - AbilityGrantedEvent/RemovedEvent: 更新 Buff 列表
+ *    - TagChangedEvent: 更新状态标签
+ *
+ * 2. **表演效果**：业务事件触发视觉/音效
+ *    - DamageEvent: 伤害飘字、震屏、音效
+ *    - HealEvent: 治疗飘字、特效
+ *    - SkillUseEvent: 技能特效、动画
+ *    - MoveEvent: 移动动画
  */
 
-import type { IBattleRecord, IFrameData } from "@inkmon/battle";
+import type { IBattleRecord, IFrameData, GameEventBase } from "@inkmon/battle";
+import {
+  isMoveEvent,
+  isDamageEvent,
+  isHealEvent,
+  isDeathEvent,
+  isTurnStartEvent,
+  isBattleEndEvent,
+  isSkillUseEvent,
+  // 框架事件 Type Guards（从 @lomo/logic-game-framework 重新导出）
+  isAttributeChangedEvent,
+  isAbilityActivatedEvent,
+  isTagChangedEvent,
+} from "@inkmon/battle";
 import {
   type ActorState,
   type ReplayPlayerState,
   createInitialState,
 } from "./types";
 
-// ========== Event Types ==========
-
-interface BaseEvent {
-  readonly kind: string;
-  readonly [key: string]: unknown;
-}
-
-interface MoveEvent extends BaseEvent {
-  kind: "move";
-  actorId: string;
-  fromHex: { q: number; r: number };
-  toHex: { q: number; r: number };
-}
-
-interface DamageEvent extends BaseEvent {
-  kind: "damage";
-  sourceActorId?: string;
-  targetActorId: string;
-  damage: number;
-  element: string;
-  damageCategory: string;
-  effectiveness: string;
-  typeMultiplier: number;
-  isCritical: boolean;
-  isSTAB: boolean;
-}
-
-interface HealEvent extends BaseEvent {
-  kind: "heal";
-  sourceActorId?: string;
-  targetActorId: string;
-  healAmount: number;
-}
-
-interface DeathEvent extends BaseEvent {
-  kind: "death";
-  actorId: string;
-  killerActorId?: string;
-}
-
-interface TurnStartEvent extends BaseEvent {
-  kind: "turnStart";
-  turnNumber: number;
-  actorId: string;
-}
-
-interface BattleStartEvent extends BaseEvent {
-  kind: "battleStart";
-  teamAIds: string[];
-  teamBIds: string[];
-}
-
-interface BattleEndEvent extends BaseEvent {
-  kind: "battleEnd";
-  result: string;
-  turnCount: number;
-  survivorIds: string[];
-}
-
-interface SkillUseEvent extends BaseEvent {
-  kind: "skillUse";
-  actorId: string;
-  skillName: string;
-  element: string;
-  targetActorId?: string;
-  targetHex?: { q: number; r: number };
-}
-
-// ========== Type Guards ==========
-
-function isMoveEvent(event: BaseEvent): event is MoveEvent {
-  return event.kind === "move";
-}
-
-function isDamageEvent(event: BaseEvent): event is DamageEvent {
-  return event.kind === "damage";
-}
-
-function isHealEvent(event: BaseEvent): event is HealEvent {
-  return event.kind === "heal";
-}
-
-function isDeathEvent(event: BaseEvent): event is DeathEvent {
-  return event.kind === "death";
-}
-
-function isTurnStartEvent(event: BaseEvent): event is TurnStartEvent {
-  return event.kind === "turnStart";
-}
-
-function isBattleStartEvent(event: BaseEvent): event is BattleStartEvent {
-  return event.kind === "battleStart";
-}
-
-function isBattleEndEvent(event: BaseEvent): event is BattleEndEvent {
-  return event.kind === "battleEnd";
-}
-
 // ========== Reducer ==========
 
 /**
- * 应用单个事件到状态
+ * 应用单个事件到状态（表演层更新）
+ *
+ * 处理两类事件：
+ * 1. 框架事件 (FrameworkEvent): 更新 Actor 状态
+ * 2. 业务事件 (BusinessEvent): 触发表演效果（未来扩展）
  */
 export function applyEvent(
   state: ReplayPlayerState,
-  event: BaseEvent,
+  event: GameEventBase,
 ): ReplayPlayerState {
   const actors = new Map(state.actors);
 
+  // ========== 框架事件：状态更新 ==========
+
+  // 属性变化：这是更新 Actor 属性的标准方式
+  if (isAttributeChangedEvent(event)) {
+    const actor = actors.get(event.actorId);
+    if (actor) {
+      // 动态更新属性
+      const updatedActor: ActorState = {
+        ...actor,
+        // 特殊处理：hp 属性
+        ...(event.attribute === 'hp' ? { hp: event.newValue } : {}),
+        // 特殊处理：maxHp 属性
+        ...(event.attribute === 'maxHp' ? { maxHp: event.newValue } : {}),
+      };
+
+      // 如果 HP 降到 0 或以下，标记为死亡
+      if (event.attribute === 'hp' && event.newValue <= 0) {
+        updatedActor.isAlive = false;
+      }
+
+      actors.set(event.actorId, updatedActor);
+    }
+    return { ...state, actors };
+  }
+
+  // Ability 激活完成：记录用于表演（显示技能图标、特效等）
+  if (isAbilityActivatedEvent(event)) {
+    // TODO: 未来可以记录到 state.lastAbilityActivation 用于显示特效
+    return state;
+  }
+
+  // Tag 变化：记录用于表演（显示 Buff/Debuff 图标）
+  if (isTagChangedEvent(event)) {
+    // TODO: 未来可以记录到 state.actorTags 用于显示状态图标
+    return state;
+  }
+
+  // ========== 业务事件：表演效果 + 状态更新 ==========
+
+  // 移动事件：更新 Actor 位置（这是状态变化）
   if (isMoveEvent(event)) {
     const actor = actors.get(event.actorId);
     if (actor) {
@@ -131,19 +103,28 @@ export function applyEvent(
     return { ...state, actors };
   }
 
+  // 伤害事件：记录用于表演（伤害飘字、震屏、音效）
+  // 注意：HP 的实际更新由 AttributeChangedEvent 处理
   if (isDamageEvent(event)) {
+    // TODO: 未来可以记录到 state.pendingEffects 用于显示特效
+    // 向后兼容：如果没有 AttributeChangedEvent，手动更新 HP
     const target = actors.get(event.targetActorId);
     if (target) {
       const newHp = Math.max(0, target.hp - event.damage);
       actors.set(event.targetActorId, {
         ...target,
         hp: newHp,
+        ...(newHp <= 0 ? { isAlive: false } : {}),
       });
     }
     return { ...state, actors };
   }
 
+  // 治疗事件：记录用于表演（治疗飘字、特效）
+  // 注意：HP 的实际更新由 AttributeChangedEvent 处理
   if (isHealEvent(event)) {
+    // TODO: 未来可以记录到 state.pendingEffects 用于显示特效
+    // 向后兼容：如果没有 AttributeChangedEvent，手动更新 HP
     const target = actors.get(event.targetActorId);
     if (target) {
       const newHp = Math.min(target.maxHp, target.hp + event.healAmount);
@@ -155,6 +136,7 @@ export function applyEvent(
     return { ...state, actors };
   }
 
+  // 死亡事件：标记为死亡
   if (isDeathEvent(event)) {
     const actor = actors.get(event.actorId);
     if (actor) {
@@ -166,6 +148,13 @@ export function applyEvent(
     return { ...state, actors };
   }
 
+  // 技能使用事件：记录用于表演（技能特效、动画）
+  if (isSkillUseEvent(event)) {
+    // TODO: 未来可以记录到 state.pendingEffects 用于显示特效
+    return state;
+  }
+
+  // 回合开始事件：更新当前行动者
   if (isTurnStartEvent(event)) {
     return {
       ...state,
@@ -174,6 +163,7 @@ export function applyEvent(
     };
   }
 
+  // 战斗结束事件：记录结果
   if (isBattleEndEvent(event)) {
     return {
       ...state,
@@ -181,12 +171,14 @@ export function applyEvent(
     };
   }
 
-  // 未知事件：不修改状态
+  // 未知事件：不修改状态（向前兼容）
   return state;
 }
 
 /**
- * 应用一帧的所有事件
+ * 应用一帧的所有事件（帧同步核心）
+ *
+ * 遍历该帧的所有事件，逐个应用到状态
  */
 export function applyFrame(
   state: ReplayPlayerState,
@@ -195,11 +187,12 @@ export function applyFrame(
   let newState: ReplayPlayerState = {
     ...state,
     currentFrame: frameData.frame,
-    currentEvents: frameData.events as unknown[],
+    currentEvents: frameData.events,
   };
 
+  // 逐个应用事件到状态（支持所有 GameEventBase 类型）
   for (const event of frameData.events) {
-    newState = applyEvent(newState, event as BaseEvent);
+    newState = applyEvent(newState, event);
   }
 
   return newState;
@@ -213,25 +206,7 @@ export function resetToInitial(replay: IBattleRecord): ReplayPlayerState {
 }
 
 /**
- * 应用到指定帧索引（从头开始重新计算）
- */
-export function applyToFrameIndex(
-  replay: IBattleRecord,
-  targetIndex: number,
-): ReplayPlayerState {
-  let state = createInitialState(replay);
-  state = { ...state, currentFrameIndex: targetIndex };
-
-  for (let i = 0; i <= targetIndex && i < replay.timeline.length; i++) {
-    state = applyFrame(state, replay.timeline[i]);
-    state = { ...state, currentFrameIndex: i };
-  }
-
-  return state;
-}
-
-/**
- * 前进一帧
+ * 前进一帧（播放核心）
  */
 export function stepForward(
   replay: IBattleRecord,
@@ -247,19 +222,4 @@ export function stepForward(
   newState = { ...newState, currentFrameIndex: nextIndex };
 
   return newState;
-}
-
-/**
- * 后退一帧（需要重新计算）
- */
-export function stepBackward(
-  replay: IBattleRecord,
-  state: ReplayPlayerState,
-): ReplayPlayerState {
-  const prevIndex = state.currentFrameIndex - 1;
-  if (prevIndex < 0) {
-    return resetToInitial(replay);
-  }
-
-  return applyToFrameIndex(replay, prevIndex);
 }

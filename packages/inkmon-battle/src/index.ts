@@ -85,3 +85,25 @@ export {
   BattleRecorder,
   ReplayLogPrinter,
 } from "@lomo/logic-game-framework/stdlib";
+
+// ========== 框架事件（从框架核心层重新导出） ==========
+export type {
+  GameEventBase,
+  AttributeChangedEvent,
+  AbilityGrantedEvent,
+  AbilityRemovedEvent,
+  AbilityActivatedEvent,
+  TagChangedEvent,
+  ActorSpawnedEvent,
+  ActorDestroyedEvent,
+} from "@lomo/logic-game-framework";
+
+export {
+  isAttributeChangedEvent,
+  isAbilityGrantedEvent,
+  isAbilityRemovedEvent,
+  isAbilityActivatedEvent,
+  isTagChangedEvent,
+  isActorSpawnedEvent,
+  isActorDestroyedEvent,
+} from "@lomo/logic-game-framework";

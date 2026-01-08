@@ -14,6 +14,7 @@
     "@inkmon/battle": "workspace:*",
     "@inkmon/core": "workspace:*",
     "@lomo/hex-grid": "workspace:*",
+    "@lomo/logic-game-framework": "workspace:*",
     "@types/three": "^0.182.0",
     "next": "16.1.1",
     "react": "19.2.3",

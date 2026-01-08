@@ -71,7 +71,30 @@ export class GameWorld {
   /** 事件处理器 - 框架核心单例资源 */
   readonly eventProcessor: EventProcessor;
 
-  /** 事件收集器 - 框架核心单例资源 */
+  /**
+   * 事件收集器 - 框架核心单例资源
+   *
+   * 用于收集逻辑层产生的 GameEvent，供各个 GameplayInstance 使用。
+   *
+   * ## 使用模式
+   *
+   * **生产事件**（在 Action 中）：
+   * ```typescript
+   * GameWorld.getInstance().eventCollector.push(event);
+   * ```
+   *
+   * **消费事件**（在 GameplayInstance.tick() 末尾）：
+   * ```typescript
+   * const frameEvents = GameWorld.getInstance().eventCollector.flush();
+   * this.recorder.recordFrame(this.tickCount, frameEvents);
+   * ```
+   *
+   * ## 职责划分
+   *
+   * - **GameWorld**: 提供 EventCollector 作为全局共享资源
+   * - **GameplayInstance**: 负责在 tick() 末尾 flush() 并消费事件
+   * - **GameWorld.tickAll()**: 仅负责调度，不负责事件收集
+   */
   readonly eventCollector: EventCollector;
 
   constructor(config: GameWorldConfig = {}) {
@@ -249,6 +272,10 @@ export class GameWorld {
 
   /**
    * 推进所有运行中的实例
+   *
+   * 注意：此方法仅负责调度，不负责事件收集。
+   * 各个 GameplayInstance 实例在自己的 tick() 中负责事件的收集和消费。
+   *
    * @param dt 时间增量
    */
   tickAll(dt: number): void {
@@ -257,8 +284,6 @@ export class GameWorld {
         instance.tick(dt);
       }
     }
-    // 帧结束：flush 所有事件
-    this.eventCollector.flush();
   }
 
   /**

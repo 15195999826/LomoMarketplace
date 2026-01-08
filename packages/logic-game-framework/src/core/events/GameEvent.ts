@@ -416,3 +416,54 @@ export function createTagChangedEvent(
     newCount,
   };
 }
+
+// ========== 框架事件 Type Guards ==========
+
+/**
+ * 检查事件是否为 ActorSpawnedEvent
+ */
+export function isActorSpawnedEvent(event: GameEventBase): event is ActorSpawnedEvent {
+  return event.kind === ACTOR_SPAWNED_EVENT;
+}
+
+/**
+ * 检查事件是否为 ActorDestroyedEvent
+ */
+export function isActorDestroyedEvent(event: GameEventBase): event is ActorDestroyedEvent {
+  return event.kind === ACTOR_DESTROYED_EVENT;
+}
+
+/**
+ * 检查事件是否为 AttributeChangedEvent
+ */
+export function isAttributeChangedEvent(event: GameEventBase): event is AttributeChangedEvent {
+  return event.kind === ATTRIBUTE_CHANGED_EVENT;
+}
+
+/**
+ * 检查事件是否为 AbilityGrantedEvent
+ */
+export function isAbilityGrantedEvent(event: GameEventBase): event is AbilityGrantedEvent {
+  return event.kind === ABILITY_GRANTED_EVENT;
+}
+
+/**
+ * 检查事件是否为 AbilityRemovedEvent
+ */
+export function isAbilityRemovedEvent(event: GameEventBase): event is AbilityRemovedEvent {
+  return event.kind === ABILITY_REMOVED_EVENT;
+}
+
+/**
+ * 检查事件是否为 AbilityActivatedEvent
+ */
+export function isAbilityActivatedEvent(event: GameEventBase): event is AbilityActivatedEvent {
+  return event.kind === ABILITY_ACTIVATED_EVENT;
+}
+
+/**
+ * 检查事件是否为 TagChangedEvent
+ */
+export function isTagChangedEvent(event: GameEventBase): event is TagChangedEvent {
+  return event.kind === TAG_CHANGED_EVENT;
+}

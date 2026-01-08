@@ -7,9 +7,7 @@ import {
   applyEvent,
   applyFrame,
   resetToInitial,
-  applyToFrameIndex,
   stepForward,
-  stepBackward,
 } from '@/components/battle-replay/battleReplayReducer';
 import {
   createInitialState,
@@ -231,9 +229,9 @@ describe('applyEvent', () => {
         kind: 'damage',
         targetActorId: 'actor-1',
         damage: 30,
-        element: 'Fire',
+        element: 'fire',
         damageCategory: 'physical',
-        effectiveness: 'normal',
+        effectiveness: 'neutral',
         typeMultiplier: 1,
         isCritical: false,
         isSTAB: false,
@@ -252,9 +250,9 @@ describe('applyEvent', () => {
         kind: 'damage',
         targetActorId: 'actor-1',
         damage: 50,
-        element: 'Fire',
+        element: 'fire',
         damageCategory: 'physical',
-        effectiveness: 'normal',
+        effectiveness: 'neutral',
         typeMultiplier: 1,
         isCritical: false,
         isSTAB: false,
@@ -333,12 +331,12 @@ describe('applyEvent', () => {
 
       const newState = applyEvent(state, {
         kind: 'battleEnd',
-        result: 'Team A wins',
+        result: 'teamA_win',
         turnCount: 10,
         survivorIds: ['actor-a1'],
       });
 
-      expect(newState.battleResult).toBe('Team A wins');
+      expect(newState.battleResult).toBe('teamA_win');
     });
   });
 
@@ -352,7 +350,7 @@ describe('applyEvent', () => {
       const newState = applyEvent(state, {
         kind: 'unknownEventType',
         someData: 'test',
-      });
+      } as any);
 
       expect(newState.actors.get('actor-1')?.hp).toBe(100);
     });
@@ -372,7 +370,7 @@ describe('applyFrame', () => {
       frame: 5,
       events: [
         { kind: 'move', actorId: 'actor-1', fromHex: { q: 0, r: 0 }, toHex: { q: 1, r: 1 } },
-        { kind: 'damage', targetActorId: 'actor-1', damage: 20, element: 'Fire', damageCategory: 'physical', effectiveness: 'normal', typeMultiplier: 1, isCritical: false, isSTAB: false },
+        { kind: 'damage', targetActorId: 'actor-1', damage: 20, element: 'fire', damageCategory: 'physical', effectiveness: 'normal', typeMultiplier: 1, isCritical: false, isSTAB: false },
       ] as any,
     };
 
@@ -405,45 +403,6 @@ describe('resetToInitial', () => {
     expect(state.currentFrame).toBe(0);
     expect(state.battleResult).toBeNull();
     expect(state.actors.size).toBe(2);
-  });
-});
-
-// ========== applyToFrameIndex Tests ==========
-
-describe('applyToFrameIndex', () => {
-  it('should apply all frames up to target index', () => {
-    const replay = createMockReplay({
-      initialActors: [
-        createMockActorInitData({ id: 'actor-1', attributes: { hp: 100, maxHp: 100 } }),
-      ],
-      timeline: [
-        { frame: 0, events: [{ kind: 'damage', targetActorId: 'actor-1', damage: 10 }] as any },
-        { frame: 1, events: [{ kind: 'damage', targetActorId: 'actor-1', damage: 20 }] as any },
-        { frame: 2, events: [{ kind: 'damage', targetActorId: 'actor-1', damage: 30 }] as any },
-      ],
-    });
-
-    const state = applyToFrameIndex(replay, 1);
-
-    expect(state.currentFrameIndex).toBe(1);
-    expect(state.currentFrame).toBe(1);
-    expect(state.actors.get('actor-1')?.hp).toBe(70); // 100 - 10 - 20
-  });
-
-  it('should handle target index 0', () => {
-    const replay = createMockReplay({
-      initialActors: [
-        createMockActorInitData({ id: 'actor-1', attributes: { hp: 100, maxHp: 100 } }),
-      ],
-      timeline: [
-        { frame: 0, events: [{ kind: 'damage', targetActorId: 'actor-1', damage: 25 }] as any },
-      ],
-    });
-
-    const state = applyToFrameIndex(replay, 0);
-
-    expect(state.currentFrameIndex).toBe(0);
-    expect(state.actors.get('actor-1')?.hp).toBe(75);
   });
 });
 
@@ -492,48 +451,5 @@ describe('stepForward', () => {
     const state = stepForward(replay, initialState);
 
     expect(state.actors.get('actor-1')?.hp).toBe(85);
-  });
-});
-
-// ========== stepBackward Tests ==========
-
-describe('stepBackward', () => {
-  it('should go back to previous frame', () => {
-    const replay = createMockReplay({
-      initialActors: [
-        createMockActorInitData({ id: 'actor-1', attributes: { hp: 100, maxHp: 100 } }),
-      ],
-      timeline: [
-        { frame: 0, events: [{ kind: 'damage', targetActorId: 'actor-1', damage: 10 }] as any },
-        { frame: 1, events: [{ kind: 'damage', targetActorId: 'actor-1', damage: 20 }] as any },
-      ],
-    });
-
-    const stateAtFrame1 = applyToFrameIndex(replay, 1);
-    expect(stateAtFrame1.actors.get('actor-1')?.hp).toBe(70);
-
-    const stateAtFrame0 = stepBackward(replay, stateAtFrame1);
-    expect(stateAtFrame0.currentFrameIndex).toBe(0);
-    expect(stateAtFrame0.actors.get('actor-1')?.hp).toBe(90);
-  });
-
-  it('should reset to initial when at frame 0', () => {
-    const replay = createMockReplay({
-      timeline: [{ frame: 0, events: [] }],
-    });
-    const state = { ...createInitialState(replay), currentFrameIndex: 0 };
-
-    const newState = stepBackward(replay, state);
-
-    expect(newState.currentFrameIndex).toBe(-1);
-  });
-
-  it('should reset to initial when at frame -1', () => {
-    const replay = createMockReplay();
-    const state = createInitialState(replay);
-
-    const newState = stepBackward(replay, state);
-
-    expect(newState.currentFrameIndex).toBe(-1);
   });
 });

@@ -33,6 +33,14 @@ export {
   createAbilityRemovedEvent,
   createAbilityActivatedEvent,
   createTagChangedEvent,
+  // 框架事件 Type Guards
+  isActorSpawnedEvent,
+  isActorDestroyedEvent,
+  isAttributeChangedEvent,
+  isAbilityGrantedEvent,
+  isAbilityRemovedEvent,
+  isAbilityActivatedEvent,
+  isTagChangedEvent,
 } from './GameEvent.js';
 
 // 事件收集器
