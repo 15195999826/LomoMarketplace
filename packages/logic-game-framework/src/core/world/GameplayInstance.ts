@@ -71,17 +71,16 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
    * 推进逻辑时间
    * 子类必须实现此方法
    * @param dt 时间增量（毫秒）
-   * @returns 产生的事件列表
    */
-  abstract tick(dt: number): GameEventBase[];
+  abstract tick(dt: number): void;
 
   /**
    * 基础的 tick 实现
    * 子类可调用此方法作为基础实现
    */
-  protected baseTick(dt: number): GameEventBase[] {
+  protected baseTick(dt: number): void {
     if (!this.isRunning) {
-      return [];
+      return;
     }
 
     // 推进逻辑时间
@@ -97,8 +96,6 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
         }
       }
     }
-
-    return this.eventCollector.flush();
   }
 
   // ========== 生命周期 ==========

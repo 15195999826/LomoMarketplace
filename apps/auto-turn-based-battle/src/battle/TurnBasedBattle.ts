@@ -425,9 +425,9 @@ export class TurnBasedBattle extends GameplayInstance {
   /**
    * 推进战斗逻辑
    */
-  override tick(_dt: number): GameEventBase[] {
+  override tick(_dt: number): void {
     if (!this.isRunning) {
-      return [];
+      return;
     }
 
     // 状态机主循环
@@ -448,8 +448,6 @@ export class TurnBasedBattle extends GameplayInstance {
     // 分发收集到的事件给监听器
     const events = this.eventCollector.flush();
     this._eventBus.dispatch(events);
-
-    return events;
   }
 
   /**

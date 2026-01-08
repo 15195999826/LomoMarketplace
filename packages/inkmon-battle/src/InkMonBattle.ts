@@ -755,8 +755,8 @@ export class InkMonBattle
 
   // ========== Tick 循环 ==========
 
-  override tick(dt: number): GameEventBase[] {
-    const baseEvents = this.baseTick(dt);
+  override tick(dt: number): void {
+    this.baseTick(dt);
     this._tickCount++;
 
     // 更新 ATB
@@ -771,18 +771,13 @@ export class InkMonBattle
     const frameEvents = this.eventCollector.flush();
 
     // 录制
-    this._recorder.recordFrame(this._tickCount, [
-      ...baseEvents,
-      ...frameEvents,
-    ]);
+    this._recorder.recordFrame(this._tickCount, frameEvents);
 
     // 检查结束条件
     if (this._turnCount >= this._maxTurns && this._result === "ongoing") {
       this._result = "draw";
       this.endBattle();
     }
-
-    return frameEvents;
   }
 
   /**

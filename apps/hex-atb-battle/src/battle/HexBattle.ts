@@ -311,8 +311,8 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
   // ========== 战斗主循环 ==========
 
-  override tick(dt: number): GameEventBase[] {
-    const baseEvents = this.baseTick(dt);
+  override tick(dt: number): void {
+    this.baseTick(dt);
     this.tickCount++;
 
     this._logger.tick(this.tickCount, this.logicTime);
@@ -342,9 +342,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     // 收集所有执行实例的事件（Action 产生的事件）
     const actionEvents = this.collectExecutionEvents();
 
-    // 录制当前帧（合并基础事件和 Action 事件）
-    this._recorder.recordFrame(this.tickCount, [...baseEvents, ...actionEvents]);
-
     // 检查战斗是否结束（简化：100 tick 后结束）
     if (this.tickCount >= 100) {
       this._logger.log('\n✅ 战斗结束（达到最大回合数）');
@@ -352,8 +349,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       this.exportReplay();
       this.end();
     }
-
-    return [];
   }
 
   /** 检查角色是否正在执行行动 */
