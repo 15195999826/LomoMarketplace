@@ -232,35 +232,36 @@ export function BattleReplayPlayer({
       ? ((state.currentFrameIndex + 1) / replay.timeline.length) * 100
       : 0;
 
+  // 分离两队数据
+  const teamA = Array.from(state.actors.values()).filter((a) => a.team === "A");
+  const teamB = Array.from(state.actors.values()).filter((a) => a.team === "B");
+
+  // 渲染单位卡片
+  const renderUnitCard = (actor: typeof teamA[0], team: "A" | "B") => (
+    <div
+      key={actor.id}
+      className={`${styles.unitCard} ${!actor.isAlive ? styles.dead : ""} ${state.currentActorId === actor.id ? styles.active : ""}`}
+    >
+      <div className={styles.unitName}>{actor.displayName}</div>
+      <div className={styles.unitCoord}>({actor.position.q},{actor.position.r})</div>
+      <div className={styles.hpBar}>
+        <div className={styles.hpFill} data-team={team} style={{ width: `${(actor.hp / actor.maxHp) * 100}%` }} />
+      </div>
+      <div className={styles.hpText}>{actor.hp}/{actor.maxHp}</div>
+    </div>
+  );
+
   return (
     <div className={styles.player}>
-      {/* 摘要信息 */}
-      <div className={styles.summary}>
-        <h3>📼 战斗回放</h3>
-        <div className={styles.summaryGrid}>
-          <span>版本: {summary.version}</span>
-          <span>帧数: {summary.frameCount}</span>
-          <span>单位: {summary.actorCount}</span>
-          <span>间隔: {summary.tickInterval}ms</span>
+      {/* 顶部控制栏 */}
+      <div className={styles.topBar}>
+        <div className={styles.controls}>
+          <button onClick={handleReset} className={styles.controlBtn} title="重置">⏮️</button>
+          <button onClick={togglePlay} className={styles.controlBtn} title={state.isPlaying ? "暂停" : "播放"}>
+            {state.isPlaying ? "⏸️" : "▶️"}
+          </button>
         </div>
-      </div>
-
-      {/* 控制栏 */}
-      <div className={styles.controls}>
-        <button onClick={handleReset} className={styles.controlBtn}>
-          ⏮️
-        </button>
-        <button onClick={togglePlay} className={styles.controlBtn}>
-          {state.isPlaying ? "⏸️" : "▶️"}
-        </button>
-
-        <span className={styles.frameInfo}>
-          帧 {state.currentFrame} / {summary.totalFrames}
-          <span className={styles.frameIndexHint}>
-            ({state.currentFrameIndex + 1}/{replay.timeline.length})
-          </span>
-        </span>
-
+        <span className={styles.frameInfo}>帧 {state.currentFrame} / {summary.totalFrames}</span>
         <div className={styles.speedControls}>
           {([0.5, 1, 2, 4] as const).map((speed) => (
             <button
@@ -274,131 +275,72 @@ export function BattleReplayPlayer({
         </div>
       </div>
 
-      {/* 进度条（只读显示） */}
-      <div className={styles.progressContainer}>
-        <div
-          className={styles.progressFill}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
+      {/* 主体区域：地图为核心 + 悬浮面板 */}
+      <div className={styles.mainArea}>
+        {/* 左侧悬浮面板 - A队 */}
+        <div className={styles.floatingPanel} data-position="left">
+          <div className={styles.panelHeader} data-team="A">
+            <span>A 我方</span>
+          </div>
+          <div className={styles.unitList}>
+            {teamA.map((actor) => renderUnitCard(actor, "A"))}
+          </div>
+        </div>
 
-      {/* 主面板 */}
-      <div className={styles.mainPanel}>
-        {/* BattleStage 地图 - 视觉核心 */}
+        {/* 中央战斗地图 - 核心区域 */}
         {showBattleStage && (
-          <div className={styles.battleStageContainer}>
+          <div className={styles.battleStageWrapper}>
             <BattleStage
               actors={state.actors}
               events={state.currentEvents as import("./types").InkMonReplayEvent[]}
-              width={900}
-              height={600}
             />
           </div>
         )}
 
-        {/* 右侧面板 - 事件列表 + 单位状态 */}
-        <div className={styles.sidePanel}>
-          {/* 事件列表 */}
-          <div className={styles.eventsPanel}>
-            <h4>📋 当前帧事件</h4>
+        {/* 右侧悬浮面板 - B队 + 事件 */}
+        <div className={styles.floatingPanel} data-position="right">
+          <div className={styles.panelHeader} data-team="B">
+            <span>B 敌方</span>
+          </div>
+          <div className={styles.unitList}>
+            {teamB.map((actor) => renderUnitCard(actor, "B"))}
+          </div>
+
+          {/* 事件日志 */}
+          <div className={styles.eventsSection}>
+            <div className={styles.eventsHeader}>当前帧事件</div>
             <div className={styles.eventsList}>
               {state.currentEvents.length === 0 ? (
                 <div className={styles.noEvents}>无事件</div>
               ) : (
                 state.currentEvents.map((event, idx) => (
-                  <div key={idx} className={styles.eventItem}>
-                    {formatEvent(event)}
-                  </div>
+                  <div key={idx} className={styles.eventItem}>{formatEvent(event)}</div>
                 ))
               )}
             </div>
           </div>
-
-          {/* Actor 状态 - 可折叠 */}
-          <div className={styles.actorsToggle}>
-            <button
-              onClick={() => setShowActorsPanel(!showActorsPanel)}
-              className={styles.toggleBtn}
-            >
-              {showActorsPanel ? "📉 收起单位列表" : "📈 展开单位列表"}
-            </button>
-          </div>
-
-          {showActorsPanel && (
-            <div className={styles.actorsPanel}>
-              <h4>🎭 单位状态 (回合 {state.turnNumber})</h4>
-              <div className={styles.teamsContainer}>
-                <div className={styles.teamSection}>
-                  <h5 className={styles.teamAHeader}>A 队</h5>
-                  {Array.from(state.actors.values())
-                    .filter((a) => a.team === "A")
-                    .map((actor) => (
-                      <div key={actor.id} className={getActorStyle(actor)}>
-                        <div className={styles.actorName}>{actor.displayName}</div>
-                        <div className={styles.actorHp}>
-                          HP: {actor.hp}/{actor.maxHp}
-                          <div className={styles.hpBar}>
-                            <div
-                              className={styles.hpFill}
-                              style={{
-                                width: `${(actor.hp / actor.maxHp) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div className={styles.actorPos}>
-                          📍 ({actor.position.q}, {actor.position.r})
-                        </div>
-                      </div>
-                    ))}
-                </div>
-                <div className={styles.teamSection}>
-                  <h5 className={styles.teamBHeader}>B 队</h5>
-                  {Array.from(state.actors.values())
-                    .filter((a) => a.team === "B")
-                    .map((actor) => (
-                      <div key={actor.id} className={getActorStyle(actor)}>
-                        <div className={styles.actorName}>{actor.displayName}</div>
-                        <div className={styles.actorHp}>
-                          HP: {actor.hp}/{actor.maxHp}
-                          <div className={styles.hpBar}>
-                            <div
-                              className={styles.hpFill}
-                              style={{
-                                width: `${(actor.hp / actor.maxHp) * 100}%`,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div className={styles.actorPos}>
-                          📍 ({actor.position.q}, {actor.position.r})
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* 战斗结果 */}
-      {state.battleResult && (
-        <div className={styles.battleResult}>
-          🏆 战斗结果: {state.battleResult}
+      {/* 进度条 */}
+      <div className={styles.progressContainer}>
+        <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+      </div>
+
+      {/* 底部日志 */}
+      {log && (
+        <div className={styles.logSection}>
+          <button onClick={() => setShowLog(!showLog)} className={styles.logToggle}>
+            {showLog ? "收起日志" : "展开日志"}
+          </button>
+          {showLog && <pre className={styles.logContent}>{log}</pre>}
         </div>
       )}
 
-      {/* 日志展开 */}
-      {log && (
-        <div className={styles.logSection}>
-          <button
-            onClick={() => setShowLog(!showLog)}
-            className={styles.logToggle}
-          >
-            {showLog ? "📖 收起日志" : "📖 展开日志"}
-          </button>
-          {showLog && <pre className={styles.logContent}>{log}</pre>}
+      {/* 战斗结果浮层 */}
+      {state.battleResult && (
+        <div className={styles.battleResultOverlay}>
+          <div className={styles.battleResult}>🏆 {state.battleResult}</div>
         </div>
       )}
     </div>

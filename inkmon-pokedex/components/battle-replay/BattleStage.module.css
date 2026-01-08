@@ -1,153 +1,20 @@
 /**
- * BattleStage.module.css - 战斗舞台样式
+ * BattleStage.module.css - 战斗舞台样式 (Canvas 版本)
  */
 
-/* 舞台容器 */
+/* 舞台容器 - 填充父容器 */
 .stageContainer {
+  width: 100%;
+  height: 100%;
   position: relative;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* 网格层 */
-.gridLayer {
-  position: absolute;
-  top: 0;
-  left: 0;
+/* Canvas 画布 */
+.canvas {
+  display: block;
   width: 100%;
   height: 100%;
-}
-
-/* 单个六边形 */
-.hexagon {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hexagonInner {
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  transition: background-color 0.2s ease;
-}
-
-.hexagon:hover .hexagonInner {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* 坐标显示 */
-.hexagonCoords {
-  position: absolute;
-  bottom: 8px;
-  right: 12px;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.3);
-  font-family: monospace;
-  pointer-events: none;
-}
-
-/* 单位层 */
-.unitLayer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-/* 战斗单位 Token */
-.battleUnit {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  pointer-events: auto;
-  transition: left 0.3s ease-out, top 0.3s ease-out, opacity 0.3s ease;
-}
-
-.battleUnit.alive {
-  opacity: 1;
-}
-
-.battleUnit.dead {
-  opacity: 0.3;
-  filter: grayscale(100%);
-}
-
-.battleUnit.active {
-  filter: brightness(1.3) drop-shadow(0 0 8px var(--team-color));
-}
-
-/* 单位头像 */
-.unitAvatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b3b5c 0%, #2a2a4a 100%);
-  border: 3px solid var(--team-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: bold;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* 血条容器 */
-.hpBarContainer {
-  width: 56px;
-  height: 6px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 3px;
-  margin-top: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.hpBarFill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 0.3s ease;
-}
-
-/* 单位名字 */
-.unitName {
-  margin-top: 2px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-  white-space: nowrap;
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
-
-/* 队伍标识 */
-.teamIndicator {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-  color: white;
-  border: 2px solid #1a1a2e;
 }
 
 /* 飘字容器 */
@@ -164,52 +31,29 @@
 /* 飘字样式 */
 .floatingText {
   position: absolute;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   text-shadow:
     2px 2px 0 #000,
     -1px -1px 0 #000,
     1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
+    -1px 1px 0 #000;
   animation: floatUp 1s ease-out forwards;
   pointer-events: none;
+  transform: translateX(-50%);
 }
 
 @keyframes floatUp {
   0% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
   50% {
     opacity: 1;
-    transform: translateY(-20px) scale(1.2);
+    transform: translateX(-50%) translateY(-15px) scale(1.15);
   }
   100% {
     opacity: 0;
-    transform: translateY(-40px) scale(0.8);
-  }
-}
-
-/* 暴击飘字特效 */
-.floatingText.critical {
-  font-size: 32px;
-  animation: criticalFloat 1s ease-out forwards;
-}
-
-@keyframes criticalFloat {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotate(-5deg);
-  }
-  25% {
-    transform: translateY(-10px) scale(1.3) rotate(5deg);
-  }
-  50% {
-    transform: translateY(-25px) scale(1.2) rotate(-3deg);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-50px) scale(0.9) rotate(0deg);
+    transform: translateX(-50%) translateY(-30px) scale(0.9);
   }
 }

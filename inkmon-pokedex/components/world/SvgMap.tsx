@@ -56,7 +56,7 @@ export function SvgMap({ regions, selectedRegion, onSelectRegion }: SvgMapProps)
   return (
     <div className={styles.mapContainer}>
       <div className={styles.svgWrapper}>
-        <svg className={styles.mapSvg} viewBox="0 0 500 420">
+        <svg className={styles.mapSvg} viewBox="0 0 500 440" preserveAspectRatio="xMidYMid meet">
           {/* 定义滤镜 */}
           <defs>
             <filter id="ink-texture" x="-20%" y="-20%" width="140%" height="140%">
@@ -69,11 +69,11 @@ export function SvgMap({ regions, selectedRegion, onSelectRegion }: SvgMapProps)
           </defs>
 
           {/* 装饰性海洋背景 */}
-          <rect x="280" y="60" width="200" height="200" rx="20" fill="rgba(33, 150, 243, 0.1)" className={styles.decorative} />
+          <rect x="280" y="70" width="200" height="200" rx="20" fill="rgba(33, 150, 243, 0.1)" className={styles.decorative} />
 
           {/* 装饰性波浪线 */}
           <path
-            d="M10,380 Q50,370 90,380 Q130,390 170,380 Q210,370 250,380 Q290,390 330,380 Q370,370 410,380 Q450,390 490,380"
+            d="M10,400 Q50,390 90,400 Q130,410 170,400 Q210,390 250,400 Q290,410 330,400 Q370,390 410,400 Q450,410 490,400"
             className={styles.decorative}
           />
 
