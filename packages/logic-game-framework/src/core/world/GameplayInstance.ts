@@ -10,7 +10,7 @@ import { getLogger } from '../utils/Logger.js';
 import type { Actor } from '../entity/Actor.js';
 import { System, type IGameplayInstanceForSystem } from '../entity/System.js';
 import type { GameEventBase } from '../events/GameEvent.js';
-import { EventCollector } from '../events/EventCollector.js';
+import { GameWorld } from './GameWorld.js';
 
 /**
  * 玩法实例状态
@@ -21,47 +21,6 @@ export type InstanceState = 'created' | 'running' | 'paused' | 'ended';
  * GameplayInstance 基类
  */
 export abstract class GameplayInstance implements IGameplayInstanceForSystem {
-  // ========== 静态：当前执行实例 ==========
-
-  /** 当前正在 tick 的实例（tick 期间有效） */
-  private static _current: GameplayInstance | null = null;
-
-  /**
-   * 获取当前正在执行的 GameplayInstance
-   *
-   * 仅在 tick() 执行期间有效，用于避免层层传递引用。
-   * 典型用法：`GameplayInstance.getCurrent().eventCollector.push(event)`
-   *
-   * @throws 如果不在 tick 执行期间调用
-   */
-  static getCurrent(): GameplayInstance {
-    if (!GameplayInstance._current) {
-      throw new Error(
-        'GameplayInstance.getCurrent() called outside of tick(). ' +
-          'This method is only valid during tick execution.'
-      );
-    }
-    return GameplayInstance._current;
-  }
-
-  /**
-   * 检查是否有当前执行的实例
-   */
-  static hasCurrent(): boolean {
-    return GameplayInstance._current !== null;
-  }
-
-  /**
-   * 手动设置当前实例（仅用于测试）
-   *
-   * @internal 不要在生产代码中使用
-   */
-  static _setCurrentForTesting(instance: GameplayInstance | null): void {
-    GameplayInstance._current = instance;
-  }
-
-  // ========== 实例属性 ==========
-
   /** 实例唯一标识 */
   readonly id: string;
 
@@ -80,12 +39,8 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   /** 实例状态 */
   protected _state: InstanceState = 'created';
 
-  /** 事件收集器（通过 getCurrent().eventCollector 访问） */
-  readonly eventCollector: EventCollector;
-
   constructor(id?: string) {
     this.id = id ?? generateId('instance');
-    this.eventCollector = new EventCollector();
   }
 
   // ========== 属性访问器 ==========
@@ -118,15 +73,8 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
   /**
    * 基础的 tick 实现
    * 子类应在 tick() 开头调用此方法
-   *
-   * 注意：此方法会设置 GameplayInstance._current，使得
-   * 整个 tick 期间可以通过 GameplayInstance.getCurrent() 访问当前实例。
-   * _current 会在下一次 tick 时被新实例覆盖。
    */
   protected baseTick(dt: number): void {
-    // 设置当前执行实例（用于静态访问）
-    GameplayInstance._current = this;
-
     if (!this.isRunning) {
       return;
     }
@@ -345,15 +293,6 @@ export abstract class GameplayInstance implements IGameplayInstanceForSystem {
    */
   getSystems(): readonly System[] {
     return this.systems;
-  }
-
-  // ========== 事件相关 ==========
-
-  /**
-   * 获取事件收集器
-   */
-  getEventCollector(): EventCollector {
-    return this.eventCollector;
   }
 
   // ========== 序列化 ==========

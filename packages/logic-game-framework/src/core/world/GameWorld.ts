@@ -39,6 +39,7 @@ import {
   EventProcessor,
   type EventProcessorConfig,
 } from '../events/EventProcessor.js';
+import { EventCollector } from '../events/EventCollector.js';
 
 /**
  * GameWorld 配置
@@ -70,9 +71,13 @@ export class GameWorld {
   /** 事件处理器 - 框架核心单例资源 */
   readonly eventProcessor: EventProcessor;
 
+  /** 事件收集器 - 框架核心单例资源 */
+  readonly eventCollector: EventCollector;
+
   constructor(config: GameWorldConfig = {}) {
     this.config = config;
     this.eventProcessor = new EventProcessor(config.eventProcessor);
+    this.eventCollector = new EventCollector();
   }
 
   // ========== 单例管理 ==========
@@ -252,6 +257,8 @@ export class GameWorld {
         instance.tick(dt);
       }
     }
+    // 帧结束：flush 所有事件
+    this.eventCollector.flush();
   }
 
   /**

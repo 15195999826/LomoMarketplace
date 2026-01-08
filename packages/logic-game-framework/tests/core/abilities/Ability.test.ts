@@ -25,17 +25,9 @@ import {
   setTimelineRegistry,
   type TimelineAsset,
 } from '../../../src/core/timeline/Timeline.js';
-import { GameplayInstance } from '../../../src/core/world/GameplayInstance.js';
+import { GameWorld } from '../../../src/core/world/GameWorld.js';
 import type { GameEventBase } from '../../../src/core/events/GameEvent.js';
 import type { IAction } from '../../../src/core/actions/Action.js';
-
-// Mock GameplayInstance for testing
-class MockGameplayInstance extends GameplayInstance {
-  readonly type = 'mock';
-  tick(_dt: number): void {
-    // No-op for testing
-  }
-}
 
 // ========== Mock Component ==========
 
@@ -120,19 +112,20 @@ function createMockContext(ability: IAbilityForComponent): ComponentLifecycleCon
 
 describe('Ability', () => {
   let registry: TimelineRegistry;
-  let mockInstance: MockGameplayInstance;
 
   beforeEach(() => {
     registry = new TimelineRegistry();
     setTimelineRegistry(registry);
 
-    // 设置 mock GameplayInstance 作为当前实例
-    mockInstance = new MockGameplayInstance('test-instance');
-    GameplayInstance._setCurrentForTesting(mockInstance);
+    // 初始化 GameWorld（如果尚未初始化）
+    if (!GameWorld['_instance']) {
+      GameWorld.init();
+    }
   });
 
   afterEach(() => {
-    GameplayInstance._setCurrentForTesting(null);
+    // 清理：在每个测试后销毁 GameWorld
+    GameWorld.destroy();
   });
 
   describe('构造函数', () => {

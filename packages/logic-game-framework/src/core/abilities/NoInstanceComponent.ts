@@ -14,8 +14,8 @@
  *
  * ## 事件收集
  *
- * 事件统一推送到 GameplayInstance.getCurrent().eventCollector，
- * 在帧尾由 GameplayInstance flush 并处理。
+ * 事件统一推送到 GameWorld.getInstance().eventCollector，
+ * 在帧尾由 GameWorld.tickAll() flush 并处理。
  *
  * ## 使用示例
  *
@@ -49,7 +49,7 @@ import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAction } from '../actions/Action.js';
 import type { ExecutionContext } from '../actions/ExecutionContext.js';
 import { createExecutionContext } from '../actions/ExecutionContext.js';
-import { GameplayInstance } from '../world/GameplayInstance.js';
+import { GameWorld } from '../world/GameWorld.js';
 import { getLogger } from '../utils/Logger.js';
 
 // ========== 类型定义 ==========
@@ -196,7 +196,7 @@ export class NoInstanceComponent extends BaseAbilityComponent {
   /**
    * 构建 Action 执行上下文
    *
-   * 事件推送到 GameplayInstance.getCurrent().eventCollector
+   * 事件推送到 GameWorld.getInstance().eventCollector
    */
   private buildExecutionContext(
     event: GameEventBase,
@@ -206,7 +206,7 @@ export class NoInstanceComponent extends BaseAbilityComponent {
     return createExecutionContext({
       eventChain: [event],
       gameplayState,
-      eventCollector: GameplayInstance.getCurrent().eventCollector,
+      eventCollector: GameWorld.getInstance().eventCollector,
       ability: {
         id: context.ability.id,
         configId: context.ability.configId,

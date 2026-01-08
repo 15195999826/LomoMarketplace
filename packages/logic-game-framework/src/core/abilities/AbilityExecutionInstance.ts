@@ -25,7 +25,7 @@ import type { GameEventBase } from '../events/GameEvent.js';
 import type { TimelineAsset } from '../timeline/Timeline.js';
 import { getTimelineRegistry } from '../timeline/Timeline.js';
 import type { ActorRef } from '../types/common.js';
-import { GameplayInstance } from '../world/GameplayInstance.js';
+import { GameWorld } from '../world/GameWorld.js';
 
 // ========== 类型定义 ==========
 
@@ -237,13 +237,13 @@ export class AbilityExecutionInstance {
    * 返回事件数组的副本，不会清空内部缓冲区。
    * 适用于调试、日志或只读查询。
    *
-   * @returns 事件数组副本（从 GameplayInstance.eventCollector）
+   * @returns 事件数组副本（从 GameWorld.eventCollector）
    *
-   * @deprecated 事件现在统一收集到 GameplayInstance.eventCollector，
-   * 请直接使用 GameplayInstance.getCurrent().eventCollector.collect()
+   * @deprecated 事件现在统一收集到 GameWorld.eventCollector，
+   * 请直接使用 GameWorld.getInstance().eventCollector.collect()
    */
   getCollectedEvents(): GameEventBase[] {
-    return GameplayInstance.getCurrent().eventCollector.collect();
+    return GameWorld.getInstance().eventCollector.collect();
   }
 
   // ========== 内部方法 ==========
@@ -252,7 +252,7 @@ export class AbilityExecutionInstance {
    * 执行指定 Tag 的 Action 列表（内部方法，actions 已解析）
    *
    * Action 通过 ctx.eventCollector.push() 推送事件到
-   * GameplayInstance.getCurrent().eventCollector。
+   * GameWorld.getInstance().eventCollector。
    */
   private executeActionsForTagInternal(tagName: string, actions: IAction[]): void {
     if (actions.length === 0) {
@@ -320,7 +320,7 @@ export class AbilityExecutionInstance {
     return createExecutionContext({
       eventChain: this.eventChain,
       gameplayState: this.gameplayState,
-      eventCollector: GameplayInstance.getCurrent().eventCollector,
+      eventCollector: GameWorld.getInstance().eventCollector,
       ability: {
         id: this.abilityInfo.id,
         configId: this.abilityInfo.configId,

@@ -6,6 +6,7 @@ import fs from 'node:fs';
 
 import {
   GameplayInstance,
+  GameWorld,
   type GameEventBase,
   type AbilitySet,
   type IAbilitySetProvider,
@@ -200,7 +201,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     const collisionThreshold = grid.getAdjacentWorldDistance() * COLLISION_THRESHOLD_MULTIPLIER;
     this._projectileSystem = new ProjectileSystem({
       collisionDetector: new DistanceCollisionDetector(collisionThreshold),
-      eventCollector: this.eventCollector,
+      eventCollector: GameWorld.getInstance().eventCollector,
     });
 
     // 随机放置角色
@@ -333,7 +334,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     }
 
     // 帧尾：flush 所有事件并录制
-    const frameEvents = this.eventCollector.flush();
+    const frameEvents = GameWorld.getInstance().eventCollector.flush();
     this._recorder.recordFrame(this.tickCount, frameEvents);
 
     // 检查战斗是否结束（简化：100 tick 后结束）
@@ -503,7 +504,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     this._projectileSystem.tick(allActors, dt);
 
     // 处理投射物事件（collect 不清空，事件保留到帧尾一起 flush 录制）
-    for (const event of this.eventCollector.collect()) {
+    for (const event of GameWorld.getInstance().eventCollector.collect()) {
       if (isProjectileHitEvent(event)) {
         this.onProjectileHit(event);
       } else if (isProjectileMissEvent(event)) {
