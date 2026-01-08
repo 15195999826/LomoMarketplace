@@ -10,7 +10,7 @@ import {
 } from '@lomo/logic-game-framework';
 
 import type { IRecordableActor, IAbilityInitData, IRecordingContext } from '@lomo/logic-game-framework/stdlib';
-import { recordAttributeChanges, recordAbilitySetChanges } from '@lomo/logic-game-framework/stdlib';
+import { recordAttributeChanges, recordAbilitySetChanges, recordActorLifecycle } from '@lomo/logic-game-framework/stdlib';
 
 import { BattleAbilitySet, createBattleAbilitySet } from '../abilities/index.js';
 
@@ -187,12 +187,19 @@ export class CharacterActor extends Actor implements IRecordableActor {
   /**
    * 设置录像订阅
    *
-   * 使用框架提供的工具函数订阅属性和 Ability 变化。
+   * 使用框架提供的工具函数订阅属性、Ability 和 Actor 生命周期变化。
+   *
+   * 订阅内容：
+   * - 属性变化 (hp, atk, def, speed 等)
+   * - Ability 生命周期 (granted, removed, triggered)
+   * - Tag 变化 (冷却等)
+   * - Actor 生命周期 (spawn, despawn)
    */
   setupRecording(ctx: IRecordingContext): (() => void)[] {
     return [
       recordAttributeChanges(this.attributeSet, ctx),
       ...recordAbilitySetChanges(this.abilitySet, ctx),
+      ...recordActorLifecycle(this, ctx),
     ];
   }
 }

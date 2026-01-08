@@ -312,6 +312,36 @@ export class BattleLogger {
     this.writeActorLog(actorId, actorName, `  └─ 决策: ${decision}`);
   }
 
+  /** 记录 Ability 触发事件 */
+  abilityTriggered(
+    actorId: string,
+    abilityConfigId: string,
+    triggerEventKind: string,
+    triggeredComponents: readonly string[]
+  ): void {
+    const actorName = this.getActorName(actorId);
+    const componentsStr = triggeredComponents.join(', ');
+    const line = `  ⚡ [${actorName}] Ability [${abilityConfigId}] 响应 ${triggerEventKind} → [${componentsStr}]`;
+    this.writeConsole(line);
+    this.writeActorLog(actorId, actorName, `[${this.currentTime}ms] Ability [${abilityConfigId}] 触发`);
+    this.writeActorLog(actorId, actorName, `    事件: ${triggerEventKind}, 组件: ${componentsStr}`);
+  }
+
+  /** 记录 Actor 生成事件 */
+  actorSpawned(actorId: string, actorName: string, displayName: string): void {
+    const line = `  🎭 Actor 生成: ${displayName} (${actorId})`;
+    this.writeConsole(line);
+    this.writeActorLog(actorId, actorName, `[${this.currentTime}ms] 生成 (${displayName})`);
+  }
+
+  /** 记录 Actor 销毁事件 */
+  actorDestroyed(actorId: string): void {
+    const actorName = this.getActorName(actorId);
+    const line = `  💀 Actor 销毁: ${actorName} (${actorId})`;
+    this.writeConsole(line);
+    this.writeActorLog(actorId, actorName, `[${this.currentTime}ms] 销毁`);
+  }
+
   /** 记录自定义日志 */
   log(message: string, actorId?: string, actorName?: string): void {
     this.writeConsole(message);

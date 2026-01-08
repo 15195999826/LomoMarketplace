@@ -17,6 +17,7 @@ export {
   ABILITY_GRANTED_EVENT,
   ABILITY_REMOVED_EVENT,
   ABILITY_ACTIVATED_EVENT,
+  ABILITY_TRIGGERED_EVENT,
   TAG_CHANGED_EVENT,
   type ActorSpawnedEvent,
   type ActorDestroyedEvent,
@@ -24,6 +25,7 @@ export {
   type AbilityGrantedEvent,
   type AbilityRemovedEvent,
   type AbilityActivatedEvent,
+  type AbilityTriggeredEvent,
   type TagChangedEvent,
   type FrameworkEvent,
   createActorSpawnedEvent,
@@ -32,6 +34,7 @@ export {
   createAbilityGrantedEvent,
   createAbilityRemovedEvent,
   createAbilityActivatedEvent,
+  createAbilityTriggeredEvent,
   createTagChangedEvent,
   // 框架事件 Type Guards
   isActorSpawnedEvent,
@@ -40,6 +43,7 @@ export {
   isAbilityGrantedEvent,
   isAbilityRemovedEvent,
   isAbilityActivatedEvent,
+  isAbilityTriggeredEvent,
   isTagChangedEvent,
 } from './GameEvent.js';
 

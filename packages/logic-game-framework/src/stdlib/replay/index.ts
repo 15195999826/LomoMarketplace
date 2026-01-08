@@ -24,6 +24,7 @@ export {
   recordAttributeChanges,
   recordAbilitySetChanges,
   recordTagChanges,
+  recordActorLifecycle,
   type IAttributeChangeSubscribable,
   type ITagChangeSubscribable,
 } from './RecordingUtils.js';

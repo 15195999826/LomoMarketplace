@@ -14,6 +14,9 @@ import {
   ProjectileActor,
   isProjectileHitEvent,
   isProjectileMissEvent,
+  isAbilityTriggeredEvent,
+  isActorSpawnedEvent,
+  isActorDestroyedEvent,
   Ability,
   IGameplayStateProvider,
 } from '@lomo/logic-game-framework';
@@ -335,6 +338,10 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
     // 帧尾：flush 所有事件并录制
     const frameEvents = GameWorld.getInstance().eventCollector.flush();
+
+    // 处理新的框架事件并输出日志
+    this.processFrameworkEvents(frameEvents);
+
     this._recorder.recordFrame(this.tickCount, frameEvents);
 
     // 检查战斗是否结束（简化：100 tick 后结束）
@@ -469,6 +476,39 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
         abilityInstanceId: actor.moveAbility.id,
         targetCoord: myPos,
       };
+    }
+  }
+
+  // ========== 框架事件处理 ==========
+
+  /**
+   * 处理框架层产生的事件
+   *
+   * 将 AbilityTriggeredEvent、ActorSpawnedEvent、ActorDestroyedEvent
+   * 转换为日志输出，方便调试和回放分析。
+   */
+  private processFrameworkEvents(events: readonly GameEventBase[]): void {
+    for (const event of events) {
+      if (isAbilityTriggeredEvent(event)) {
+        // Ability 收到事件且有 Component 被触发
+        this._logger.abilityTriggered(
+          event.actorId,
+          event.abilityConfigId,
+          event.triggerEventKind,
+          event.triggeredComponents
+        );
+      } else if (isActorSpawnedEvent(event)) {
+        // Actor 生成
+        const actor = this.getActor<CharacterActor>(event.actorId);
+        this._logger.actorSpawned(
+          event.actorId,
+          actor?.displayName ?? event.actorId,
+          event.displayName
+        );
+      } else if (isActorDestroyedEvent(event)) {
+        // Actor 销毁
+        this._logger.actorDestroyed(event.actorId);
+      }
     }
   }
 
