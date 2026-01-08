@@ -5,6 +5,17 @@
   gap: var(--spacing-xl);
 }
 
+/* 队伍配置容器 - 限制宽度 */
+.setupContainer {
+  width: 100%;
+  max-width: 1400px; /* 增加宽度以容纳一行显示 */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  padding: 0 var(--spacing-md);
+}
+
 /* 战斗区域 */
 .battleArea {
   background: var(--paper);
@@ -92,8 +103,10 @@
 /* 槽位容器 */
 .slots {
   display: flex;
+  flex-wrap: nowrap; /* 强制不换行 */
+  justify-content: center; /* 关键：确保卡片组整体居中 */
   gap: var(--spacing-md);
-  flex-wrap: wrap;
+  flex: 1; /* 占满剩余空间 */
 }
 
 /* VS 分隔 */
@@ -103,6 +116,9 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-md);
+  padding: 0 var(--spacing-md);
+  flex-shrink: 0; /* 防止被压缩 */
+  margin-top: 36px; /* 视觉上与槽位对齐，避开标题高度 */
 }
 
 .vsIcon {
@@ -171,11 +187,13 @@
 
 /* 战斗结果 */
 .resultSection {
-  background: var(--paper-light);
-  border: var(--border-sketch);
-  border-radius: var(--border-radius-sm);
-  padding: var(--spacing-lg);
-  text-align: center;
+  /* 影院模式：保留宽屏感但两侧留白 */
+  width: auto;
+  margin: var(--spacing-xl) var(--spacing-lg); /* 上下保持间距，左右添加间距 */
+  border-radius: 16px; /* 恢复圆角，更精致 */
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* 强阴影提升层次感 */
+  border: 1px solid rgba(0, 0, 0, 0.1); /* 微妙边框 */
 }
 
 .resultTitle {

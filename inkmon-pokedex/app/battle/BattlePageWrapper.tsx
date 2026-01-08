@@ -29,15 +29,17 @@ export function BattlePageWrapper() {
 
   return (
     <>
-      <section className={styles.hero}>
-        <h1 className={styles.title}>⚔️ 战斗模拟器</h1>
-        <p className={styles.subtitle}>
-          从 {isLoaded ? total : inkmons.length} 只 InkMon 中选择队员，开始模拟战斗
-          {isLoading && !isLoaded && " (加载中...)"}
-        </p>
-      </section>
+      <div className="container">
+        <section className={styles.hero}>
+          <h1 className={styles.title}>⚔️ 战斗模拟器</h1>
+          <p className={styles.subtitle}>
+            从 {isLoaded ? total : inkmons.length} 只 InkMon 中选择队员，开始模拟战斗
+            {isLoading && !isLoaded && " (加载中...)"}
+          </p>
+        </section>
+      </div>
 
-      <section className={`container ${styles.content}`}>
+      <section className={styles.content}>
         <BattleSimulator inkmons={inkmons} />
       </section>
     </>

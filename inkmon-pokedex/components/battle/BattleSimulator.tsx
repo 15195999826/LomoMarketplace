@@ -151,75 +151,86 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
 
   return (
     <div className={styles.simulator}>
-      <div className={styles.battleArea}>
-        <div className={styles.teamsContainer}>
-          {/* 队伍 A */}
-          <div className={styles.team}>
-            <div className={styles.teamHeader}>
-              <div className={`${styles.teamIcon} ${styles.teamA}`}>A</div>
-              <h3 className={styles.teamTitle}>队伍 A</h3>
-              <span className={styles.teamStats}>
-                {teamAStats.count}/3 · 总战力 {teamAStats.totalHp + teamAStats.totalAtk + teamAStats.totalDef}
-              </span>
+      {/* 队伍配置区域 - 限制宽度居中 */}
+      <div className={styles.setupContainer}>
+        <div className={styles.battleArea}>
+          <div className={styles.teamsContainer}>
+            {/* 队伍 A */}
+            <div className={styles.team}>
+              <div className={styles.teamHeader}>
+                <div className={`${styles.teamIcon} ${styles.teamA}`}>A</div>
+                <h3 className={styles.teamTitle}>队伍 A</h3>
+                <span className={styles.teamStats}>
+                  {teamAStats.count}/3 · 总战力 {teamAStats.totalHp + teamAStats.totalAtk + teamAStats.totalDef}
+                </span>
+              </div>
+              <div className={styles.slots}>
+                {teamA.map((inkmon, index) => (
+                  <TeamSlot
+                    key={index}
+                    inkmon={inkmon}
+                    slotIndex={index}
+                    onClick={() => handleSlotClick('A', index)}
+                    onRemove={() => handleRemove('A', index)}
+                  />
+                ))}
+              </div>
             </div>
-            <div className={styles.slots}>
-              {teamA.map((inkmon, index) => (
-                <TeamSlot
-                  key={index}
-                  inkmon={inkmon}
-                  slotIndex={index}
-                  onClick={() => handleSlotClick('A', index)}
-                  onRemove={() => handleRemove('A', index)}
-                />
-              ))}
-            </div>
-          </div>
 
-          {/* VS */}
-          <div className={styles.vsSection}>
-            <div className={styles.vsIcon}>VS</div>
-            <button
-              className={styles.battleButton}
-              onClick={handleBattle}
-              disabled={!canBattle || battle.status === "loading"}
-            >
-              {battle.status === "loading" ? "⏳ 战斗中..." : "⚔️ 开始战斗"}
-            </button>
-            <label className={styles.deterministicToggle}>
-              <input
-                type="checkbox"
-                checked={deterministicMode}
-                onChange={(e) => setDeterministicMode(e.target.checked)}
-              />
-              <span>固定随机种子</span>
-            </label>
-          </div>
-
-          {/* 队伍 B */}
-          <div className={styles.team}>
-            <div className={styles.teamHeader}>
-              <div className={`${styles.teamIcon} ${styles.teamB}`}>B</div>
-              <h3 className={styles.teamTitle}>队伍 B</h3>
-              <span className={styles.teamStats}>
-                {teamBStats.count}/3 · 总战力 {teamBStats.totalHp + teamBStats.totalAtk + teamBStats.totalDef}
-              </span>
-            </div>
-            <div className={styles.slots}>
-              {teamB.map((inkmon, index) => (
-                <TeamSlot
-                  key={index}
-                  inkmon={inkmon}
-                  slotIndex={index}
-                  onClick={() => handleSlotClick('B', index)}
-                  onRemove={() => handleRemove('B', index)}
+            {/* VS */}
+            <div className={styles.vsSection}>
+              <div className={styles.vsIcon}>VS</div>
+              <button
+                className={styles.battleButton}
+                onClick={handleBattle}
+                disabled={!canBattle || battle.status === "loading"}
+              >
+                {battle.status === "loading" ? "⏳ 战斗中..." : "⚔️ 开始战斗"}
+              </button>
+              <label className={styles.deterministicToggle}>
+                <input
+                  type="checkbox"
+                  checked={deterministicMode}
+                  onChange={(e) => setDeterministicMode(e.target.checked)}
                 />
-              ))}
+                <span>固定随机种子</span>
+              </label>
+            </div>
+
+            {/* 队伍 B */}
+            <div className={styles.team}>
+              <div className={styles.teamHeader}>
+                <div className={`${styles.teamIcon} ${styles.teamB}`}>B</div>
+                <h3 className={styles.teamTitle}>队伍 B</h3>
+                <span className={styles.teamStats}>
+                  {teamBStats.count}/3 · 总战力 {teamBStats.totalHp + teamBStats.totalAtk + teamBStats.totalDef}
+                </span>
+              </div>
+              <div className={styles.slots}>
+                {teamB.map((inkmon, index) => (
+                  <TeamSlot
+                    key={index}
+                    inkmon={inkmon}
+                    slotIndex={index}
+                    onClick={() => handleSlotClick('B', index)}
+                    onRemove={() => handleRemove('B', index)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* 提示 */}
+        {!canBattle && (
+          <div className={styles.hint}>
+            <span className={styles.hintIcon}>💡</span>
+            请为两支队伍各选择至少一只 InkMon 后开始战斗
+          </div>
+        )}
       </div>
 
-      {/* 战斗结果 - Replay Player */}
+      {/* 战斗结果 - 全宽展示 */}
       {battle.status === "success" && battle.replay && (
         <div className={styles.resultSection}>
           <BattleReplayPlayer replay={battle.replay} log={battle.log ?? undefined} />
@@ -231,14 +242,6 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
         <div className={styles.resultSection}>
           <h3 className={styles.resultTitle}>❌ 战斗失败</h3>
           <p className={styles.resultMessage}>{battle.error}</p>
-        </div>
-      )}
-
-      {/* 提示 */}
-      {!canBattle && (
-        <div className={styles.hint}>
-          <span className={styles.hintIcon}>💡</span>
-          请为两支队伍各选择至少一只 InkMon 后开始战斗
         </div>
       )}
 

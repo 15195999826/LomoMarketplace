@@ -1,7 +1,7 @@
 /* TeamSlot - 队伍槽位组件 */
 .slot {
   width: 140px;
-  min-height: 180px;
+  min-height: 190px; /* 稍微增加一点高度以容纳更多内容 */
   background: var(--paper);
   border: var(--border-sketch);
   border-radius: var(--border-radius-organic);
