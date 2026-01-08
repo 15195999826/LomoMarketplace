@@ -11,7 +11,7 @@
  * - expire
  * - 执行实例管理
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Ability, type AbilityConfig } from '../../../src/core/abilities/Ability.js';
 import {
   BaseAbilityComponent,
@@ -25,8 +25,17 @@ import {
   setTimelineRegistry,
   type TimelineAsset,
 } from '../../../src/core/timeline/Timeline.js';
+import { GameplayInstance } from '../../../src/core/world/GameplayInstance.js';
 import type { GameEventBase } from '../../../src/core/events/GameEvent.js';
 import type { IAction } from '../../../src/core/actions/Action.js';
+
+// Mock GameplayInstance for testing
+class MockGameplayInstance extends GameplayInstance {
+  readonly type = 'mock';
+  tick(_dt: number): void {
+    // No-op for testing
+  }
+}
 
 // ========== Mock Component ==========
 
@@ -111,10 +120,19 @@ function createMockContext(ability: IAbilityForComponent): ComponentLifecycleCon
 
 describe('Ability', () => {
   let registry: TimelineRegistry;
+  let mockInstance: MockGameplayInstance;
 
   beforeEach(() => {
     registry = new TimelineRegistry();
     setTimelineRegistry(registry);
+
+    // 设置 mock GameplayInstance 作为当前实例
+    mockInstance = new MockGameplayInstance('test-instance');
+    GameplayInstance._setCurrentForTesting(mockInstance);
+  });
+
+  afterEach(() => {
+    GameplayInstance._setCurrentForTesting(null);
   });
 
   describe('构造函数', () => {

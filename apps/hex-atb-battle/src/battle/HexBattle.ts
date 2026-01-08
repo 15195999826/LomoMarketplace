@@ -11,7 +11,6 @@ import {
   type IAbilitySetProvider,
   setDebugLogHandler,
   ProjectileActor,
-  EventCollector,
   isProjectileHitEvent,
   isProjectileMissEvent,
   Ability,
@@ -73,9 +72,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
   /** 活跃的投射物列表 */
   private _projectiles: ProjectileActor[] = [];
-
-  /** 投射物事件收集器 */
-  private _projectileEventCollector!: EventCollector;
 
   /** 战斗录制器 */
   private _recorder!: BattleRecorder;
@@ -161,9 +157,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       this._logger.handleFrameworkLog(category, message, context);
     });
 
-    // 初始化投射物系统（碰撞阈值在 HexGridModel 创建后设置）
-    this._projectileEventCollector = new EventCollector();
-
     // 创建左方队伍
     const leftTeam: CharacterActor[] = [
       this.createActor(() => new CharacterActor('Priest')),
@@ -207,7 +200,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     const collisionThreshold = grid.getAdjacentWorldDistance() * COLLISION_THRESHOLD_MULTIPLIER;
     this._projectileSystem = new ProjectileSystem({
       collisionDetector: new DistanceCollisionDetector(collisionThreshold),
-      eventCollector: this._projectileEventCollector,
+      eventCollector: this.eventCollector,
     });
 
     // 随机放置角色
@@ -339,8 +332,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       }
     }
 
-    // 收集所有执行实例的事件（Action 产生的事件）
-    const actionEvents = this.collectExecutionEvents();
+    // 帧尾：flush 所有事件并录制
+    const frameEvents = this.eventCollector.flush();
+    this._recorder.recordFrame(this.tickCount, frameEvents);
 
     // 检查战斗是否结束（简化：100 tick 后结束）
     if (this.tickCount >= 100) {
@@ -359,32 +353,6 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       }
     }
     return false;
-  }
-
-  /**
-   * 收集所有执行实例产生的事件
-   *
-   * ExecutionInstance 有自己的 eventCollector，需要手动收集事件
-   * 以便录制到回放中。使用 flush 模式避免重复收集。
-   */
-  private collectExecutionEvents(): GameEventBase[] {
-    const events: GameEventBase[] = [];
-
-    for (const actor of this.allActors) {
-      for (const ability of actor.abilitySet.getAbilities()) {
-        for (const instance of ability.getExecutingInstances()) {
-          // flushCollectedEvents 是 AbilityExecutionInstance 的方法，
-          // 但 IAbilityExecutionInstance 接口没有暴露它
-          const instanceWithEvents = instance as { flushCollectedEvents?: () => GameEventBase[] };
-          if (instanceWithEvents.flushCollectedEvents) {
-            const instanceEvents = instanceWithEvents.flushCollectedEvents();
-            events.push(...instanceEvents);
-          }
-        }
-      }
-    }
-
-    return events;
   }
 
   /** 开始角色行动 */
@@ -531,12 +499,11 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
     // 获取所有可被命中的 Actor（包括投射物和角色）
     const allActors = [...this._projectiles, ...this.allActors];
 
-    // 更新投射物系统
+    // 更新投射物系统（事件推送到共享的 eventCollector）
     this._projectileSystem.tick(allActors, dt);
 
-    // 处理投射物事件
-    const events = this._projectileEventCollector.flush();
-    for (const event of events) {
+    // 处理投射物事件（collect 不清空，事件保留到帧尾一起 flush 录制）
+    for (const event of this.eventCollector.collect()) {
       if (isProjectileHitEvent(event)) {
         this.onProjectileHit(event);
       } else if (isProjectileMissEvent(event)) {

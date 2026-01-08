@@ -22,6 +22,19 @@ import {
 } from '../../../src/core/timeline/Timeline.js';
 import type { IAction, ActionResult } from '../../../src/core/actions/Action.js';
 import type { ExecutionContext } from '../../../src/core/actions/ExecutionContext.js';
+import { GameplayInstance } from '../../../src/core/world/GameplayInstance.js';
+import { EventCollector } from '../../../src/core/events/EventCollector.js';
+
+// Mock GameplayInstance for testing
+class MockGameplayInstance extends GameplayInstance {
+  readonly type = 'mock';
+  tick(_dt: number): void {
+    // No-op for testing
+  }
+}
+
+// 测试用的 mock 实例
+let mockInstance: MockGameplayInstance;
 
 // ========== 测试用 Mock ==========
 
@@ -81,10 +94,15 @@ describe('AbilityExecutionInstance', () => {
   beforeEach(() => {
     registry = new TimelineRegistry();
     setTimelineRegistry(registry);
+
+    // 设置 mock GameplayInstance 作为当前实例
+    mockInstance = new MockGameplayInstance('test-instance');
+    GameplayInstance._setCurrentForTesting(mockInstance);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    GameplayInstance._setCurrentForTesting(null);
   });
 
   describe('构造函数', () => {

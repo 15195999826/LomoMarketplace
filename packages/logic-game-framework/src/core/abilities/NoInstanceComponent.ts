@@ -10,15 +10,12 @@
  * |------|---------------------|---------------------------|
  * | ExecutionInstance | ❌ 不创建 | ✅ 创建 |
  * | Timeline 驱动 | ❌ | ✅ |
- * | 事件收集 | ❌ 丢弃 | ✅ 可 flush |
  * | 适用场景 | 瞬发效果 | 有时间轴的技能 |
  *
- * ## ⚠️ 事件收集说明
+ * ## 事件收集
  *
- * **重要**：NoInstanceComponent 执行 Action 后**不收集产生的事件**。
- * 每次执行都会创建临时的 EventCollector，执行完后丢弃。
- *
- * 如需收集事件（用于表演层展示），请使用 **ActivateInstanceComponent**。
+ * 事件统一推送到 GameplayInstance.getCurrent().eventCollector，
+ * 在帧尾由 GameplayInstance flush 并处理。
  *
  * ## 使用示例
  *
@@ -52,7 +49,7 @@ import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAction } from '../actions/Action.js';
 import type { ExecutionContext } from '../actions/ExecutionContext.js';
 import { createExecutionContext } from '../actions/ExecutionContext.js';
-import { EventCollector } from '../events/EventCollector.js';
+import { GameplayInstance } from '../world/GameplayInstance.js';
 import { getLogger } from '../utils/Logger.js';
 
 // ========== 类型定义 ==========
@@ -198,6 +195,8 @@ export class NoInstanceComponent extends BaseAbilityComponent {
 
   /**
    * 构建 Action 执行上下文
+   *
+   * 事件推送到 GameplayInstance.getCurrent().eventCollector
    */
   private buildExecutionContext(
     event: GameEventBase,
@@ -207,7 +206,7 @@ export class NoInstanceComponent extends BaseAbilityComponent {
     return createExecutionContext({
       eventChain: [event],
       gameplayState,
-      eventCollector: new EventCollector(),
+      eventCollector: GameplayInstance.getCurrent().eventCollector,
       ability: {
         id: context.ability.id,
         configId: context.ability.configId,

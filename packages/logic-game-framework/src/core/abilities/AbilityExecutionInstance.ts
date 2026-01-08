@@ -22,10 +22,10 @@ import type { IAction } from '../actions/Action.js';
 import type { ExecutionContext } from '../actions/ExecutionContext.js';
 import { createExecutionContext } from '../actions/ExecutionContext.js';
 import type { GameEventBase } from '../events/GameEvent.js';
-import { EventCollector } from '../events/EventCollector.js';
 import type { TimelineAsset } from '../timeline/Timeline.js';
 import { getTimelineRegistry } from '../timeline/Timeline.js';
 import type { ActorRef } from '../types/common.js';
+import { GameplayInstance } from '../world/GameplayInstance.js';
 
 // ========== 类型定义 ==========
 
@@ -110,9 +110,6 @@ export class AbilityExecutionInstance {
 
   /** 已触发的 Tag 集合 */
   private readonly triggeredTags = new Set<string>();
-
-  /** 事件收集器 */
-  private readonly eventCollector = new EventCollector();
 
   constructor(config: ExecutionInstanceConfig) {
     this.id = generateId('execution');
@@ -240,28 +237,13 @@ export class AbilityExecutionInstance {
    * 返回事件数组的副本，不会清空内部缓冲区。
    * 适用于调试、日志或只读查询。
    *
-   * @returns 事件数组副本
+   * @returns 事件数组副本（从 GameplayInstance.eventCollector）
    *
-   * @example
-   * ```typescript
-   * // 调试时查看事件
-   * console.log('Events:', instance.getCollectedEvents());
-   * ```
+   * @deprecated 事件现在统一收集到 GameplayInstance.eventCollector，
+   * 请直接使用 GameplayInstance.getCurrent().eventCollector.collect()
    */
   getCollectedEvents(): GameEventBase[] {
-    return this.eventCollector.collect();
-  }
-
-  /**
-   * 消费已收集的事件（清空缓冲区）
-   *
-   * 返回事件数组并清空内部缓冲区。
-   * 适用于回放录制等需要消费事件的场景。
-   *
-   * @returns 事件数组
-   */
-  flushCollectedEvents(): GameEventBase[] {
-    return this.eventCollector.flush();
+    return GameplayInstance.getCurrent().eventCollector.collect();
   }
 
   // ========== 内部方法 ==========
@@ -269,9 +251,8 @@ export class AbilityExecutionInstance {
   /**
    * 执行指定 Tag 的 Action 列表（内部方法，actions 已解析）
    *
-   * 注意：Action 应通过 ctx.eventCollector.push() 推送事件，
-   * 不需要在此处额外收集 ActionResult.events，因为 execContext.eventCollector
-   * 就是 this.eventCollector。
+   * Action 通过 ctx.eventCollector.push() 推送事件到
+   * GameplayInstance.getCurrent().eventCollector。
    */
   private executeActionsForTagInternal(tagName: string, actions: IAction[]): void {
     if (actions.length === 0) {
@@ -282,7 +263,7 @@ export class AbilityExecutionInstance {
 
     for (const action of actions) {
       try {
-        // 执行 Action，事件通过 ctx.eventCollector.push() 自动收集到 this.eventCollector
+        // 执行 Action，事件通过 ctx.eventCollector.push() 自动收集
         action.execute(execContext);
       } catch (error) {
         getLogger().error(`ExecutionInstance action error: ${action.type}`, {
@@ -339,7 +320,7 @@ export class AbilityExecutionInstance {
     return createExecutionContext({
       eventChain: this.eventChain,
       gameplayState: this.gameplayState,
-      eventCollector: this.eventCollector,
+      eventCollector: GameplayInstance.getCurrent().eventCollector,
       ability: {
         id: this.abilityInfo.id,
         configId: this.abilityInfo.configId,
