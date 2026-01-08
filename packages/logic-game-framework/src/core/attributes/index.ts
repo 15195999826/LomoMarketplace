@@ -144,12 +144,8 @@ export {
   calculateCurrentValue,
 } from './AttributeCalculator.js';
 
-/**
- * @internal 底层 RawAttributeSet 类
- */
-export {
-  RawAttributeSet,
-} from './AttributeSet.js';
+// RawAttributeSet 不导出到公共 API
+// 框架内部需要使用时，通过相对路径 import { RawAttributeSet } from './AttributeSet.js' 导入
 
 /**
  * @internal 底层类型定义

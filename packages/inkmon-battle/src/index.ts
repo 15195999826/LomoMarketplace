@@ -81,12 +81,7 @@ export {
   type DamageCalcResult,
 } from "./InkMonBattle.js";
 
-// ========== 旧版兼容（将逐步废弃） ==========
-export {
-  InkMonUnit,
-  createInkMonUnit,
-  type InkMonUnitConfig,
-} from "./InkMonUnit.js";
+// ========== HexBattleInstance 战斗系统 ==========
 export {
   HexBattleInstance,
   type HexBattleConfig,

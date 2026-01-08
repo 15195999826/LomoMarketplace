@@ -6,7 +6,7 @@
 
 import { hexDistance, type AxialCoord } from '@lomo/hex-grid';
 import type { HexBattleInstance } from './HexBattleInstance.js';
-import type { InkMonUnit } from './InkMonUnit.js';
+import type { InkMonActor } from './actors/InkMonActor.js';
 import { TypeSystem } from './systems/TypeSystem.js';
 
 /**
@@ -16,7 +16,7 @@ export type AIDecision = {
   /** 行动类型 */
   action: 'move' | 'attack' | 'skip';
   /** 攻击目标（action = 'attack' 时） */
-  target?: InkMonUnit;
+  target?: InkMonActor;
   /** 移动目的地（action = 'move' 时） */
   destination?: AxialCoord;
   /** 决策原因 */
@@ -37,7 +37,7 @@ export class SimpleAI {
   /**
    * 为当前单位做出决策
    */
-  decide(unit: InkMonUnit): AIDecision {
+  decide(unit: InkMonActor): AIDecision {
     // 检查单位状态
     if (!unit.hexPosition) {
       return { action: 'skip', reason: '没有位置' };
@@ -101,9 +101,9 @@ export class SimpleAI {
    * 2. 剩余 HP 最低（更容易击杀）
    */
   private selectBestTarget(
-    attacker: InkMonUnit,
-    targets: InkMonUnit[]
-  ): InkMonUnit {
+    attacker: InkMonActor,
+    targets: InkMonActor[]
+  ): InkMonActor {
     let bestTarget = targets[0];
     let bestScore = -Infinity;
 
@@ -133,12 +133,12 @@ export class SimpleAI {
    * 找到最近的敌人
    */
   private findNearestEnemy(
-    unit: InkMonUnit,
-    enemies: InkMonUnit[]
-  ): InkMonUnit | undefined {
+    unit: InkMonActor,
+    enemies: InkMonActor[]
+  ): InkMonActor | undefined {
     if (!unit.hexPosition) return undefined;
 
-    let nearestEnemy: InkMonUnit | undefined;
+    let nearestEnemy: InkMonActor | undefined;
     let nearestDistance = Infinity;
 
     for (const enemy of enemies) {
@@ -158,8 +158,8 @@ export class SimpleAI {
    * 计算向目标移动的最佳位置
    */
   private calculateBestMovePosition(
-    unit: InkMonUnit,
-    target: InkMonUnit
+    unit: InkMonActor,
+    target: InkMonActor
   ): AxialCoord | undefined {
     if (!unit.hexPosition || !target.hexPosition) return undefined;
 
@@ -189,7 +189,7 @@ export class SimpleAI {
    * 执行 AI 决策
    * @returns 是否成功执行
    */
-  executeDecision(unit: InkMonUnit, decision: AIDecision): boolean {
+  executeDecision(unit: InkMonActor, decision: AIDecision): boolean {
     switch (decision.action) {
       case 'attack':
         if (decision.target) {

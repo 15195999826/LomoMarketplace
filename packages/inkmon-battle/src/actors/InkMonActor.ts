@@ -3,22 +3,26 @@
  *
  * 基于 logic-game-framework 的 Actor 基类，整合：
  * - AttributeSet：属性管理（hp, atk, def, spAtk, spDef, speed）
- * - AbilitySet：技能和 Buff 管理
+ * - AbilitySet：技能和 Buff 管理（使用框架 AbilitySet）
  * - IRecordableActor：支持战斗录像
  *
  * ## 架构说明
  *
  * 遵循 hex-atb-battle 的架构风格：
  * - 使用 defineAttributes 创建 AttributeSet
- * - 使用 BattleAbilitySet 管理技能
+ * - 使用框架 AbilitySet 管理技能（整合自 InkMonUnit）
+ * - 构造时自动授予默认战斗 Ability
  * - ATB 系统基于 speed 属性累积
  */
 
 import {
   Actor,
   defineAttributes,
+  AbilitySet,
+  Ability,
   type AttributeSet,
   type AttributeDefConfig,
+  type AbilityConfig,
 } from '@lomo/logic-game-framework';
 
 import type { IRecordableActor, IAbilityInitData, IRecordingContext } from '@lomo/logic-game-framework/stdlib';
@@ -27,8 +31,8 @@ import { recordAttributeChanges, recordAbilitySetChanges } from '@lomo/logic-gam
 import type { AxialCoord } from '@lomo/hex-grid';
 import type { InkMon, Element } from '@inkmon/core';
 
-import { InkMonAbilitySet, createInkMonAbilitySet } from '../abilities/InkMonAbilitySet.js';
 import type { IATBUnit } from '../atb/index.js';
+import { getDefaultBattleAbilities } from '../skills/index.js';
 
 // ========== 属性定义 ==========
 
@@ -60,6 +64,8 @@ export type InkMonActorConfig = {
   team: 'A' | 'B';
   /** 攻击范围（默认 1） */
   attackRange?: number;
+  /** 初始位置（可选） */
+  position?: AxialCoord;
 };
 
 /**
@@ -83,8 +89,8 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
   /** 属性集 */
   readonly attributeSet: AttributeSet<typeof INKMON_ATTRIBUTES>;
 
-  /** 能力集 */
-  readonly abilitySet: InkMonAbilitySet;
+  /** 能力集（使用框架 AbilitySet） */
+  readonly abilitySet: AbilitySet;
 
   /** ATB 条当前值 */
   private _atbGauge: number = 0;
@@ -93,7 +99,7 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
   isActing: boolean = false;
 
   /** 六边形位置 */
-  private _hexPosition?: AxialCoord;
+  hexPosition?: AxialCoord;
 
   /** 攻击范围 */
   readonly attackRange: number;
@@ -106,6 +112,7 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
     this.primaryElement = config.inkmon.elements.primary;
     this.secondaryElement = config.inkmon.elements.secondary;
     this.attackRange = config.attackRange ?? 1;
+    this.hexPosition = config.position;
 
     // 设置队伍和显示名称
     this._team = config.team;
@@ -124,11 +131,33 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
     this.attributeSet.setSpDefBase(stats.spDef);
     this.attributeSet.setSpeedBase(stats.speed);
 
-    // 创建能力集
-    this.abilitySet = createInkMonAbilitySet(
-      this.toRef(),
-      this.attributeSet._modifierTarget
-    );
+    // 创建能力集（使用框架 AbilitySet）
+    this.abilitySet = new AbilitySet({
+      owner: this.toRef(),
+      modifierTarget: this.attributeSet._modifierTarget,
+    });
+
+    // 授予默认战斗 Ability
+    this.grantDefaultAbilities();
+  }
+
+  /**
+   * 授予默认战斗 Ability
+   */
+  private grantDefaultAbilities(): void {
+    const abilities = getDefaultBattleAbilities();
+    for (const config of abilities) {
+      const ability = new Ability(config, this.toRef());
+      this.abilitySet.grantAbility(ability);
+    }
+  }
+
+  /**
+   * 授予自定义 Ability
+   */
+  grantAbility(config: AbilityConfig): void {
+    const ability = new Ability(config, this.toRef());
+    this.abilitySet.grantAbility(ability);
   }
 
   /**
@@ -253,23 +282,18 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
 
   // ========== 位置相关 ==========
 
-  /** 获取六边形位置 */
-  get hexPosition(): AxialCoord | undefined {
-    return this._hexPosition;
-  }
-
   /**
    * 设置位置
    */
   setPosition(coord: AxialCoord): void {
-    this._hexPosition = coord;
+    this.hexPosition = coord;
   }
 
   /**
    * 清除位置
    */
   clearPosition(): void {
-    this._hexPosition = undefined;
+    this.hexPosition = undefined;
   }
 
   // ========== 战斗相关 ==========
@@ -347,6 +371,22 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
     ];
   }
 
+  // ========== Ability 相关 ==========
+
+  /**
+   * 根据 configId 查找 Ability
+   */
+  findAbilityByConfigId(configId: string) {
+    return this.abilitySet.findAbilityByConfigId(configId);
+  }
+
+  /**
+   * 获取所有 Ability
+   */
+  getAbilities() {
+    return this.abilitySet.getAbilities();
+  }
+
   // ========== 序列化 ==========
 
   serialize(): object {
@@ -358,8 +398,12 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
       secondaryElement: this.secondaryElement,
       atbGauge: this._atbGauge,
       isActing: this.isActing,
-      hexPosition: this._hexPosition,
+      hexPosition: this.hexPosition,
       attributes: this.getAttributeSnapshot(),
+      abilities: this.abilitySet.getAbilities().map((a) => ({
+        id: a.id,
+        configId: a.configId,
+      })),
     };
   }
 }
@@ -372,12 +416,13 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
 export function createInkMonActor(
   inkmon: InkMon,
   team: 'A' | 'B',
-  options?: { level?: number; attackRange?: number }
+  options?: { level?: number; attackRange?: number; position?: AxialCoord }
 ): InkMonActor {
   return new InkMonActor({
     inkmon,
     team,
     level: options?.level,
     attackRange: options?.attackRange,
+    position: options?.position,
   });
 }

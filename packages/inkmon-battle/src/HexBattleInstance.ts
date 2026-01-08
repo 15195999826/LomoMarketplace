@@ -24,7 +24,7 @@ import {
 } from '@lomo/hex-grid';
 import type { Element } from '@inkmon/core';
 import { ATBSystem, type ATBConfig } from './atb/index.js';
-import { InkMonUnit } from './InkMonUnit.js';
+import { InkMonActor } from './actors/InkMonActor.js';
 import { TypeSystem } from './systems/TypeSystem.js';
 import { BattleLogger, type LogLevel } from './logger/BattleLogger.js';
 import type {
@@ -119,7 +119,7 @@ export class HexBattleInstance extends GameplayInstance {
   private _result: BattleResult = 'ongoing';
 
   /** 单位列表 */
-  private units: InkMonUnit[] = [];
+  private units: InkMonActor[] = [];
 
   /** 确定性模式（禁用随机） */
   private readonly deterministicMode: boolean;
@@ -182,7 +182,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 添加战斗单位并放置到网格
    */
-  addUnit(unit: InkMonUnit, position: AxialCoord): boolean {
+  addUnit(unit: InkMonActor, position: AxialCoord): boolean {
     // 检查位置是否可用
     if (!this.gridModel.isPassable(position)) {
       return false;
@@ -204,7 +204,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 移除战斗单位
    */
-  removeUnit(unit: InkMonUnit): void {
+  removeUnit(unit: InkMonActor): void {
     // 从网格移除
     if (unit.hexPosition) {
       this.gridModel.removeOccupant(unit.hexPosition);
@@ -218,44 +218,44 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 获取所有单位
    */
-  getUnits(): InkMonUnit[] {
+  getUnits(): InkMonActor[] {
     return this.units;
   }
 
   /**
    * 获取指定队伍的单位
    */
-  getTeamUnits(team: 'A' | 'B'): InkMonUnit[] {
+  getTeamUnits(team: 'A' | 'B'): InkMonActor[] {
     return this.units.filter((u) => u.team === team);
   }
 
   /**
    * 获取存活的队伍单位
    */
-  getAliveTeamUnits(team: 'A' | 'B'): InkMonUnit[] {
+  getAliveTeamUnits(team: 'A' | 'B'): InkMonActor[] {
     return this.getTeamUnits(team).filter((u) => u.isActive);
   }
 
   /**
    * 获取所有存活单位
    */
-  getAliveUnits(): InkMonUnit[] {
+  getAliveUnits(): InkMonActor[] {
     return this.units.filter((u) => u.isActive);
   }
 
   /**
    * 通过 ID 获取单位
    */
-  getUnitById(id: string): InkMonUnit | undefined {
+  getUnitById(id: string): InkMonActor | undefined {
     return this.units.find((u) => u.id === id);
   }
 
   /**
-   * 获取 InkMonUnit Actor（供 Action 使用）
+   * 获取 InkMonActor Actor（供 Action 使用）
    *
    * 注意：这个方法名与基类不同，避免类型冲突
    */
-  getInkMonActor(id: string): InkMonUnit | undefined {
+  getInkMonActor(id: string): InkMonActor | undefined {
     return this.getUnitById(id);
   }
 
@@ -270,7 +270,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 获取存活单位列表（供 Action 使用）
    */
-  get aliveActors(): InkMonUnit[] {
+  get aliveActors(): InkMonActor[] {
     return this.getAliveUnits();
   }
 
@@ -279,7 +279,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 获取当前可行动的单位
    */
-  getCurrentUnit(): InkMonUnit | null {
+  getCurrentUnit(): InkMonActor | null {
     const unitId = this.atbSystem.getCurrentUnitId();
     if (!unitId) return null;
     return this.getUnitById(unitId) ?? null;
@@ -301,8 +301,8 @@ export class HexBattleInstance extends GameplayInstance {
    * FinalDamage = BaseDamage × STAB × TypeMult × Crit × Random
    */
   calculateDamage(
-    attacker: InkMonUnit,
-    target: InkMonUnit,
+    attacker: InkMonActor,
+    target: InkMonActor,
     power: number,
     element: Element,
     category: 'physical' | 'special' = 'physical'
@@ -365,10 +365,10 @@ export class HexBattleInstance extends GameplayInstance {
    * @param options 附加选项（目标、坐标等）
    */
   useAbility(
-    unit: InkMonUnit,
+    unit: InkMonActor,
     abilityConfigId: string,
     options?: {
-      target?: InkMonUnit;
+      target?: InkMonActor;
       targetCoord?: AxialCoord;
       element?: Element;
       power?: number;
@@ -417,7 +417,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 驱动单位的 Ability 执行
    */
-  private driveAbilityExecutions(unit: InkMonUnit, dt: number): void {
+  private driveAbilityExecutions(unit: InkMonActor, dt: number): void {
     // 驱动执行实例
     unit.abilitySet.tickExecutions(dt);
   }
@@ -466,7 +466,7 @@ export class HexBattleInstance extends GameplayInstance {
    *
    * 使用 Ability 系统执行移动。
    */
-  executeMove(unit: InkMonUnit, to: AxialCoord): ActionResult {
+  executeMove(unit: InkMonActor, to: AxialCoord): ActionResult {
     const events: InkMonBattleEvent[] = [];
 
     // 检查是否是当前行动单位
@@ -531,8 +531,8 @@ export class HexBattleInstance extends GameplayInstance {
    * @param category 伤害类型（默认物理）
    */
   executeAttack(
-    attacker: InkMonUnit,
-    target: InkMonUnit,
+    attacker: InkMonActor,
+    target: InkMonActor,
     skillName: string = '普通攻击',
     power: number = 40,
     element?: Element,
@@ -661,7 +661,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 跳过行动
    */
-  executeSkip(unit: InkMonUnit): ActionResult {
+  executeSkip(unit: InkMonActor): ActionResult {
     const events: InkMonBattleEvent[] = [];
 
     if (this.getCurrentUnit()?.id !== unit.id) {
@@ -688,7 +688,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 结束当前单位的回合
    */
-  private endTurn(unit: InkMonUnit): void {
+  private endTurn(unit: InkMonActor): void {
     // 重置 ATB
     unit.atbGauge = 0;
     unit.isActing = false;
@@ -711,7 +711,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 获取单位可移动到的位置
    */
-  getMovablePositions(unit: InkMonUnit): AxialCoord[] {
+  getMovablePositions(unit: InkMonActor): AxialCoord[] {
     if (!unit.hexPosition) return [];
 
     // 只能移动 1 格
@@ -723,7 +723,7 @@ export class HexBattleInstance extends GameplayInstance {
   /**
    * 获取单位可攻击的目标
    */
-  getAttackableTargets(unit: InkMonUnit): InkMonUnit[] {
+  getAttackableTargets(unit: InkMonActor): InkMonActor[] {
     if (!unit.hexPosition) return [];
 
     const enemies = this.getAliveTeamUnits(unit.team === 'A' ? 'B' : 'A');
@@ -759,7 +759,7 @@ export class HexBattleInstance extends GameplayInstance {
    *
    * @returns 当前准备行动的单位（如果有）
    */
-  advanceAndGetCurrentUnit(dt: number): InkMonUnit | null {
+  advanceAndGetCurrentUnit(dt: number): InkMonActor | null {
     if (!this.isOngoing) return null;
     if (this.state !== 'running') return null;
 
