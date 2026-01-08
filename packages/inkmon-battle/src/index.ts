@@ -75,18 +75,18 @@ export { ATBSystem, type ATBConfig, type IATBUnit } from "./atb/index.js";
 export {
   InkMonBattle,
   createInkMonBattle,
+  runInkMonBattle,
   type InkMonBattleConfig,
   type BattleResult,
   type ActionResult,
   type DamageCalcResult,
 } from "./InkMonBattle.js";
 
-// ========== HexBattleInstance 战斗系统 ==========
+// ========== GameWorld ==========
 export {
-  HexBattleInstance,
-  type HexBattleConfig,
-} from "./HexBattleInstance.js";
-export { SimpleAI, type AIDecision } from "./SimpleAI.js";
+  InkMonBattleGameWorld,
+  type InkMonBattleGameWorldConfig,
+} from "./world/index.js";
 
 // ========== 重新导出常用类型 ==========
 export type { AxialCoord } from "@lomo/hex-grid";

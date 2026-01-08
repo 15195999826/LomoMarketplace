@@ -136,15 +136,21 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
       owner: this.toRef(),
       modifierTarget: this.attributeSet._modifierTarget,
     });
+  }
 
-    // 授予默认战斗 Ability
+  /**
+   * Actor 生命周期：添加到 GameplayInstance 时调用
+   * 在此时 GameWorld 已初始化，可以安全地授予 Ability
+   */
+  override onSpawn(): void {
+    super.onSpawn();
     this.grantDefaultAbilities();
   }
 
   /**
    * 授予默认战斗 Ability
    */
-  private grantDefaultAbilities(): void {
+  grantDefaultAbilities(): void {
     const abilities = getDefaultBattleAbilities();
     for (const config of abilities) {
       const ability = new Ability(config, this.toRef());

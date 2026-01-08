@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from "next/server";
 import { getInkMonByNameEn, type InkMon } from "@inkmon/core";
 import {
-  createInkMonBattle,
+  runInkMonBattle,
   ReplayLogPrinter,
   type IBattleRecord,
   type InkMonBattleConfig,
@@ -44,57 +44,6 @@ export interface SimulateBattleErrorResponse {
 }
 
 type ApiResponse = SimulateBattleResponse | SimulateBattleErrorResponse;
-
-// ========== 辅助函数 ==========
-
-function runSimpleAI(battle: ReturnType<typeof createInkMonBattle>): void {
-  while (battle.isOngoing) {
-    const currentUnit = battle.advanceToNextUnit();
-    if (!currentUnit) break;
-
-    // 简单 AI：尝试攻击，否则移动或跳过
-    const targets = battle.getAttackableTargets(currentUnit);
-    if (targets.length > 0) {
-      // 攻击第一个目标
-      const target = targets[0];
-      const elements = currentUnit.getElements();
-      const element = elements[0] ?? "Normal";
-      battle.executeAttack(currentUnit, target, 60, element, "physical");
-    } else {
-      // 移动或跳过
-      const movablePositions = battle.getMovablePositions(currentUnit);
-      if (movablePositions.length > 0) {
-        // 朝敌人方向移动
-        const enemies = battle.aliveActors.filter(
-          (a) => a.team !== currentUnit.team,
-        );
-        if (enemies.length > 0) {
-          const enemy = enemies[0];
-          const enemyPos = enemy.hexPosition;
-          const currentPos = currentUnit.hexPosition;
-          if (enemyPos && currentPos) {
-            // 选择距离敌人最近的位置
-            let bestPos = movablePositions[0];
-            let bestDist = Infinity;
-            for (const pos of movablePositions) {
-              const dist =
-                Math.abs(pos.q - enemyPos.q) + Math.abs(pos.r - enemyPos.r);
-              if (dist < bestDist) {
-                bestDist = dist;
-                bestPos = pos;
-              }
-            }
-            battle.executeMove(currentUnit, bestPos);
-          }
-        }
-      } else {
-        battle.executeSkip(currentUnit);
-      }
-    }
-
-    battle.endTurn();
-  }
-}
 
 // ========== API Handler ==========
 
@@ -167,15 +116,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
       maxTurns: body.config?.maxTurns ?? 100,
     };
 
-    // 创建并运行战斗
-    const battle = createInkMonBattle(teamAInkmons, teamBInkmons, battleConfig);
-    battle.start();
-
-    // 运行 AI 直到战斗结束
-    runSimpleAI(battle);
-
-    // 获取 replay
-    const replay = battle.getReplay();
+    // 运行战斗并获取 replay（AI 决策在 InkMonBattle.tick() 内部处理）
+    const replay = runInkMonBattle(teamAInkmons, teamBInkmons, battleConfig);
 
     // 轻量级数据完整性校验
     if (replay.version !== "2.0") {

@@ -23,6 +23,8 @@ import {
   EventCollector,
   type IGameplayStateProvider,
   Actor,
+  type ExecutionContext,
+  getTimelineRegistry,
 } from "@lomo/logic-game-framework";
 
 import {
@@ -55,6 +57,13 @@ import {
   TYPE_CHART,
   getEffectivenessLevel,
 } from "./types/TypeEffectiveness.js";
+import {
+  INKMON_TIMELINES,
+  ABILITY_CONFIG_ID,
+  createActionUseEvent,
+  type ActionUseEvent,
+} from "./skills/index.js";
+import { InkMonBattleGameWorld } from "./world/index.js";
 
 // ========== 辅助函数 ==========
 
@@ -539,6 +548,70 @@ export class InkMonBattle
   }
 
   /**
+   * 使用框架 Ability 系统执行技能
+   *
+   * @param actor 执行单位
+   * @param abilityConfigId Ability 配置 ID
+   * @param options 附加选项（目标、坐标等）
+   */
+  useAbility(
+    actor: InkMonActor,
+    abilityConfigId: string,
+    options?: {
+      target?: InkMonActor;
+      targetCoord?: AxialCoord;
+      element?: Element;
+      power?: number;
+      damageCategory?: "physical" | "special";
+    }
+  ): ActionResult {
+    const events: GameEventBase[] = [];
+
+    // 查找 Ability
+    const ability = actor.findAbilityByConfigId(abilityConfigId);
+    if (!ability) {
+      return {
+        success: false,
+        message: `Ability not found: ${abilityConfigId}`,
+        events,
+      };
+    }
+
+    // 创建激活事件
+    const activateEvent = createActionUseEvent(ability.id, actor.id, {
+      target: options?.target?.toRef(),
+      targetCoord: options?.targetCoord,
+      element: options?.element,
+      power: options?.power,
+      damageCategory: options?.damageCategory,
+    });
+
+    // 发送事件到 AbilitySet（触发 Ability）
+    actor.abilitySet.receiveEvent(activateEvent, this);
+
+    // 收集产生的事件
+    const producedEvents = this.eventCollector.flush();
+    events.push(...producedEvents);
+
+    // 驱动 Timeline 执行（立即执行所有 tag actions）
+    this.driveAbilityExecutions(actor, 1000); // 假设 1 秒足够执行完
+
+    // 收集 Timeline 执行产生的事件
+    const timelineEvents = this.eventCollector.flush();
+    events.push(...timelineEvents);
+
+    return { success: true, events };
+  }
+
+  /**
+   * 驱动单位的 Ability 执行
+   */
+  private driveAbilityExecutions(actor: InkMonActor, dt: number): void {
+    // 驱动执行实例
+    actor.abilitySet.tickExecutions(dt);
+  }
+
+  /**
    * 结束当前回合
    */
   endTurn(): void {
@@ -767,17 +840,122 @@ export class InkMonBattle
       actor.abilitySet.tick(dt, this.logicTime);
     }
 
+    // 检查是否有单位可行动（ATB 满了）
+    const currentUnit = this.getCurrentUnit();
+    if (currentUnit && !currentUnit.isActing) {
+      this.executeActorTurn(currentUnit);
+    }
+
     // 收集本帧事件
     const frameEvents = this.eventCollector.flush();
 
     // 录制
     this._recorder.recordFrame(this._tickCount, frameEvents);
 
-    // 检查结束条件
+    // 检查战斗结束
+    this.checkBattleEnd();
+
+    // 检查回合数限制
     if (this._turnCount >= this._maxTurns && this._result === "ongoing") {
       this._result = "draw";
       this.endBattle();
     }
+  }
+
+  /**
+   * 执行角色回合（AI 决策 + 行动）
+   */
+  private executeActorTurn(actor: InkMonActor): void {
+    actor.isActing = true;
+    this._turnCount++;
+
+    // 产生回合开始事件
+    const turnStartEvent = createTurnStartEvent(this._turnCount, actor.id);
+    this.eventCollector.push(turnStartEvent);
+
+    // 日志
+    this.logger.turnStart(actor.displayName, actor.hp, actor.maxHp);
+
+    // AI 决策：优先攻击，否则移动，否则跳过
+    const targets = this.getAttackableTargets(actor);
+    if (targets.length > 0) {
+      // 攻击
+      const target = this.selectBestTarget(actor, targets);
+      const element = actor.getElements()[0] ?? "fire";
+      this.executeAttack(actor, target, 60, element, "physical");
+    } else {
+      // 尝试移动向敌人靠近
+      const moved = this.tryMoveTowardsEnemy(actor);
+      if (!moved) {
+        this.executeSkip(actor);
+      }
+    }
+
+    // 结束回合
+    this.endTurn();
+  }
+
+  /**
+   * 选择最佳攻击目标（优先低血量）
+   */
+  private selectBestTarget(
+    _attacker: InkMonActor,
+    targets: InkMonActor[],
+  ): InkMonActor {
+    // 简单策略：选择血量最低的
+    return targets.reduce((best, current) =>
+      current.hp < best.hp ? current : best
+    );
+  }
+
+  /**
+   * 尝试向敌人移动
+   */
+  private tryMoveTowardsEnemy(actor: InkMonActor): boolean {
+    const pos = actor.hexPosition;
+    if (!pos) return false;
+
+    const enemies = this.aliveActors.filter((a) => a.team !== actor.team);
+    if (enemies.length === 0) return false;
+
+    // 找最近的敌人
+    let nearestEnemy: InkMonActor | undefined;
+    let nearestDist = Infinity;
+    for (const enemy of enemies) {
+      const enemyPos = enemy.hexPosition;
+      if (enemyPos) {
+        const dist = hexDistance(pos, enemyPos);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestEnemy = enemy;
+        }
+      }
+    }
+
+    if (!nearestEnemy || !nearestEnemy.hexPosition) return false;
+
+    // 找可移动的格子
+    const movable = this.getMovablePositions(actor);
+    if (movable.length === 0) return false;
+
+    // 选择最靠近敌人的格子
+    let bestPos = movable[0];
+    let bestDist = hexDistance(bestPos, nearestEnemy.hexPosition);
+    for (const p of movable) {
+      const d = hexDistance(p, nearestEnemy.hexPosition);
+      if (d < bestDist) {
+        bestDist = d;
+        bestPos = p;
+      }
+    }
+
+    // 只有更近才移动
+    if (bestDist < nearestDist) {
+      this.executeMove(actor, bestPos);
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -905,14 +1083,89 @@ export class InkMonBattle
 // ========== 工厂函数 ==========
 
 /**
- * 创建 InkMon 战斗实例
+ * 创建 InkMon 战斗实例（低级 API）
+ *
+ * 此函数会自动处理 GameWorld 的初始化：
+ * 1. 检查 GameWorld 是否已初始化，如果没有则初始化（仅首次）
+ * 2. 注册所有技能 Timeline（仅首次）
+ * 3. 使用 world.createInstance() 创建战斗实例
+ *
+ * 注意：此函数仅创建战斗实例，不会运行战斗。
+ * 对于简单的同步战斗场景，推荐使用 runInkMonBattle()
  */
 export function createInkMonBattle(
   teamAInkmons: InkMon[],
   teamBInkmons: InkMon[],
   config?: InkMonBattleConfig,
 ): InkMonBattle {
-  const battle = new InkMonBattle(config);
+  // 检查 GameWorld 是否已初始化
+  let world: InkMonBattleGameWorld;
+
+  try {
+    world = InkMonBattleGameWorld.getInstance();
+  } catch {
+    // GameWorld 未初始化，创建新的（仅首次）
+    world = InkMonBattleGameWorld.init();
+
+    // 注册 Timeline（使用全局注册表）
+    const timelineRegistry = getTimelineRegistry();
+    for (const timeline of INKMON_TIMELINES) {
+      timelineRegistry.register(timeline);
+    }
+  }
+
+  // 使用 world.createInstance() 创建战斗实例
+  const battle = world.createInstance(() => new InkMonBattle(config));
+
+  // 初始化战斗
   battle.initialize(teamAInkmons, teamBInkmons);
+
   return battle;
+}
+
+/**
+ * 运行完整 InkMon 战斗并返回录像
+ *
+ * 遵循框架 GameWorld/GameplayInstance 设计：
+ * 1. 初始化 GameWorld
+ * 2. 创建战斗实例
+ * 3. 同步 tick 循环直到结束（无 sleep，一帧跑完）
+ * 4. 返回战斗录像
+ * 5. 清理 GameWorld
+ *
+ * AI 决策逻辑在 InkMonBattle.tick() 内部处理
+ */
+export function runInkMonBattle(
+  teamAInkmons: InkMon[],
+  teamBInkmons: InkMon[],
+  config?: InkMonBattleConfig,
+): IBattleRecord {
+  // 1. 初始化 GameWorld
+  const world = InkMonBattleGameWorld.init();
+
+  try {
+    // 注册 Timeline
+    const timelineRegistry = getTimelineRegistry();
+    for (const timeline of INKMON_TIMELINES) {
+      timelineRegistry.register(timeline);
+    }
+
+    // 2. 创建战斗实例
+    const battle = world.createInstance(() => new InkMonBattle(config));
+    battle.initialize(teamAInkmons, teamBInkmons);
+    battle.start();
+
+    const tickInterval = config?.tickInterval ?? 100;
+
+    // 3. 同步 tick 循环（无 sleep，一帧跑完）
+    while (world.hasRunningInstances) {
+      world.tickAll(tickInterval);
+    }
+
+    // 4. 获取录像
+    return battle.getReplay();
+  } finally {
+    // 5. 清理 GameWorld
+    InkMonBattleGameWorld.destroy();
+  }
 }
