@@ -11,6 +11,7 @@
 
 import {
   GameplayInstance,
+  GameWorld,
   type GameEventBase,
 } from "@lomo/logic-game-framework";
 
@@ -180,7 +181,7 @@ export class TurnBasedBattle extends GameplayInstance {
 
     // 创建技能执行器
     this._skillExecutor = createSkillExecutor(
-      this.eventCollector,
+      GameWorld.getInstance().eventCollector,
       this._targetResolver,
     );
 
@@ -446,7 +447,7 @@ export class TurnBasedBattle extends GameplayInstance {
     }
 
     // 分发收集到的事件给监听器
-    const events = this.eventCollector.flush();
+    const events = GameWorld.getInstance().eventCollector.flush();
     this._eventBus.dispatch(events);
   }
 
@@ -578,7 +579,7 @@ export class TurnBasedBattle extends GameplayInstance {
     this._logger.battleStart(this._teamA, this._teamB);
 
     // 发出战斗开始事件
-    this.eventCollector.push(
+    GameWorld.getInstance().eventCollector.push(
       createBattleStartEvent(
         this.id,
         this._teamA.map((u) => u.id),
@@ -630,7 +631,7 @@ export class TurnBasedBattle extends GameplayInstance {
     }
 
     // 发出回合开始事件
-    this.eventCollector.push(
+    GameWorld.getInstance().eventCollector.push(
       createRoundStartEvent(
         this._context.round,
         sortedUnits.map((u) => u.id),
@@ -676,7 +677,7 @@ export class TurnBasedBattle extends GameplayInstance {
     character.onGetTurn();
 
     // 发出行动开始事件
-    this.eventCollector.push(
+    GameWorld.getInstance().eventCollector.push(
       createTurnStartEvent(
         character.id,
         character.hp,
@@ -698,7 +699,7 @@ export class TurnBasedBattle extends GameplayInstance {
 
     if (isStunned) {
       this._logger.characterSkipTurn(character, "眩晕");
-      this.eventCollector.push(createSkipTurnEvent(characterId, "眩晕"));
+      GameWorld.getInstance().eventCollector.push(createSkipTurnEvent(characterId, "眩晕"));
 
       // 回放：记录跳过的行动
       if (this._replayRecorder) {
@@ -776,7 +777,7 @@ export class TurnBasedBattle extends GameplayInstance {
       if (character && !character.isDead) {
         character.onEndTurn();
         this._logger.characterEndTurn(character);
-        this.eventCollector.push(createTurnEndEvent(characterId));
+        GameWorld.getInstance().eventCollector.push(createTurnEndEvent(characterId));
       }
     }
 
@@ -794,7 +795,7 @@ export class TurnBasedBattle extends GameplayInstance {
     const aliveB = this.getTeamAliveUnits(1).length;
 
     // 发出回合结束事件
-    this.eventCollector.push(
+    GameWorld.getInstance().eventCollector.push(
       createRoundEndEvent(this._context.round, aliveA, aliveB),
     );
 
@@ -819,7 +820,7 @@ export class TurnBasedBattle extends GameplayInstance {
       Defeat: "Defeat",
       Draw: "Draw",
     };
-    this.eventCollector.push(
+    GameWorld.getInstance().eventCollector.push(
       createBattleEndEvent(
         this.id,
         resultMap[this._context.battleResult] ?? "Draw",
@@ -969,7 +970,7 @@ export class TurnBasedBattle extends GameplayInstance {
     );
 
     // 记录执行前的事件数量，用于收集本次行动产生的事件
-    const eventCountBefore = this.eventCollector.count;
+    const eventCountBefore = GameWorld.getInstance().eventCollector.count;
 
     switch (command.type) {
       case "ability":
@@ -988,7 +989,7 @@ export class TurnBasedBattle extends GameplayInstance {
     // 回放：记录本次行动
     if (this._replayRecorder) {
       // 收集本次行动产生的事件
-      const allEvents = this.eventCollector.collect();
+      const allEvents = GameWorld.getInstance().eventCollector.collect();
       const turnEvents = allEvents.slice(eventCountBefore) as BattleEvent[];
 
       // 获取 AI 决策信息（如果有）
@@ -1209,7 +1210,7 @@ export class TurnBasedBattle extends GameplayInstance {
     executor.setGridPosition(command.targetPosition);
 
     // 发出移动事件
-    this.eventCollector.push(
+    GameWorld.getInstance().eventCollector.push(
       createMoveEvent(executor.id, oldPos, command.targetPosition),
     );
 
