@@ -18,14 +18,14 @@ import type { TimelineAsset } from '@lomo/logic-game-framework';
 
 /**
  * 移动 Timeline
- * - 快速移动到相邻格子
+ * - 移动到相邻格子
  */
 export const MOVE_TIMELINE: TimelineAsset = {
   id: 'action_move',
-  totalDuration: 200,
+  totalDuration: 500,
   tags: {
-    execute: 100, // 100ms 时执行移动
-    end: 200,
+    execute: 250, // 中点执行移动逻辑
+    end: 500,
   },
 };
 
@@ -34,9 +34,9 @@ export const MOVE_TIMELINE: TimelineAsset = {
  */
 export const SKIP_TIMELINE: TimelineAsset = {
   id: 'action_skip',
-  totalDuration: 100,
+  totalDuration: 200,
   tags: {
-    end: 100,
+    end: 200,
   },
 };
 
@@ -44,27 +44,27 @@ export const SKIP_TIMELINE: TimelineAsset = {
 
 /**
  * 普通攻击 Timeline
- * - 快速近战攻击
+ * - 标准近战攻击
  */
 export const BASIC_ATTACK_TIMELINE: TimelineAsset = {
   id: 'skill_basic_attack',
-  totalDuration: 400,
+  totalDuration: 1000,
   tags: {
-    hit: 200, // 200ms 时命中
-    end: 400,
+    hit: 500, // 中点命中
+    end: 1000,
   },
 };
 
 /**
  * 物理攻击 Timeline
- * - 标准近战技能
+ * - 近战技能（有前摇动作）
  */
 export const PHYSICAL_ATTACK_TIMELINE: TimelineAsset = {
   id: 'skill_physical',
-  totalDuration: 500,
+  totalDuration: 1200,
   tags: {
-    hit: 300,
-    end: 500,
+    hit: 700, // 前摇后命中
+    end: 1200,
   },
 };
 
@@ -74,27 +74,27 @@ export const PHYSICAL_ATTACK_TIMELINE: TimelineAsset = {
  */
 export const SPECIAL_ATTACK_TIMELINE: TimelineAsset = {
   id: 'skill_special',
-  totalDuration: 800,
+  totalDuration: 1500,
   tags: {
-    cast: 200,   // 施法动作
-    launch: 400, // 发射/释放
-    hit: 600,    // 命中
-    end: 800,
+    cast: 400,    // 施法动作
+    launch: 800,  // 发射/释放
+    hit: 1200,    // 命中
+    end: 1500,
   },
 };
 
 /**
  * 多段攻击 Timeline
- * - 快速连击
+ * - 三连击
  */
 export const MULTI_HIT_TIMELINE: TimelineAsset = {
   id: 'skill_multi_hit',
-  totalDuration: 600,
+  totalDuration: 1400,
   tags: {
-    hit1: 150,
-    hit2: 300,
-    hit3: 450,
-    end: 600,
+    hit1: 400,
+    hit2: 700,
+    hit3: 1000,
+    end: 1400,
   },
 };
 
@@ -105,10 +105,10 @@ export const MULTI_HIT_TIMELINE: TimelineAsset = {
  */
 export const HEAL_TIMELINE: TimelineAsset = {
   id: 'skill_heal',
-  totalDuration: 500,
+  totalDuration: 1000,
   tags: {
-    heal: 300,
-    end: 500,
+    heal: 600,
+    end: 1000,
   },
 };
 
@@ -117,10 +117,10 @@ export const HEAL_TIMELINE: TimelineAsset = {
  */
 export const BUFF_TIMELINE: TimelineAsset = {
   id: 'skill_buff',
-  totalDuration: 400,
+  totalDuration: 800,
   tags: {
-    apply: 200,
-    end: 400,
+    apply: 400,
+    end: 800,
   },
 };
 

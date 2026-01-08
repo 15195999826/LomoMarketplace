@@ -11,6 +11,7 @@ export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from "next/server";
 import { getInkMonByNameEn, type InkMon } from "@inkmon/core";
+import { initDb } from "@/lib/db";
 import {
   runInkMonBattle,
   ReplayLogPrinter,
@@ -49,6 +50,9 @@ type ApiResponse = SimulateBattleResponse | SimulateBattleErrorResponse;
 
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
+    // 初始化数据库连接（确保使用正确的数据库路径）
+    initDb();
+
     const body = (await request.json()) as SimulateBattleRequest;
 
     // 验证请求

@@ -5,5 +5,6 @@ export {
   ActivationError,
   Position,
   Direction,
+  Vector3,
   createActivationError,
 } from './common.js';

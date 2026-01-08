@@ -3,6 +3,7 @@
  */
 
 import type { IBattleRecord, IActorInitData, IFrameData, GameEventBase } from "@inkmon/battle";
+import { worldToHex, type HexMapConfig } from "@lomo/hex-grid";
 
 // 重新导出 GameEventBase（来自 @lomo/logic-game-framework）
 export type { GameEventBase };
@@ -160,8 +161,11 @@ export interface ReplaySummary {
 export function createInitialState(replay: IBattleRecord): ReplayPlayerState {
   const actors = new Map<string, ActorState>();
 
+  // 从 replay.configs.map 获取地图配置
+  const mapConfig = replay.configs?.map as HexMapConfig | undefined;
+
   for (const actor of replay.initialActors) {
-    actors.set(actor.id, createActorState(actor));
+    actors.set(actor.id, createActorState(actor, mapConfig));
   }
 
   return {
@@ -179,10 +183,36 @@ export function createInitialState(replay: IBattleRecord): ReplayPlayerState {
 
 /**
  * 从 IActorInitData 创建 ActorState
+ *
+ * @param actor Actor 初始数据
+ * @param mapConfig 地图配置（用于 world -> hex 坐标转换）
  */
-export function createActorState(actor: IActorInitData): ActorState {
-  const hex = actor.position?.hex;
+export function createActorState(
+  actor: IActorInitData,
+  mapConfig?: HexMapConfig
+): ActorState {
   const elements = (actor as { elements?: string[] }).elements ?? [];
+
+  // 优先使用 hex 坐标，如果没有则从 world 坐标转换
+  let position: { q: number; r: number };
+
+  if (actor.position?.hex) {
+    // 直接使用 hex 坐标
+    position = { q: actor.position.hex.q, r: actor.position.hex.r };
+  } else if (actor.position?.world && mapConfig) {
+    // 从 world 坐标转换为 hex 坐标
+    const hexCoord = worldToHex(
+      { x: actor.position.world.x, y: actor.position.world.y },
+      {
+        hexSize: mapConfig.hexSize,
+        orientation: mapConfig.orientation,
+      }
+    );
+    position = { q: hexCoord.q, r: hexCoord.r };
+  } else {
+    // 默认位置
+    position = { q: 0, r: 0 };
+  }
 
   return {
     id: actor.id,
@@ -190,7 +220,7 @@ export function createActorState(actor: IActorInitData): ActorState {
     team: actor.team === "A" || actor.team === 1 ? "A" : "B",
     hp: actor.attributes.hp ?? 0,
     maxHp: actor.attributes.maxHp ?? actor.attributes.hp ?? 100,
-    position: hex ? { q: hex.q, r: hex.r } : { q: 0, r: 0 },
+    position,
     isAlive: true,
     elements,
   };

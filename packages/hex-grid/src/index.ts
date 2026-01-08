@@ -72,6 +72,7 @@ export {
   type OccupantUpdateEvent,
   type OccupantMoveEvent,
   type DrawMode,
+  type HexMapConfig,
   type HexGridConfig,
   HexGridModel,
 } from './HexGridModel.js';

@@ -687,9 +687,9 @@ export class InkMonBattle
       this._units.set(actor.id, actor);
     }
 
-    // 放置队伍 - 使用确定性的位置分配，避免重叠
-    this.placeTeamDeterministically(teamA, -3, 3);  // 队伍A 放在左侧区域
-    this.placeTeamDeterministically(teamB, -3, 3);  // 队伍B 放在右侧区域
+    // 放置队伍 - 使用确定性的位置分配，关于中心对称
+    this.placeTeamDeterministically(teamA, -3, 3);  // 队伍A 放在左侧 (-3, 0)
+    this.placeTeamDeterministically(teamB, 3, 3);   // 队伍B 放在右侧 (3, 0) - 对称
 
     // 初始化录制器
     this._recorder = new BattleRecorder({
@@ -771,14 +771,9 @@ export class InkMonBattle
   }
 
   protected override onStart(): void {
-    // 开始录制
+    // 开始录制（使用 grid.toMapConfig() 导出地图配置）
     this._recorder.startRecording(this.allActors, {
-      map: {
-        type: "hex",
-        rows: this._config.mapHeight,
-        columns: this._config.mapWidth,
-        hexSize: this._config.hexSize,
-      },
+      map: this._context.grid.toMapConfig(),
     });
 
     // 产生战斗开始事件

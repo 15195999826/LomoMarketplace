@@ -117,6 +117,24 @@ export type OccupantMoveEvent = {
 export type DrawMode = 'baseOnRowColumn' | 'baseOnRadius';
 
 /**
+ * 六边形地图配置（用于序列化/回放）
+ *
+ * 包含重建地图所需的最小信息
+ */
+export type HexMapConfig = {
+  /** 地图类型标识 */
+  type: "hex";
+  /** 行数 */
+  rows: number;
+  /** 列数 */
+  columns: number;
+  /** 六边形尺寸 */
+  hexSize: number;
+  /** 六边形方向 */
+  orientation: HexOrientation;
+};
+
+/**
  * 网格配置
  */
 export type HexGridConfig = {
@@ -664,8 +682,20 @@ export class HexGridModel<T = unknown> {
   // ========== 序列化 ==========
 
   /**
-   * 序列化为普通对象
+   * 导出地图配置（用于序列化/回放）
+   *
+   * 返回重建地图所需的最小配置
    */
+  toMapConfig(): HexMapConfig {
+    return {
+      type: "hex",
+      rows: this.config.rows,
+      columns: this.config.columns,
+      hexSize: this.config.hexSize,
+      orientation: this.config.orientation,
+    };
+  }
+
   serialize(): object {
     const tiles: Array<{
       coord: AxialCoord;

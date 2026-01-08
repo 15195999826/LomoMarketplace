@@ -20,6 +20,7 @@ import {
   defineAttributes,
   AbilitySet,
   Ability,
+  Vector3,
   type AttributeSet,
   type AttributeDefConfig,
   type AbilityConfig,
@@ -28,7 +29,7 @@ import {
 import type { IRecordableActor, IAbilityInitData, IRecordingContext } from '@lomo/logic-game-framework/stdlib';
 import { recordAttributeChanges, recordAbilitySetChanges } from '@lomo/logic-game-framework/stdlib';
 
-import type { AxialCoord } from '@lomo/hex-grid';
+import { hexToWorld, type AxialCoord } from '@lomo/hex-grid';
 import type { InkMon, Element } from '@inkmon/core';
 
 import type { IATBUnit } from '../atb/index.js';
@@ -287,6 +288,25 @@ export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
   }
 
   // ========== 位置相关 ==========
+
+  /** 默认 hexSize（与 InkMonBattle 配置一致） */
+  private static readonly DEFAULT_HEX_SIZE = 100;
+
+  /**
+   * 获取世界坐标位置（供 BattleRecorder 使用）
+   *
+   * 将 hexPosition 转换为 world 坐标，使用默认的 hexSize 和 flat orientation
+   */
+  override get position(): Vector3 | undefined {
+    if (!this.hexPosition) return undefined;
+
+    const pixel = hexToWorld(this.hexPosition, {
+      hexSize: InkMonActor.DEFAULT_HEX_SIZE,
+      orientation: 'flat',
+    });
+
+    return new Vector3(pixel.x, pixel.y, 0);
+  }
 
   /**
    * 设置位置
