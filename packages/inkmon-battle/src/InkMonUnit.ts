@@ -1,13 +1,23 @@
 /**
  * InkMonUnit - InkMon 战斗单位
  *
- * 继承自 Actor，整合 RawAttributeSet 管理属性
+ * 继承自 Actor，整合：
+ * - RawAttributeSet：属性管理
+ * - AbilitySet：技能和 Buff 管理
  */
 
-import { Actor, RawAttributeSet } from '@lomo/logic-game-framework';
+import {
+  Actor,
+  RawAttributeSet,
+  AbilitySet,
+  Ability,
+  type IAttributeModifierTarget,
+  type AbilityConfig,
+} from '@lomo/logic-game-framework';
 import type { AxialCoord } from '@lomo/hex-grid';
 import type { InkMon, Element } from '@inkmon/core';
 import type { IATBUnit } from './atb/index.js';
+import { getDefaultBattleAbilities } from './skills/index.js';
 
 /**
  * InkMon 战斗单位配置
@@ -65,6 +75,9 @@ export class InkMonUnit extends Actor implements IATBUnit {
   /** 属性集 */
   readonly attributes: RawAttributeSet;
 
+  /** 能力集 */
+  readonly abilitySet: AbilitySet;
+
   /** ATB 条当前值 */
   atbGauge: number = 0;
 
@@ -104,6 +117,53 @@ export class InkMonUnit extends Actor implements IATBUnit {
       { name: ATTR.SP_DEF, baseValue: config.inkmon.stats.sp_defense },
       { name: ATTR.SPEED, baseValue: config.inkmon.stats.speed },
     ]);
+
+    // 创建 ModifierTarget 适配器
+    const modifierTarget = this.createModifierTarget();
+
+    // 初始化能力集
+    this.abilitySet = new AbilitySet({
+      owner: this.toRef(),
+      modifierTarget,
+    });
+
+    // 授予默认战斗 Ability
+    this.grantDefaultAbilities();
+  }
+
+  /**
+   * 创建 ModifierTarget 适配器
+   *
+   * 将 RawAttributeSet 适配为 IAttributeModifierTarget 接口
+   */
+  private createModifierTarget(): IAttributeModifierTarget {
+    const attrs = this.attributes;
+    return {
+      addModifier: (mod) => attrs.addModifier(mod),
+      removeModifier: (id) => attrs.removeModifier(id),
+      removeModifiersBySource: (source) => attrs.removeModifiersBySource(source),
+      getModifiers: (name) => attrs.getModifiers(name),
+      hasModifier: (id) => attrs.hasModifier(id),
+    };
+  }
+
+  /**
+   * 授予默认战斗 Ability
+   */
+  private grantDefaultAbilities(): void {
+    const abilities = getDefaultBattleAbilities();
+    for (const config of abilities) {
+      const ability = new Ability(config, this.toRef());
+      this.abilitySet.grantAbility(ability);
+    }
+  }
+
+  /**
+   * 授予自定义 Ability
+   */
+  grantAbility(config: AbilityConfig): void {
+    const ability = new Ability(config, this.toRef());
+    this.abilitySet.grantAbility(ability);
   }
 
   /**
@@ -220,6 +280,22 @@ export class InkMonUnit extends Actor implements IATBUnit {
     this.hexPosition = undefined;
   }
 
+  // ========== Ability 相关 ==========
+
+  /**
+   * 根据 configId 查找 Ability
+   */
+  findAbilityByConfigId(configId: string) {
+    return this.abilitySet.findAbilityByConfigId(configId);
+  }
+
+  /**
+   * 获取所有 Ability
+   */
+  getAbilities() {
+    return this.abilitySet.getAbilities();
+  }
+
   // ========== 序列化 ==========
 
   serialize(): object {
@@ -232,6 +308,10 @@ export class InkMonUnit extends Actor implements IATBUnit {
       hexPosition: this.hexPosition,
       hp: this.hp,
       maxHp: this.maxHp,
+      abilities: this.abilitySet.getAbilities().map((a) => ({
+        id: a.id,
+        configId: a.configId,
+      })),
     };
   }
 }

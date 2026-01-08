@@ -76,7 +76,9 @@
       "mcp__chrome-devtools__list_console_messages",
       "mcp__chrome-devtools__evaluate_script",
       "Bash(pnpm:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(npx tsx examples/full-battle-3v3.ts)"
     ]
   },
   "enableAllProjectMcpServers": true,

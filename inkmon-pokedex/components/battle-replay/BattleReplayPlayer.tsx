@@ -29,6 +29,7 @@ import {
 import type { ReplayPlayerState } from "./types";
 import { createInitialState, getReplaySummary } from "./types";
 import { stepForward, resetToInitial } from "./battleReplayReducer";
+import { BattleStage } from "./BattleStage";
 import styles from "./BattleReplayPlayer.module.css";
 
 // ========== Props ==========
@@ -36,15 +37,22 @@ import styles from "./BattleReplayPlayer.module.css";
 interface BattleReplayPlayerProps {
   replay: IBattleRecord;
   log?: string;
+  /** 是否显示 BattleStage 地图（默认 true） */
+  showBattleStage?: boolean;
 }
 
 // ========== Component ==========
 
-export function BattleReplayPlayer({ replay, log }: BattleReplayPlayerProps) {
+export function BattleReplayPlayer({
+  replay,
+  log,
+  showBattleStage = true,
+}: BattleReplayPlayerProps) {
   const [state, setState] = useState<ReplayPlayerState>(() =>
     createInitialState(replay),
   );
   const [showLog, setShowLog] = useState(false);
+  const [showActorsPanel, setShowActorsPanel] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const summary = getReplaySummary(replay);
@@ -276,75 +284,101 @@ export function BattleReplayPlayer({ replay, log }: BattleReplayPlayerProps) {
 
       {/* 主面板 */}
       <div className={styles.mainPanel}>
-        {/* Actor 状态 */}
-        <div className={styles.actorsPanel}>
-          <h4>🎭 单位状态 (回合 {state.turnNumber})</h4>
-          <div className={styles.teamsContainer}>
-            <div className={styles.teamSection}>
-              <h5 className={styles.teamAHeader}>A 队</h5>
-              {Array.from(state.actors.values())
-                .filter((a) => a.team === "A")
-                .map((actor) => (
-                  <div key={actor.id} className={getActorStyle(actor)}>
-                    <div className={styles.actorName}>{actor.displayName}</div>
-                    <div className={styles.actorHp}>
-                      HP: {actor.hp}/{actor.maxHp}
-                      <div className={styles.hpBar}>
-                        <div
-                          className={styles.hpFill}
-                          style={{
-                            width: `${(actor.hp / actor.maxHp) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className={styles.actorPos}>
-                      📍 ({actor.position.q}, {actor.position.r})
-                    </div>
-                  </div>
-                ))}
-            </div>
-            <div className={styles.teamSection}>
-              <h5 className={styles.teamBHeader}>B 队</h5>
-              {Array.from(state.actors.values())
-                .filter((a) => a.team === "B")
-                .map((actor) => (
-                  <div key={actor.id} className={getActorStyle(actor)}>
-                    <div className={styles.actorName}>{actor.displayName}</div>
-                    <div className={styles.actorHp}>
-                      HP: {actor.hp}/{actor.maxHp}
-                      <div className={styles.hpBar}>
-                        <div
-                          className={styles.hpFill}
-                          style={{
-                            width: `${(actor.hp / actor.maxHp) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className={styles.actorPos}>
-                      📍 ({actor.position.q}, {actor.position.r})
-                    </div>
-                  </div>
-                ))}
-            </div>
+        {/* BattleStage 地图 - 视觉核心 */}
+        {showBattleStage && (
+          <div className={styles.battleStageContainer}>
+            <BattleStage
+              actors={state.actors}
+              events={state.currentEvents as import("./types").InkMonReplayEvent[]}
+              width={900}
+              height={600}
+            />
           </div>
-        </div>
+        )}
 
-        {/* 事件列表 */}
-        <div className={styles.eventsPanel}>
-          <h4>📋 当前帧事件</h4>
-          <div className={styles.eventsList}>
-            {state.currentEvents.length === 0 ? (
-              <div className={styles.noEvents}>无事件</div>
-            ) : (
-              state.currentEvents.map((event, idx) => (
-                <div key={idx} className={styles.eventItem}>
-                  {formatEvent(event)}
-                </div>
-              ))
-            )}
+        {/* 右侧面板 - 事件列表 + 单位状态 */}
+        <div className={styles.sidePanel}>
+          {/* 事件列表 */}
+          <div className={styles.eventsPanel}>
+            <h4>📋 当前帧事件</h4>
+            <div className={styles.eventsList}>
+              {state.currentEvents.length === 0 ? (
+                <div className={styles.noEvents}>无事件</div>
+              ) : (
+                state.currentEvents.map((event, idx) => (
+                  <div key={idx} className={styles.eventItem}>
+                    {formatEvent(event)}
+                  </div>
+                ))
+              )}
+            </div>
           </div>
+
+          {/* Actor 状态 - 可折叠 */}
+          <div className={styles.actorsToggle}>
+            <button
+              onClick={() => setShowActorsPanel(!showActorsPanel)}
+              className={styles.toggleBtn}
+            >
+              {showActorsPanel ? "📉 收起单位列表" : "📈 展开单位列表"}
+            </button>
+          </div>
+
+          {showActorsPanel && (
+            <div className={styles.actorsPanel}>
+              <h4>🎭 单位状态 (回合 {state.turnNumber})</h4>
+              <div className={styles.teamsContainer}>
+                <div className={styles.teamSection}>
+                  <h5 className={styles.teamAHeader}>A 队</h5>
+                  {Array.from(state.actors.values())
+                    .filter((a) => a.team === "A")
+                    .map((actor) => (
+                      <div key={actor.id} className={getActorStyle(actor)}>
+                        <div className={styles.actorName}>{actor.displayName}</div>
+                        <div className={styles.actorHp}>
+                          HP: {actor.hp}/{actor.maxHp}
+                          <div className={styles.hpBar}>
+                            <div
+                              className={styles.hpFill}
+                              style={{
+                                width: `${(actor.hp / actor.maxHp) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className={styles.actorPos}>
+                          📍 ({actor.position.q}, {actor.position.r})
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                <div className={styles.teamSection}>
+                  <h5 className={styles.teamBHeader}>B 队</h5>
+                  {Array.from(state.actors.values())
+                    .filter((a) => a.team === "B")
+                    .map((actor) => (
+                      <div key={actor.id} className={getActorStyle(actor)}>
+                        <div className={styles.actorName}>{actor.displayName}</div>
+                        <div className={styles.actorHp}>
+                          HP: {actor.hp}/{actor.maxHp}
+                          <div className={styles.hpBar}>
+                            <div
+                              className={styles.hpFill}
+                              style={{
+                                width: `${(actor.hp / actor.maxHp) * 100}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className={styles.actorPos}>
+                          📍 ({actor.position.q}, {actor.position.r})
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

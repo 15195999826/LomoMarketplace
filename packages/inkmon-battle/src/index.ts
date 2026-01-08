@@ -33,6 +33,31 @@ export {
   COOLDOWN_TAG_PREFIX,
 } from "./abilities/index.js";
 
+// ========== Skills (Ability 配置和 Timeline) ==========
+export {
+  // Timeline
+  INKMON_TIMELINES,
+  TIMELINE_ID,
+  MOVE_TIMELINE,
+  BASIC_ATTACK_TIMELINE,
+  // Ability 配置
+  MOVE_ABILITY,
+  BASIC_ATTACK_ABILITY,
+  PHYSICAL_SKILL_ABILITY,
+  SPECIAL_SKILL_ABILITY,
+  HEAL_SKILL_ABILITY,
+  ABILITY_CONFIG_ID,
+  INKMON_BASE_ABILITIES,
+  getDefaultBattleAbilities,
+  createActionUseEvent,
+  // 冷却系统
+  CooldownReadyCondition,
+  CooldownCost,
+  isOnCooldown,
+  type ActionUseEvent,
+  type TimelineId,
+} from "./skills/index.js";
+
 // ========== 系统 ==========
 export { TypeSystem } from "./systems/TypeSystem.js";
 

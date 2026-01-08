@@ -26,3 +26,10 @@ export {
   type HealActionParams,
   type PreHealEvent,
 } from './HealAction.js';
+
+// MoveAction
+export {
+  MoveAction,
+  createMoveAction,
+  type MoveActionParams,
+} from './MoveAction.js';

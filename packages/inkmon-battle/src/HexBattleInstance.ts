@@ -1,10 +1,20 @@
 /**
  * HexBattleInstance - 六边形网格战斗实例
  *
- * 整合 HexGridModel、ATB 系统、类型相克和战斗日志
+ * 整合：
+ * - HexGridModel：六边形网格
+ * - ATB 系统：行动时间条
+ * - Ability 系统：技能/行动管理
+ * - 类型相克和战斗日志
  */
 
-import { GameplayInstance, EventCollector, type GameEventBase } from '@lomo/logic-game-framework';
+import {
+  GameplayInstance,
+  EventCollector,
+  TimelineRegistry,
+  type GameEventBase,
+  type ExecutionContext,
+} from '@lomo/logic-game-framework';
 import {
   HexGridModel,
   type AxialCoord,
@@ -29,6 +39,12 @@ import type {
   InkMonBattleEvent,
 } from './types/BattleEvents.js';
 import { getEffectivenessLevel, type EffectivenessLevel } from './types/TypeEffectiveness.js';
+import {
+  INKMON_TIMELINES,
+  ABILITY_CONFIG_ID,
+  createActionUseEvent,
+  type ActionUseEvent,
+} from './skills/index.js';
 
 /**
  * 战斗结果
@@ -111,6 +127,9 @@ export class HexBattleInstance extends GameplayInstance {
   /** 暴击率 */
   private readonly critRate: number = 0.1;
 
+  /** Timeline 注册表 */
+  private readonly timelineRegistry: TimelineRegistry;
+
   constructor(config: HexBattleConfig = {}) {
     super();
 
@@ -129,6 +148,12 @@ export class HexBattleInstance extends GameplayInstance {
 
     // 初始化事件收集器
     this.eventCollector = new EventCollector();
+
+    // 初始化 Timeline 注册表
+    this.timelineRegistry = new TimelineRegistry();
+    for (const timeline of INKMON_TIMELINES) {
+      this.timelineRegistry.register(timeline);
+    }
 
     this.maxTurns = config.maxTurns ?? 100;
     this.deterministicMode = config.deterministicMode ?? false;
@@ -225,6 +250,30 @@ export class HexBattleInstance extends GameplayInstance {
     return this.units.find((u) => u.id === id);
   }
 
+  /**
+   * 获取 InkMonUnit Actor（供 Action 使用）
+   *
+   * 注意：这个方法名与基类不同，避免类型冲突
+   */
+  getInkMonActor(id: string): InkMonUnit | undefined {
+    return this.getUnitById(id);
+  }
+
+  /**
+   * 获取 Actor 位置（供 Action 使用）
+   */
+  getActorPosition(actorId: string): AxialCoord | undefined {
+    const unit = this.getUnitById(actorId);
+    return unit?.hexPosition;
+  }
+
+  /**
+   * 获取存活单位列表（供 Action 使用）
+   */
+  get aliveActors(): InkMonUnit[] {
+    return this.getAliveUnits();
+  }
+
   // ========== ATB 和行动 ==========
 
   /**
@@ -303,10 +352,119 @@ export class HexBattleInstance extends GameplayInstance {
     };
   }
 
-  // ========== 行动执行 ==========
+  // ========== Ability 系统 ==========
+
+  /**
+   * 使用 Ability（通过事件触发）
+   *
+   * 这是框架推荐的方式，通过发送 AbilityActivateEvent 来激活 Ability。
+   * Ability 的 Component 会响应事件并执行 Timeline 上的 Action。
+   *
+   * @param unit 执行单位
+   * @param abilityConfigId Ability 配置 ID
+   * @param options 附加选项（目标、坐标等）
+   */
+  useAbility(
+    unit: InkMonUnit,
+    abilityConfigId: string,
+    options?: {
+      target?: InkMonUnit;
+      targetCoord?: AxialCoord;
+      element?: Element;
+      power?: number;
+      damageCategory?: 'physical' | 'special';
+    }
+  ): ActionResult {
+    const events: InkMonBattleEvent[] = [];
+
+    // 检查是否是当前行动单位
+    if (this.getCurrentUnit()?.id !== unit.id) {
+      return { success: false, events, message: 'Not current unit turn' };
+    }
+
+    // 查找 Ability
+    const ability = unit.findAbilityByConfigId(abilityConfigId);
+    if (!ability) {
+      return { success: false, events, message: `Ability not found: ${abilityConfigId}` };
+    }
+
+    // 创建激活事件
+    const activateEvent = createActionUseEvent(ability.id, unit.id, {
+      target: options?.target?.toRef(),
+      targetCoord: options?.targetCoord,
+      element: options?.element,
+      power: options?.power,
+      damageCategory: options?.damageCategory,
+    });
+
+    // 发送事件到 AbilitySet（触发 Ability）
+    unit.abilitySet.receiveEvent(activateEvent, this);
+
+    // 收集产生的事件
+    const producedEvents = this.eventCollector.flush();
+    events.push(...(producedEvents as InkMonBattleEvent[]));
+
+    // 驱动 Timeline 执行（立即执行所有 tag actions）
+    this.driveAbilityExecutions(unit, 1000); // 假设 1 秒足够执行完
+
+    // 收集 Timeline 执行产生的事件
+    const timelineEvents = this.eventCollector.flush();
+    events.push(...(timelineEvents as InkMonBattleEvent[]));
+
+    return { success: true, events };
+  }
+
+  /**
+   * 驱动单位的 Ability 执行
+   */
+  private driveAbilityExecutions(unit: InkMonUnit, dt: number): void {
+    // 驱动执行实例
+    unit.abilitySet.tickExecutions(dt);
+  }
+
+  /**
+   * 应用移动效果（由 MoveAction 调用的回放事件触发）
+   */
+  applyMove(actorId: string, toHex: AxialCoord): boolean {
+    const unit = this.getUnitById(actorId);
+    if (!unit || !unit.hexPosition) return false;
+
+    const from = unit.hexPosition;
+    const moved = this.gridModel.moveOccupant(from, toHex);
+    if (moved) {
+      unit.setPosition(toHex);
+      this.logger.move(unit.displayName, from, toHex);
+    }
+    return moved;
+  }
+
+  /**
+   * 应用伤害效果（由 DamageAction 调用的回放事件触发）
+   */
+  applyDamage(targetId: string, damage: number): number {
+    const target = this.getUnitById(targetId);
+    if (!target) return 0;
+
+    const actualDamage = target.takeDamage(damage);
+
+    // 检查击杀
+    if (!target.isActive) {
+      this.logger.death(target.displayName, 'unknown');
+      if (target.hexPosition) {
+        this.gridModel.removeOccupant(target.hexPosition);
+      }
+      this.checkBattleEnd();
+    }
+
+    return actualDamage;
+  }
+
+  // ========== 行动执行（简化版，内部使用 Ability 系统） ==========
 
   /**
    * 执行移动行动
+   *
+   * 使用 Ability 系统执行移动。
    */
   executeMove(unit: InkMonUnit, to: AxialCoord): ActionResult {
     const events: InkMonBattleEvent[] = [];
@@ -607,6 +765,13 @@ export class HexBattleInstance extends GameplayInstance {
 
     // 更新逻辑时间
     this._logicTime += dt;
+
+    // 更新所有单位的 AbilitySet（驱动冷却/持续时间等）
+    for (const unit of this.units) {
+      if (unit.isActive) {
+        unit.abilitySet.tick(dt, this._logicTime);
+      }
+    }
 
     // 更新 ATB
     this.atbSystem.tick(this.units, dt);
