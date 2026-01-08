@@ -1,15 +1,22 @@
 /**
  * BattleReplayPlayer - 战斗回放播放器组件
  *
- * MVP 功能：
- * - 播放控制：Play/Pause、Step、Speed
- * - 进度控制：当前 frame、可拖动到任意 frame
- * - 信息面板：当前帧 events、所有 actor 状态
+ * ## 时钟系统
+ *
+ * - 渲染帧：20ms/帧（基准），用于动画插值
+ * - 逻辑帧：100ms/帧，用于事件处理
+ * - 固定 5 渲染帧 = 1 逻辑帧
+ * - 倍速通过调整渲染帧间隔实现：interval = 20ms / speed
+ *
+ * ## 动画系统
+ *
+ * - 移动动画：500ms，在 5 个逻辑帧内完成
+ * - 攻击动画：1000ms，Hit 帧在 500ms 触发飘字
  */
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { IBattleRecord, GameEventBase } from "@inkmon/battle";
 import {
   isMoveEvent,
@@ -26,11 +33,31 @@ import {
   isAbilityActivatedEvent,
   isTagChangedEvent,
 } from "@inkmon/battle";
-import type { ReplayPlayerState } from "./types";
-import { createInitialState, getReplaySummary } from "./types";
-import { stepForward, resetToInitial } from "./battleReplayReducer";
+import type { ReplayPlayerState, MoveAnimationData, SkillAnimationData, PendingEffect } from "./types";
+import {
+  createInitialState,
+  getReplaySummary,
+  BASE_RENDER_TICK_MS,
+  RENDER_FRAMES_PER_LOGIC_FRAME,
+  MOVE_DURATION_MS,
+  BASIC_ATTACK_DURATION_MS,
+  BASIC_ATTACK_HIT_MS,
+} from "./types";
+import { resetToInitial, applyFrame } from "./battleReplayReducer";
 import { BattleStage } from "./BattleStage";
 import styles from "./BattleReplayPlayer.module.css";
+
+// ========== 动画辅助函数 ==========
+
+/** 线性插值 */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+/** 缓动函数：ease-in-out-quad */
+function easeInOutQuad(t: number): number {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
 
 // ========== Props ==========
 
@@ -53,9 +80,26 @@ export function BattleReplayPlayer({
   );
   const [showLog, setShowLog] = useState(false);
   const [showActorsPanel, setShowActorsPanel] = useState(true);
+  /** 触发的效果（用于飘字） */
+  const [triggeredEffects, setTriggeredEffects] = useState<Array<{
+    type: 'damage' | 'heal';
+    targetActorId: string;
+    value: number;
+  }>>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  /** 渲染帧计数器（在逻辑帧内的位置，0-4） */
+  const renderFrameInLogicRef = useRef(0);
 
   const summary = getReplaySummary(replay);
+
+  // 预构建帧号到帧数据的 Map，提高查找效率
+  const frameDataMap = useMemo(() => {
+    const map = new Map<number, typeof replay.timeline[0]>();
+    for (const frame of replay.timeline) {
+      map.set(frame.frame, frame);
+    }
+    return map;
+  }, [replay.timeline]);
 
   // 清理定时器
   useEffect(() => {
@@ -66,27 +110,240 @@ export function BattleReplayPlayer({
     };
   }, []);
 
+  /**
+   * 渲染帧 Tick
+   * 每 20ms/speed 执行一次，每 5 次推进一个逻辑帧
+   */
+  const renderTick = useCallback(() => {
+    // 收集本次 tick 触发的效果
+    const effectsToTrigger: Array<{ type: 'damage' | 'heal'; targetActorId: string; value: number }> = [];
+
+    setState((prev) => {
+      if (!prev.isPlaying) return prev;
+
+      let newState = { ...prev };
+      const newRenderFrameCount = prev.renderFrameCount + 1;
+      newState.renderFrameCount = newRenderFrameCount;
+
+      // 更新动画插值，并收集触发的效果
+      const { state: updatedState, effects } = updateAnimationInterpolation(newState);
+      newState = updatedState;
+      effectsToTrigger.push(...effects);
+
+      // 每 5 渲染帧推进 1 逻辑帧
+      renderFrameInLogicRef.current++;
+      if (renderFrameInLogicRef.current >= RENDER_FRAMES_PER_LOGIC_FRAME) {
+        renderFrameInLogicRef.current = 0;
+
+        // 推进逻辑帧号
+        const nextFrame = prev.currentFrame + 1;
+        if (nextFrame > replay.meta.totalFrames) {
+          // 播放结束
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          return { ...newState, isPlaying: false };
+        }
+
+        newState.currentFrame = nextFrame;
+
+        // 查找该帧是否有事件（使用预构建的 Map）
+        const frameData = frameDataMap.get(nextFrame);
+        if (frameData) {
+          // 有事件，应用帧数据
+          newState = applyFrame(newState, frameData);
+          // 检查事件，创建动画
+          newState = processEventsForAnimation(newState, frameData.events);
+        } else {
+          // 无事件，清空当前事件列表
+          newState.currentEvents = [];
+        }
+      }
+
+      return newState;
+    });
+
+    // 在 setState 外部触发效果
+    if (effectsToTrigger.length > 0) {
+      setTriggeredEffects(effectsToTrigger);
+    } else {
+      // 清空上一帧的效果
+      setTriggeredEffects([]);
+    }
+  }, [replay, frameDataMap]);
+
+  /**
+   * 更新动画插值位置
+   * 返回更新后的状态和触发的效果
+   */
+  const updateAnimationInterpolation = (state: ReplayPlayerState): {
+    state: ReplayPlayerState;
+    effects: Array<{ type: 'damage' | 'heal'; targetActorId: string; value: number }>;
+  } => {
+    const effects: Array<{ type: 'damage' | 'heal'; targetActorId: string; value: number }> = [];
+
+    if (!state.currentAnimation) {
+      return { state, effects };
+    }
+
+    const anim = state.currentAnimation;
+    const elapsedFrames = state.renderFrameCount - anim.startRenderFrame;
+    const elapsedMs = elapsedFrames * BASE_RENDER_TICK_MS;
+    const progress = Math.min(1, elapsedMs / anim.duration);
+
+    if (anim.type === 'move') {
+      // 移动动画插值
+      const interpolatedPositions = new Map(state.interpolatedPositions);
+      const q = lerp(anim.fromPos.q, anim.toPos.q, easeInOutQuad(progress));
+      const r = lerp(anim.fromPos.r, anim.toPos.r, easeInOutQuad(progress));
+      interpolatedPositions.set(anim.actorId, { q, r });
+
+      // 动画结束
+      if (progress >= 1) {
+        return {
+          state: {
+            ...state,
+            interpolatedPositions,
+            currentAnimation: null,
+          },
+          effects,
+        };
+      }
+
+      return { state: { ...state, interpolatedPositions }, effects };
+    }
+
+    if (anim.type === 'skill') {
+      // 技能动画：检查 Tag 触发
+      const triggeredTags = new Set(anim.triggeredTags);
+
+      for (const [tagName, tagTime] of Object.entries(anim.tags)) {
+        if (elapsedMs >= tagTime && !triggeredTags.has(tagName)) {
+          triggeredTags.add(tagName);
+          // 收集该 Tag 对应的效果
+          for (const effect of anim.pendingEffects) {
+            if (effect.triggerTag === tagName) {
+              effects.push({
+                type: effect.type,
+                targetActorId: effect.targetActorId,
+                value: effect.value,
+              });
+            }
+          }
+        }
+      }
+
+      // 动画结束
+      if (progress >= 1) {
+        return {
+          state: {
+            ...state,
+            currentAnimation: null,
+          },
+          effects,
+        };
+      }
+
+      // 更新动画状态
+      return {
+        state: {
+          ...state,
+          currentAnimation: {
+            ...anim,
+            triggeredTags,
+          },
+        },
+        effects,
+      };
+    }
+
+    return { state, effects };
+  };
+
+  /**
+   * 处理事件，创建动画
+   */
+  const processEventsForAnimation = (
+    state: ReplayPlayerState,
+    events: GameEventBase[]
+  ): ReplayPlayerState => {
+    let newState = state;
+
+    for (const event of events) {
+      // 移动事件 -> 创建移动动画
+      if (isMoveEvent(event)) {
+        const moveAnim: MoveAnimationData = {
+          type: 'move',
+          actorId: event.actorId,
+          fromPos: { q: event.fromHex.q, r: event.fromHex.r },
+          toPos: { q: event.toHex.q, r: event.toHex.r },
+          duration: MOVE_DURATION_MS,
+          startRenderFrame: state.renderFrameCount,
+        };
+        newState = {
+          ...newState,
+          currentAnimation: moveAnim,
+        };
+        // 初始化插值位置
+        const interpolatedPositions = new Map(newState.interpolatedPositions);
+        interpolatedPositions.set(event.actorId, { q: event.fromHex.q, r: event.fromHex.r });
+        newState.interpolatedPositions = interpolatedPositions;
+      }
+
+      // 技能使用事件 -> 创建技能动画
+      if (isSkillUseEvent(event)) {
+        // 收集后续的伤害/治疗事件作为待触发效果
+        const pendingEffects: PendingEffect[] = [];
+        for (const e of events) {
+          if (isDamageEvent(e)) {
+            pendingEffects.push({
+              type: 'damage',
+              targetActorId: e.targetActorId,
+              value: e.damage,
+              triggerTag: 'hit',
+            });
+          }
+          if (isHealEvent(e)) {
+            pendingEffects.push({
+              type: 'heal',
+              targetActorId: e.targetActorId,
+              value: e.healAmount,
+              triggerTag: 'heal',
+            });
+          }
+        }
+
+        const skillAnim: SkillAnimationData = {
+          type: 'skill',
+          actorId: event.actorId,
+          skillName: event.skillName,
+          duration: BASIC_ATTACK_DURATION_MS,
+          startRenderFrame: state.renderFrameCount,
+          tags: { hit: BASIC_ATTACK_HIT_MS },
+          triggeredTags: new Set(),
+          pendingEffects,
+        };
+        newState = {
+          ...newState,
+          currentAnimation: skillAnim,
+        };
+      }
+    }
+
+    return newState;
+  };
+
   // 播放/暂停切换
   const togglePlay = useCallback(() => {
     setState((prev) => {
       const newIsPlaying = !prev.isPlaying;
 
       if (newIsPlaying) {
-        // 开始播放
-        const interval = replay.meta.tickInterval / prev.speed;
-        intervalRef.current = setInterval(() => {
-          setState((s) => {
-            if (!s.isPlaying) return s;
-            const nextState = stepForward(replay, s);
-            if (nextState.currentFrameIndex >= replay.timeline.length - 1) {
-              if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-              }
-              return { ...nextState, isPlaying: false };
-            }
-            return nextState;
-          });
-        }, interval);
+        // 开始播放：启动渲染帧定时器
+        renderFrameInLogicRef.current = 0;
+        const interval = BASE_RENDER_TICK_MS / prev.speed;
+        intervalRef.current = setInterval(renderTick, interval);
       } else {
         // 暂停
         if (intervalRef.current) {
@@ -97,7 +354,7 @@ export function BattleReplayPlayer({
 
       return { ...prev, isPlaying: newIsPlaying };
     });
-  }, [replay]);
+  }, [renderTick]);
 
   // 重置
   const handleReset = useCallback(() => {
@@ -105,6 +362,7 @@ export function BattleReplayPlayer({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    renderFrameInLogicRef.current = 0;
     setState(resetToInitial(replay));
   }, [replay]);
 
@@ -115,25 +373,13 @@ export function BattleReplayPlayer({
         // 如果正在播放，重新设置定时器
         if (prev.isPlaying && intervalRef.current) {
           clearInterval(intervalRef.current);
-          const interval = replay.meta.tickInterval / speed;
-          intervalRef.current = setInterval(() => {
-            setState((s) => {
-              if (!s.isPlaying) return s;
-              const nextState = stepForward(replay, s);
-              if (nextState.currentFrameIndex >= replay.timeline.length - 1) {
-                if (intervalRef.current) {
-                  clearInterval(intervalRef.current);
-                }
-                return { ...nextState, isPlaying: false };
-              }
-              return nextState;
-            });
-          }, interval);
+          const interval = BASE_RENDER_TICK_MS / speed;
+          intervalRef.current = setInterval(renderTick, interval);
         }
         return { ...prev, speed };
       });
     },
-    [replay],
+    [renderTick],
   );
 
   // 获取事件显示文本（使用 Type Guards 转换事件类型）
@@ -292,6 +538,8 @@ export function BattleReplayPlayer({
             <BattleStage
               actors={state.actors}
               events={state.currentEvents as import("./types").InkMonReplayEvent[]}
+              interpolatedPositions={state.interpolatedPositions}
+              triggeredEffects={triggeredEffects}
             />
             {/* 战斗结果浮层移到地图上方 */}
             {state.battleResult && (

@@ -8,6 +8,28 @@ import { worldToHex, type HexMapConfig } from "@lomo/hex-grid";
 // 重新导出 GameEventBase（来自 @lomo/logic-game-framework）
 export type { GameEventBase };
 
+// ========== 时钟常量 ==========
+
+/** 基准渲染帧间隔（毫秒） */
+export const BASE_RENDER_TICK_MS = 20;
+
+/** 逻辑帧间隔（毫秒） */
+export const LOGIC_TICK_MS = 100;
+
+/** 每个逻辑帧包含的渲染帧数 */
+export const RENDER_FRAMES_PER_LOGIC_FRAME = LOGIC_TICK_MS / BASE_RENDER_TICK_MS; // = 5
+
+// ========== Timeline 常量（从 @inkmon/battle 同步） ==========
+
+/** 移动动画时长（毫秒） */
+export const MOVE_DURATION_MS = 500;
+
+/** 普通攻击动画时长（毫秒） */
+export const BASIC_ATTACK_DURATION_MS = 1000;
+
+/** 普通攻击 Hit 帧时间（毫秒） */
+export const BASIC_ATTACK_HIT_MS = 500;
+
 // ========== Actor State ==========
 
 /**
@@ -112,6 +134,61 @@ export interface UnknownEvent {
   [key: string]: unknown;
 }
 
+// ========== Animation Types ==========
+
+/**
+ * 动画类型
+ */
+export type AnimationType = 'idle' | 'move' | 'skill';
+
+/**
+ * 移动动画数据
+ */
+export interface MoveAnimationData {
+  type: 'move';
+  actorId: string;
+  fromPos: { q: number; r: number };
+  toPos: { q: number; r: number };
+  /** 动画总时长（毫秒），从 Timeline 读取 */
+  duration: number;
+  /** 动画开始时的渲染帧计数 */
+  startRenderFrame: number;
+}
+
+/**
+ * 技能动画数据
+ */
+export interface SkillAnimationData {
+  type: 'skill';
+  actorId: string;
+  skillName: string;
+  /** 动画总时长（毫秒），从 Timeline 读取 */
+  duration: number;
+  /** 动画开始时的渲染帧计数 */
+  startRenderFrame: number;
+  /** Tag 时间点（毫秒），用于触发效果 */
+  tags: Record<string, number>;
+  /** 已触发的 Tag */
+  triggeredTags: Set<string>;
+  /** 待触发的效果（如伤害飘字） */
+  pendingEffects: PendingEffect[];
+}
+
+/**
+ * 待触发效果
+ */
+export interface PendingEffect {
+  type: 'damage' | 'heal';
+  targetActorId: string;
+  value: number;
+  triggerTag: string;
+}
+
+/**
+ * 动画状态联合类型
+ */
+export type AnimationState = MoveAnimationData | SkillAnimationData | null;
+
 // ========== Replay Player State ==========
 
 /**
@@ -136,6 +213,12 @@ export interface ReplayPlayerState {
   turnNumber: number;
   /** 当前行动的 Actor ID */
   currentActorId: string | null;
+  /** 当前渲染帧计数（用于动画插值） */
+  renderFrameCount: number;
+  /** 当前动画状态 */
+  currentAnimation: AnimationState;
+  /** 插值位置（用于渲染移动动画） */
+  interpolatedPositions: Map<string, { q: number; r: number }>;
 }
 
 // ========== Replay Summary ==========
@@ -178,6 +261,9 @@ export function createInitialState(replay: IBattleRecord): ReplayPlayerState {
     battleResult: null,
     turnNumber: 0,
     currentActorId: null,
+    renderFrameCount: 0,
+    currentAnimation: null,
+    interpolatedPositions: new Map(),
   };
 }
 

@@ -19,10 +19,23 @@ const HEX_SPACING = 2; // 六边形间距
 
 // ========== Props ==========
 
+/**
+ * 触发的效果（用于飘字）
+ */
+export interface TriggeredEffect {
+  type: 'damage' | 'heal';
+  targetActorId: string;
+  value: number;
+}
+
 export interface BattleStageProps {
   actors: Map<string, ActorState>;
   events: InkMonReplayEvent[];
   mapRadius?: number;
+  /** 插值位置（用于移动动画） */
+  interpolatedPositions?: Map<string, { q: number; r: number }>;
+  /** 触发的效果（用于 Hit 帧飘字） */
+  triggeredEffects?: TriggeredEffect[];
 }
 
 // ========== Floating Text Types ==========
@@ -37,24 +50,6 @@ interface FloatingText {
 }
 
 // ========== Helper Functions ==========
-
-function isDamageEvent(event: unknown): event is {
-  kind: "damage";
-  damage: number;
-  targetActorId: string;
-} {
-  const e = event as { kind: string };
-  return e.kind === "damage";
-}
-
-function isHealEvent(event: unknown): event is {
-  kind: "heal";
-  healAmount: number;
-  targetActorId: string;
-} {
-  const e = event as { kind: string };
-  return e.kind === "heal";
-}
 
 /**
  * Axial 坐标转像素坐标 (pointy-top)
@@ -105,6 +100,8 @@ export function BattleStage({
   actors,
   events,
   mapRadius = 4,
+  interpolatedPositions,
+  triggeredEffects,
 }: BattleStageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -185,7 +182,9 @@ export function BattleStage({
     for (const [id, actor] of actors) {
       if (!actor.isAlive) continue;
 
-      const pixel = axialToPixel(actor.position.q, actor.position.r, HEX_SIZE);
+      // 优先使用插值位置（动画中），否则使用逻辑位置
+      const pos = interpolatedPositions?.get(id) ?? actor.position;
+      const pixel = axialToPixel(pos.q, pos.r, HEX_SIZE);
       const x = pixel.x + offsetX;
       const y = pixel.y + offsetY;
 
@@ -234,39 +233,36 @@ export function BattleStage({
       ctx.font = "bold 8px sans-serif";
       ctx.fillText(actor.team, x + HEX_SIZE * 0.4, y - HEX_SIZE * 0.4);
     }
-  }, [hexGrid, actors, canvasSize]);
+  }, [hexGrid, actors, canvasSize, interpolatedPositions]);
 
-  // 处理事件生成飘字
+  // 处理触发的效果生成飘字（Hit 帧触发）
   useEffect(() => {
-    if (events.length === 0) return;
+    if (!triggeredEffects || triggeredEffects.length === 0) return;
 
     const newTexts: FloatingText[] = [];
     const offsetX = canvasSize.width / 2;
     const offsetY = canvasSize.height / 2;
 
-    for (const event of events) {
-      if (isDamageEvent(event)) {
-        const targetActor = actors.get(event.targetActorId);
-        if (targetActor) {
-          const pixel = axialToPixel(targetActor.position.q, targetActor.position.r, HEX_SIZE);
+    for (const effect of triggeredEffects) {
+      const targetActor = actors.get(effect.targetActorId);
+      if (targetActor) {
+        // 使用插值位置（如果有）
+        const pos = interpolatedPositions?.get(effect.targetActorId) ?? targetActor.position;
+        const pixel = axialToPixel(pos.q, pos.r, HEX_SIZE);
+
+        if (effect.type === 'damage') {
           newTexts.push({
-            id: `${event.targetActorId}-${Date.now()}-${Math.random()}`,
-            text: `-${event.damage}`,
+            id: `${effect.targetActorId}-${Date.now()}-${Math.random()}`,
+            text: `-${effect.value}`,
             x: pixel.x + offsetX,
             y: pixel.y + offsetY - 30,
             color: "#ff4444",
             timestamp: Date.now(),
           });
-        }
-      }
-
-      if (isHealEvent(event)) {
-        const targetActor = actors.get(event.targetActorId);
-        if (targetActor) {
-          const pixel = axialToPixel(targetActor.position.q, targetActor.position.r, HEX_SIZE);
+        } else if (effect.type === 'heal') {
           newTexts.push({
-            id: `${event.targetActorId}-${Date.now()}-${Math.random()}`,
-            text: `+${event.healAmount}`,
+            id: `${effect.targetActorId}-${Date.now()}-${Math.random()}`,
+            text: `+${effect.value}`,
             x: pixel.x + offsetX,
             y: pixel.y + offsetY - 30,
             color: "#22c55e",
@@ -279,7 +275,7 @@ export function BattleStage({
     if (newTexts.length > 0) {
       setFloatingTexts((prev) => [...prev, ...newTexts]);
     }
-  }, [events, actors, canvasSize]);
+  }, [triggeredEffects, actors, canvasSize, interpolatedPositions]);
 
   // 清理飘字
   const handleFloatingTextComplete = useCallback((id: string) => {
