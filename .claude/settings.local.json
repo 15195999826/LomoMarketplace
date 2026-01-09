@@ -78,7 +78,13 @@
       "Bash(pnpm:*)",
       "Bash(git checkout:*)",
       "Bash(ls:*)",
-      "Bash(npx tsx examples/full-battle-3v3.ts)"
+      "Bash(npx tsx examples/full-battle-3v3.ts)",
+      "Bash(for i in 1 2 3 4 5)",
+      "Bash(do node dist/main.js)",
+      "Bash(break)",
+      "Bash(done)",
+      "Bash(for:*)",
+      "Bash(do echo \"Run $i...\")"
     ]
   },
   "enableAllProjectMcpServers": true,

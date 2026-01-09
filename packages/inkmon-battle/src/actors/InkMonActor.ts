@@ -32,7 +32,6 @@ import { recordAttributeChanges, recordAbilitySetChanges } from '@lomo/logic-gam
 import { hexToWorld, type AxialCoord } from '@lomo/hex-grid';
 import type { InkMon, Element } from '@inkmon/core';
 
-import type { IATBUnit } from '../atb/index.js';
 import { getDefaultBattleAbilities } from '../skills/index.js';
 
 // ========== 属性定义 ==========
@@ -72,7 +71,7 @@ export type InkMonActorConfig = {
 /**
  * InkMonActor - InkMon 战斗单位
  */
-export class InkMonActor extends Actor implements IRecordableActor, IATBUnit {
+export class InkMonActor extends Actor implements IRecordableActor {
   readonly type = 'InkMonActor';
 
   /** 原始 InkMon 数据 */

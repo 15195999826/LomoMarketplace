@@ -1,11 +1,11 @@
 /**
  * InkMonBattle - InkMon 战斗实例
  *
- * 基于 hex-atb-battle 架构的战斗系统，整合：
+ * 基于 hex-atb-battle 架构的实时战斗系统，整合：
  * - BattleRecorder：战斗录像
- * - ATBSystem：行动条系统
  * - TypeSystem：类型相克
  * - HexGrid：六边形网格
+ * - ATB：行动条系统（Actor 内部管理）
  *
  * ## 设计特点
  *
@@ -13,6 +13,7 @@
  * - 使用 InkMonActor 作为战斗单位
  * - 支持 14 种属性相克
  * - STAB 加成系统
+ * - 实时战斗模式（与 HexBattle 一致）
  */
 
 import {
@@ -23,7 +24,6 @@ import {
   EventCollector,
   type IGameplayStateProvider,
   Actor,
-  type ExecutionContext,
   getTimelineRegistry,
   type ActorRef,
 } from "@lomo/logic-game-framework";
@@ -44,25 +44,16 @@ import {
 import type { InkMon, Element } from "@inkmon/core";
 
 import { InkMonActor, createInkMonActor } from "./actors/InkMonActor.js";
-import { ATBSystem } from "./atb/index.js";
 import { BattleLogger } from "./logger/BattleLogger.js";
 import {
   createBattleStartEvent,
   createBattleEndEvent,
   createTurnStartEvent,
-  createMoveEvent,
-  createDeathEvent,
-  type DamageCategory,
 } from "./events/ReplayEvents.js";
-import {
-  TYPE_CHART,
-  getEffectivenessLevel,
-} from "./types/TypeEffectiveness.js";
 import {
   INKMON_TIMELINES,
   ABILITY_CONFIG_ID,
   createActionUseEvent,
-  type ActionUseEvent,
 } from "./skills/index.js";
 import { InkMonBattleGameWorld } from "./world/index.js";
 
@@ -165,9 +156,6 @@ export class InkMonBattle
   /** 战斗上下文 */
   private _context!: BattleContext;
 
-  /** ATB 系统 */
-  private readonly _atbSystem: ATBSystem;
-
   /** 日志系统 */
   readonly logger: BattleLogger;
 
@@ -212,11 +200,6 @@ export class InkMonBattle
     };
 
     this._maxTurns = this._config.maxTurns;
-
-    // 初始化 ATB 系统
-    this._atbSystem = new ATBSystem({
-      maxGauge: this._config.atbMaxGauge,
-    });
 
     // 初始化日志系统
     this.logger = new BattleLogger("full");
@@ -354,292 +337,19 @@ export class InkMonBattle
     return this._context.grid.findOccupantPosition(actor.id);
   }
 
-  // ========== ATB 系统 ==========
+  // ========== 执行状态检查 ==========
 
   /**
-   * 获取当前可行动的单位
+   * 检查角色是否正在执行行动
+   * 遍历该角色所有 Ability 的执行实例
    */
-  getCurrentUnit(): InkMonActor | undefined {
-    const unitId = this._atbSystem.getCurrentUnitId();
-    if (!unitId) return undefined;
-    return this._units.get(unitId);
-  }
-
-  /**
-   * 获取 ATB 进度
-   */
-  getATBProgress(): Map<string, number> {
-    return this._atbSystem.getATBProgress(this.aliveActors);
-  }
-
-  // ========== 伤害计算 ==========
-
-  /**
-   * 计算伤害
-   */
-  calculateDamage(
-    attacker: InkMonActor,
-    defender: InkMonActor,
-    basePower: number,
-    element: Element,
-    category: DamageCategory = "physical",
-  ): DamageCalcResult {
-    const level = attacker.level;
-
-    // 攻击/防御属性
-    const atkStat = category === "physical" ? attacker.atk : attacker.spAtk;
-    const defStat = category === "physical" ? defender.def : defender.spDef;
-
-    // 基础伤害公式（简化版宝可梦公式）
-    const baseDamage = Math.floor(
-      (((2 * level) / 5 + 2) * basePower * atkStat) / defStat / 50 + 2,
-    );
-
-    // STAB 加成
-    const attackerElements = attacker.getElements();
-    const isSTAB = attackerElements.includes(element);
-    const stabMultiplier = isSTAB ? 1.5 : 1;
-
-    // 类型相克
-    const defenderElements = defender.getElements();
-    let typeMultiplier = 1;
-    for (const defElement of defenderElements) {
-      const chart = TYPE_CHART[element];
-      if (chart && chart[defElement] !== undefined) {
-        typeMultiplier *= chart[defElement];
+  private isActorExecuting(actor: InkMonActor): boolean {
+    for (const ability of actor.abilitySet.getAbilities()) {
+      if (ability.getExecutingInstances().length > 0) {
+        return true;
       }
     }
-
-    const effectiveness = getEffectivenessLevel(typeMultiplier);
-
-    // 暴击
-    const isCritical =
-      !this._config.deterministicMode && Math.random() < this._config.critRate;
-    const critMultiplier = isCritical ? 1.5 : 1;
-
-    // 随机波动（85%-100%）
-    const randomMultiplier = this._config.deterministicMode
-      ? 1
-      : 0.85 + Math.random() * 0.15;
-
-    // 最终伤害
-    const finalDamage = Math.max(
-      1,
-      Math.floor(
-        baseDamage *
-          stabMultiplier *
-          typeMultiplier *
-          critMultiplier *
-          randomMultiplier,
-      ),
-    );
-
-    return {
-      damage: finalDamage,
-      typeMultiplier,
-      effectiveness,
-      isCritical,
-      isSTAB,
-    };
-  }
-
-  // ========== 行动执行 ==========
-
-  /**
-   * 执行移动
-   */
-  executeMove(actor: InkMonActor, targetCoord: AxialCoord): ActionResult {
-    const events: GameEventBase[] = [];
-
-    if (!actor.isActive) {
-      return { success: false, message: "单位已死亡" };
-    }
-
-    const currentPos = actor.hexPosition;
-    if (!currentPos) {
-      return { success: false, message: "单位无位置" };
-    }
-
-    // 检查目标是否有效
-    if (!this._context.grid.hasTile(targetCoord)) {
-      return { success: false, message: "目标位置无效" };
-    }
-
-    if (this._context.grid.isOccupied(targetCoord)) {
-      return { success: false, message: "目标位置已被占据" };
-    }
-
-    // 检查距离（最多移动 1 格）
-    const distance = hexDistance(currentPos, targetCoord);
-    if (distance > 1) {
-      return { success: false, message: "移动距离过远" };
-    }
-
-    // 执行移动
-    this._context.grid.removeOccupant(currentPos);
-    this._context.grid.placeOccupant(targetCoord, { id: actor.id });
-    actor.setPosition(targetCoord);
-
-    // 产生移动事件
-    const moveEvent = createMoveEvent(
-      actor.id,
-      { q: currentPos.q, r: currentPos.r },
-      { q: targetCoord.q, r: targetCoord.r },
-    );
-    events.push(this.eventCollector.push(moveEvent));
-
-    // 使用 BattleLogger 的 move 方法
-    this.logger.move(actor.displayName, currentPos, targetCoord);
-
-    return { success: true, events };
-  }
-
-  /**
-   * 执行攻击
-   */
-  executeAttack(
-    attacker: InkMonActor,
-    target: InkMonActor,
-    basePower: number,
-    element: Element,
-    category: DamageCategory = "physical",
-  ): ActionResult {
-    const events: GameEventBase[] = [];
-
-    if (!attacker.isActive) {
-      return { success: false, message: "攻击者已死亡" };
-    }
-
-    if (!target.isActive) {
-      return { success: false, message: "目标已死亡" };
-    }
-
-    // 计算伤害
-    const damageResult = this.calculateDamage(
-      attacker,
-      target,
-      basePower,
-      element,
-      category,
-    );
-
-    // 如果免疫
-    if (damageResult.typeMultiplier === 0) {
-      logMessage(`❌ ${target.displayName} 免疫 ${element} 属性攻击`);
-      return { success: true, events, message: "目标免疫" };
-    }
-
-    // 应用伤害
-    const actualDamage = target.takeDamage(damageResult.damage);
-
-    // 使用 BattleLogger 的 damage 方法
-    this.logger.damage(attacker.displayName, target.displayName, actualDamage, {
-      element,
-      effectiveness: damageResult.effectiveness,
-      isCritical: damageResult.isCritical,
-      isSTAB: damageResult.isSTAB,
-      remainingHp: target.hp,
-      maxHp: target.maxHp,
-    });
-
-    // 检查死亡
-    if (!target.isActive) {
-      const deathEvent = createDeathEvent(target.id, attacker.id);
-      events.push(this.eventCollector.push(deathEvent));
-
-      // 使用 BattleLogger 的 death 方法
-      this.logger.death(target.displayName, attacker.displayName);
-
-      // 检查战斗是否结束
-      this.checkBattleEnd();
-    }
-
-    return { success: true, events };
-  }
-
-  /**
-   * 执行跳过
-   */
-  executeSkip(actor: InkMonActor): ActionResult {
-    this.logger.skip(actor.displayName);
-    return { success: true };
-  }
-
-  /**
-   * 使用框架 Ability 系统执行技能
-   *
-   * @param actor 执行单位
-   * @param abilityConfigId Ability 配置 ID
-   * @param options 附加选项（目标、坐标等）
-   */
-  useAbility(
-    actor: InkMonActor,
-    abilityConfigId: string,
-    options?: {
-      target?: InkMonActor;
-      targetCoord?: AxialCoord;
-      element?: Element;
-      power?: number;
-      damageCategory?: "physical" | "special";
-    }
-  ): ActionResult {
-    const events: GameEventBase[] = [];
-
-    // 查找 Ability
-    const ability = actor.findAbilityByConfigId(abilityConfigId);
-    if (!ability) {
-      return {
-        success: false,
-        message: `Ability not found: ${abilityConfigId}`,
-        events,
-      };
-    }
-
-    // 创建激活事件
-    const activateEvent = createActionUseEvent(ability.id, actor.id, {
-      target: options?.target?.toRef(),
-      targetCoord: options?.targetCoord,
-      element: options?.element,
-      power: options?.power,
-      damageCategory: options?.damageCategory,
-    });
-
-    // 发送事件到 AbilitySet（触发 Ability）
-    actor.abilitySet.receiveEvent(activateEvent, this);
-
-    // 收集产生的事件
-    const producedEvents = this.eventCollector.flush();
-    events.push(...producedEvents);
-
-    // 驱动 Timeline 执行（立即执行所有 tag actions）
-    this.driveAbilityExecutions(actor, 1000); // 假设 1 秒足够执行完
-
-    // 收集 Timeline 执行产生的事件
-    const timelineEvents = this.eventCollector.flush();
-    events.push(...timelineEvents);
-
-    return { success: true, events };
-  }
-
-  /**
-   * 驱动单位的 Ability 执行
-   */
-  private driveAbilityExecutions(actor: InkMonActor, dt: number): void {
-    // 驱动执行实例
-    actor.abilitySet.tickExecutions(dt);
-  }
-
-  /**
-   * 结束当前回合
-   */
-  endTurn(): void {
-    const currentUnit = this.getCurrentUnit();
-    if (currentUnit) {
-      currentUnit.isActing = false;
-      this._atbSystem.resetUnitATB(currentUnit);
-      this._atbSystem.consumeAction();
-    }
-    this._turnCount++;
+    return false;
   }
 
   // ========== 查询方法 ==========
@@ -845,18 +555,23 @@ export class InkMonBattle
     this.baseTick(dt);
     this._tickCount++;
 
-    // 更新 ATB
-    this._atbSystem.tick(this.aliveActors, dt);
-
-    // 更新所有单位的 AbilitySet
     for (const actor of this.aliveActors) {
+      // 驱动 AbilitySet（Buff 计时、Tag 过期等）
       actor.abilitySet.tick(dt, this.logicTime);
-    }
 
-    // 检查是否有单位可行动（ATB 满了）
-    const currentUnit = this.getCurrentUnit();
-    if (currentUnit && !currentUnit.isActing) {
-      this.executeActorTurn(currentUnit);
+      // 检查执行状态
+      if (this.isActorExecuting(actor)) {
+        // 正在执行：驱动执行实例，不累积 ATB
+        actor.abilitySet.tickExecutions(dt);
+      } else {
+        // 空闲：累积 ATB
+        actor.accumulateATB(dt);
+
+        // 检查是否可以行动
+        if (actor.canAct) {
+          this.startActorAction(actor);
+        }
+      }
     }
 
     // 收集本帧事件
@@ -882,10 +597,14 @@ export class InkMonBattle
   }
 
   /**
-   * 执行角色回合（AI 决策 + 行动）
+   * 开始角色行动（异步，不等待执行完成）
+   *
+   * 与 HexBattle.startActorAction 保持一致：
+   * - 行动开始时立即重置 ATB
+   * - 不同步等待执行完成
+   * - Timeline 由 tick() 中的 tickExecutions(dt) 逐帧推进
    */
-  private executeActorTurn(actor: InkMonActor): void {
-    actor.isActing = true;
+  private startActorAction(actor: InkMonActor): void {
     this._turnCount++;
 
     // 产生回合开始事件
@@ -911,22 +630,15 @@ export class InkMonBattle
       }
     );
 
-    // 广播给该角色的 AbilitySet（触发 Ability）
+    // 广播给该角色的 AbilitySet（触发 Ability 创建执行实例）
     actor.abilitySet.receiveEvent(event, this);
 
-    // 驱动 Timeline 执行（立即执行所有 tag actions）
-    // 注意：Timeline 是异步的，需要推进足够的时间让所有 Action 执行完
-    const maxTimelineDuration = 1500; // 最长 Timeline 是 1500ms
-    this.driveAbilityExecutions(actor, maxTimelineDuration);
+    // 重置 ATB（行动开始时立即重置，不等执行完成）
+    actor.resetATB();
 
-    // 立即收集并记录本回合产生的所有事件
-    const turnEvents = this.eventCollector.flush();
-    if (turnEvents.length > 0) {
-      this._recorder.recordFrame(this._tickCount, turnEvents);
-    }
-
-    // 结束回合
-    this.endTurn();
+    // 注意：执行实例在创建时已自动触发 dt=0 的 tick
+    // Timeline 中 0ms 的 tags 会立即执行
+    // 后续的 Timeline 推进由 tick() 中的 tickExecutions(dt) 完成
   }
 
   /**
@@ -1045,39 +757,6 @@ export class InkMonBattle
     );
   }
 
-  /**
-   * 推进到下一个行动单位
-   */
-  advanceToNextUnit(): InkMonActor | undefined {
-    while (this._result === "ongoing") {
-      this.tick(this._config.tickInterval);
-
-      const currentUnit = this.getCurrentUnit();
-      if (currentUnit) {
-        currentUnit.isActing = true;
-        this._turnCount++;
-
-        // 产生回合开始事件
-        const turnStartEvent = createTurnStartEvent(
-          this._turnCount,
-          currentUnit.id,
-        );
-        this.eventCollector.push(turnStartEvent);
-
-        // 使用 BattleLogger 的 turnStart 方法
-        this.logger.turnStart(
-          currentUnit.displayName,
-          currentUnit.hp,
-          currentUnit.maxHp,
-        );
-
-        return currentUnit;
-      }
-    }
-
-    return undefined;
-  }
-
   // ========== 战斗结束 ==========
 
   /**
@@ -1165,49 +844,6 @@ export class InkMonBattle
       units: this.allActors.map((u) => u.serialize()),
     };
   }
-}
-
-// ========== 工厂函数 ==========
-
-/**
- * 创建 InkMon 战斗实例（低级 API）
- *
- * 此函数会自动处理 GameWorld 的初始化：
- * 1. 检查 GameWorld 是否已初始化，如果没有则初始化（仅首次）
- * 2. 注册所有技能 Timeline（仅首次）
- * 3. 使用 world.createInstance() 创建战斗实例
- *
- * 注意：此函数仅创建战斗实例，不会运行战斗。
- * 对于简单的同步战斗场景，推荐使用 runInkMonBattle()
- */
-export function createInkMonBattle(
-  teamAInkmons: InkMon[],
-  teamBInkmons: InkMon[],
-  config?: InkMonBattleConfig,
-): InkMonBattle {
-  // 检查 GameWorld 是否已初始化
-  let world: InkMonBattleGameWorld;
-
-  try {
-    world = InkMonBattleGameWorld.getInstance();
-  } catch {
-    // GameWorld 未初始化，创建新的（仅首次）
-    world = InkMonBattleGameWorld.init();
-
-    // 注册 Timeline（使用全局注册表）
-    const timelineRegistry = getTimelineRegistry();
-    for (const timeline of INKMON_TIMELINES) {
-      timelineRegistry.register(timeline);
-    }
-  }
-
-  // 使用 world.createInstance() 创建战斗实例
-  const battle = world.createInstance(() => new InkMonBattle(config));
-
-  // 初始化战斗
-  battle.initialize(teamAInkmons, teamBInkmons);
-
-  return battle;
 }
 
 /**

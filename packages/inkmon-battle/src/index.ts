@@ -68,13 +68,9 @@ export {
   type LogEntry,
 } from "./logger/BattleLogger.js";
 
-// ========== ATB 系统 ==========
-export { ATBSystem, type ATBConfig, type IATBUnit } from "./atb/index.js";
-
-// ========== 战斗实例（新版） ==========
+// ========== 战斗实例 ==========
 export {
   InkMonBattle,
-  createInkMonBattle,
   runInkMonBattle,
   type InkMonBattleConfig,
   type BattleResult,

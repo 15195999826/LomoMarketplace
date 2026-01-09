@@ -2,12 +2,16 @@
  * 战斗回放示例
  *
  * 演示使用新的 InkMonBattle API 进行战斗并导出回放
+ *
+ * 新版本使用实时战斗模式（与 HexBattle 一致）：
+ * - ATB 由 Actor 内部管理
+ * - AI 决策在 tick() 中自动执行
+ * - 使用 runInkMonBattle() 一次性运行完整战斗
  */
 
 import type { InkMon } from "@inkmon/core";
 import {
-  InkMonBattle,
-  createInkMonBattle,
+  runInkMonBattle,
   ReplayLogPrinter,
 } from "../src/index.js";
 
@@ -165,66 +169,14 @@ const mockDragonfly: InkMon = {
   },
 };
 
-// ========== 简单 AI ==========
-
-function runSimpleAI(battle: InkMonBattle, maxTurns: number = 100): number {
-  let turns = 0;
-
-  while (battle.isOngoing && turns < maxTurns) {
-    // 推进到下一个行动单位
-    const currentUnit = battle.advanceToNextUnit();
-    if (!currentUnit) break;
-
-    turns++;
-
-    // 简单 AI：优先攻击，否则移动
-    const enemies = battle.aliveActors.filter((a) => a.team !== currentUnit.team);
-    const attackableTargets = battle.getAttackableTargets(currentUnit);
-
-    if (attackableTargets.length > 0) {
-      // 随机选择一个目标攻击
-      const target =
-        attackableTargets[Math.floor(Math.random() * attackableTargets.length)];
-
-      // 使用主属性攻击，威力 60
-      battle.executeAttack(
-        currentUnit,
-        target,
-        60,
-        currentUnit.primaryElement,
-        "physical"
-      );
-    } else if (enemies.length > 0) {
-      // 没有可攻击目标，尝试移动
-      const movablePositions = battle.getMovablePositions(currentUnit);
-      if (movablePositions.length > 0) {
-        // 随机选择一个位置移动
-        const targetPos =
-          movablePositions[Math.floor(Math.random() * movablePositions.length)];
-        battle.executeMove(currentUnit, targetPos);
-      } else {
-        // 无法移动，跳过
-        battle.executeSkip(currentUnit);
-      }
-    } else {
-      // 没有敌人了，跳过
-      battle.executeSkip(currentUnit);
-    }
-
-    // 结束当前回合
-    battle.endTurn();
-  }
-
-  return turns;
-}
-
 // ========== 运行战斗 ==========
 
 function runBattleWithReplay(): void {
-  console.log("🎮 创建战斗实例...\n");
+  console.log("🎮 运行 InkMon 战斗...\n");
 
-  // 使用工厂函数创建战斗（自动初始化）
-  const battle = createInkMonBattle(
+  // 使用 runInkMonBattle 一次性运行完整战斗
+  // AI 决策在 tick() 中自动执行（实时战斗模式）
+  const replay = runInkMonBattle(
     // 队伍 A
     [mockFireFox, mockGrassSnake],
     // 队伍 B
@@ -239,26 +191,12 @@ function runBattleWithReplay(): void {
     }
   );
 
-  // 开始战斗
-  battle.start();
-
-  console.log("⚔️ 开始战斗...\n");
-
-  // 运行 AI
-  const turns = runSimpleAI(battle, 50);
-
-  console.log(`\n📊 战斗统计:`);
-  console.log(`   回合数: ${turns}`);
-  console.log(`   结果: ${battle.result}`);
-
-  // 获取回放数据
-  const replay = battle.getReplay();
-
   console.log(`\n🎥 回放数据:`);
   console.log(`   战斗 ID: ${replay.meta.battleId}`);
   console.log(`   总帧数: ${replay.meta.totalFrames}`);
   console.log(`   初始单位数: ${replay.initialActors.length}`);
   console.log(`   时间线条目数: ${replay.timeline.length}`);
+  console.log(`   结束原因: ${replay.meta.endReason}`);
 
   // 打印回放日志摘要
   console.log("\n📋 回放日志摘要:");
