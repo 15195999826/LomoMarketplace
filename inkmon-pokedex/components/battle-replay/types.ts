@@ -251,6 +251,8 @@ export interface ReplayPlayerState {
   activeAnimations: Map<string, AnimationData>;
   /** 插值位置（用于渲染移动动画） */
   interpolatedPositions: Map<string, { q: number; r: number }>;
+  /** 地图配置（从回放数据读取） */
+  mapConfig?: HexMapConfig;
 }
 
 // ========== Replay Summary ==========
@@ -297,6 +299,7 @@ export function createInitialState(replay: IBattleRecord): ReplayPlayerState {
     renderFrameCount: 0,
     activeAnimations: new Map(),
     interpolatedPositions: new Map(),
+    mapConfig,
   };
 }
 

@@ -2,20 +2,21 @@
  * BattleStage - 战斗舞台组件 (Canvas 版本)
  *
  * 使用 Canvas 绘制六边形战斗地图，避免 CSS clip-path 边框重叠问题
+ * 直接使用 HexGridModel 进行坐标计算，与逻辑层保持一致
  */
 
 "use client";
 
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { HexGridModel, type HexMapConfig, type PixelCoord } from "@lomo/hex-grid";
 import type { ActorState, InkMonReplayEvent } from "./types";
-import { generateHexGrid } from "@/lib/hex-layout";
 import styles from "./BattleStage.module.css";
 
 // ========== Constants ==========
 
-// 六边形尺寸配置 (pointy-top)
-const HEX_SIZE = 36; // 六边形外接圆半径
-const HEX_SPACING = 2; // 六边形间距
+// 渲染用六边形尺寸
+const RENDER_HEX_SIZE = 36;
+const HEX_SPACING = 2;
 
 // ========== Props ==========
 
@@ -31,7 +32,8 @@ export interface TriggeredEffect {
 export interface BattleStageProps {
   actors: Map<string, ActorState>;
   events: InkMonReplayEvent[];
-  mapRadius?: number;
+  /** 地图配置（来自回放数据） */
+  mapConfig?: HexMapConfig;
   /** 插值位置（用于移动动画） */
   interpolatedPositions?: Map<string, { q: number; r: number }>;
   /** 触发的效果（用于 Hit 帧飘字） */
@@ -52,32 +54,24 @@ interface FloatingText {
 // ========== Helper Functions ==========
 
 /**
- * Axial 坐标转像素坐标 (pointy-top)
- */
-function axialToPixel(q: number, r: number, size: number): { x: number; y: number } {
-  const x = size * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-  const y = size * (3 / 2 * r);
-  return { x, y };
-}
-
-/**
- * 绘制单个六边形 (pointy-top)
+ * 绘制单个六边形（支持 flat-top 和 pointy-top）
  */
 function drawHex(
   ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
+  center: PixelCoord,
   size: number,
+  orientation: "flat" | "pointy",
   fillStyle?: string,
   strokeStyle: string = "rgba(255,255,255,0.15)",
   lineWidth: number = 1
 ) {
   ctx.beginPath();
   for (let i = 0; i < 6; i++) {
-    // pointy-top: 从 -30 度开始
-    const angle = (Math.PI / 180) * (60 * i - 30);
-    const x = centerX + size * Math.cos(angle);
-    const y = centerY + size * Math.sin(angle);
+    // flat-top: 从 0 度开始; pointy-top: 从 -30 度开始
+    const angleDeg = orientation === "flat" ? 60 * i : 60 * i - 30;
+    const angleRad = (Math.PI / 180) * angleDeg;
+    const x = center.x + size * Math.cos(angleRad);
+    const y = center.y + size * Math.sin(angleRad);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
@@ -99,7 +93,7 @@ function drawHex(
 export function BattleStage({
   actors,
   events,
-  mapRadius = 4,
+  mapConfig,
   interpolatedPositions,
   triggeredEffects,
 }: BattleStageProps) {
@@ -108,9 +102,25 @@ export function BattleStage({
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
 
-  // 生成网格坐标
-  const hexGrid = useMemo(() => generateHexGrid(mapRadius), [mapRadius]);
-
+  // 创建 HexGridModel 实例（用于坐标计算）
+  // 使用渲染尺寸，这样 coordToWorld 直接返回渲染坐标
+  const gridModel = useMemo(() => {
+    if (mapConfig) {
+      return new HexGridModel({
+        rows: mapConfig.rows,
+        columns: mapConfig.columns,
+        hexSize: RENDER_HEX_SIZE,
+        orientation: mapConfig.orientation,
+      });
+    }
+    // 默认使用 radius=4 的六边形区域
+    return new HexGridModel({
+      drawMode: "baseOnRadius",
+      radius: 4,
+      hexSize: RENDER_HEX_SIZE,
+      orientation: "pointy",
+    });
+  }, [mapConfig]);
 
   // ResizeObserver 监听容器大小
   useEffect(() => {
@@ -153,18 +163,21 @@ export function BattleStage({
     const offsetX = canvasSize.width / 2;
     const offsetY = canvasSize.height / 2;
 
-    // 绘制网格
-    for (const hex of hexGrid) {
-      const pixel = axialToPixel(hex.q, hex.r, HEX_SIZE);
-      const x = pixel.x + offsetX;
-      const y = pixel.y + offsetY;
+    const hexSize = gridModel.config.hexSize;
+    const orientation = gridModel.config.orientation;
+
+    // 绘制网格（使用 HexGridModel 遍历所有格子）
+    for (const tile of gridModel.getAllTiles()) {
+      const worldPos = gridModel.coordToWorld(tile.coord);
+      const x = worldPos.x + offsetX;
+      const y = worldPos.y + offsetY;
 
       // 绘制六边形
       drawHex(
         ctx,
-        x,
-        y,
-        HEX_SIZE - HEX_SPACING,
+        { x, y },
+        hexSize - HEX_SPACING,
+        orientation,
         "rgba(255,255,255,0.04)",
         "rgba(255,255,255,0.12)",
         1
@@ -175,7 +188,7 @@ export function BattleStage({
       ctx.font = "9px monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(`${hex.q},${hex.r}`, x, y);
+      ctx.fillText(`${tile.coord.q},${tile.coord.r}`, x, y);
     }
 
     // 绘制单位
@@ -184,9 +197,9 @@ export function BattleStage({
 
       // 优先使用插值位置（动画中），否则使用逻辑位置
       const pos = interpolatedPositions?.get(id) ?? actor.position;
-      const pixel = axialToPixel(pos.q, pos.r, HEX_SIZE);
-      const x = pixel.x + offsetX;
-      const y = pixel.y + offsetY;
+      const worldPos = gridModel.coordToWorld(pos);
+      const x = worldPos.x + offsetX;
+      const y = worldPos.y + offsetY;
 
       // 队伍颜色
       const teamColor = actor.team === "A" ? "#22c55e" : "#ef4444";
@@ -194,7 +207,7 @@ export function BattleStage({
 
       // 绘制单位底座
       ctx.beginPath();
-      ctx.arc(x, y, HEX_SIZE * 0.6, 0, Math.PI * 2);
+      ctx.arc(x, y, hexSize * 0.6, 0, Math.PI * 2);
       ctx.fillStyle = teamBg;
       ctx.fill();
       ctx.strokeStyle = teamColor;
@@ -210,10 +223,10 @@ export function BattleStage({
       ctx.fillText(displayName, x, y - 4);
 
       // 绘制血条背景
-      const hpBarWidth = HEX_SIZE * 1.2;
+      const hpBarWidth = hexSize * 1.2;
       const hpBarHeight = 4;
       const hpBarX = x - hpBarWidth / 2;
-      const hpBarY = y + HEX_SIZE * 0.35;
+      const hpBarY = y + hexSize * 0.35;
 
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(hpBarX, hpBarY, hpBarWidth, hpBarHeight);
@@ -226,14 +239,14 @@ export function BattleStage({
 
       // 绘制队伍标识
       ctx.beginPath();
-      ctx.arc(x + HEX_SIZE * 0.4, y - HEX_SIZE * 0.4, 8, 0, Math.PI * 2);
+      ctx.arc(x + hexSize * 0.4, y - hexSize * 0.4, 8, 0, Math.PI * 2);
       ctx.fillStyle = teamColor;
       ctx.fill();
       ctx.fillStyle = "white";
       ctx.font = "bold 8px sans-serif";
-      ctx.fillText(actor.team, x + HEX_SIZE * 0.4, y - HEX_SIZE * 0.4);
+      ctx.fillText(actor.team, x + hexSize * 0.4, y - hexSize * 0.4);
     }
-  }, [hexGrid, actors, canvasSize, interpolatedPositions]);
+  }, [gridModel, actors, canvasSize, interpolatedPositions]);
 
   // 处理触发的效果生成飘字（Hit 帧触发）
   useEffect(() => {
@@ -248,14 +261,14 @@ export function BattleStage({
       if (targetActor) {
         // 使用插值位置（如果有）
         const pos = interpolatedPositions?.get(effect.targetActorId) ?? targetActor.position;
-        const pixel = axialToPixel(pos.q, pos.r, HEX_SIZE);
+        const worldPos = gridModel.coordToWorld(pos);
 
         if (effect.type === 'damage') {
           newTexts.push({
             id: `${effect.targetActorId}-${Date.now()}-${Math.random()}`,
             text: `-${effect.value}`,
-            x: pixel.x + offsetX,
-            y: pixel.y + offsetY - 30,
+            x: worldPos.x + offsetX,
+            y: worldPos.y + offsetY - 30,
             color: "#ff4444",
             timestamp: Date.now(),
           });
@@ -263,8 +276,8 @@ export function BattleStage({
           newTexts.push({
             id: `${effect.targetActorId}-${Date.now()}-${Math.random()}`,
             text: `+${effect.value}`,
-            x: pixel.x + offsetX,
-            y: pixel.y + offsetY - 30,
+            x: worldPos.x + offsetX,
+            y: worldPos.y + offsetY - 30,
             color: "#22c55e",
             timestamp: Date.now(),
           });
@@ -275,7 +288,7 @@ export function BattleStage({
     if (newTexts.length > 0) {
       setFloatingTexts((prev) => [...prev, ...newTexts]);
     }
-  }, [triggeredEffects, actors, canvasSize, interpolatedPositions]);
+  }, [triggeredEffects, actors, canvasSize, interpolatedPositions, gridModel]);
 
   // 清理飘字
   const handleFloatingTextComplete = useCallback((id: string) => {

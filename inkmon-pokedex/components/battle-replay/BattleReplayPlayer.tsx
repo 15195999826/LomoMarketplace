@@ -601,6 +601,7 @@ export function BattleReplayPlayer({
             <BattleStage
               actors={state.actors}
               events={state.currentEvents as import("./types").InkMonReplayEvent[]}
+              mapConfig={state.mapConfig}
               interpolatedPositions={state.interpolatedPositions}
               triggeredEffects={triggeredEffects}
             />
