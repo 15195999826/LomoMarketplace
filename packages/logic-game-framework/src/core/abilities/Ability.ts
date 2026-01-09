@@ -360,13 +360,15 @@ export class Ability implements IAbilityForComponent {
   /**
    * 接收游戏事件，分发到所有 Component
    *
+   * 将事件分发到所有 active 状态的 Component，如果有 Component 被触发，
+   * 会通知所有通过 `addTriggeredListener()` 注册的回调。
+   *
    * @param event 游戏事件
    * @param context 组件生命周期上下文
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
-   * @returns 被触发的 Component 类型列表
    */
-  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): string[] {
-    if (this._state === 'expired') return [];
+  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
+    if (this._state === 'expired') return;
 
     const triggeredComponents: string[] = [];
 
@@ -389,8 +391,6 @@ export class Ability implements IAbilityForComponent {
         callback(event, triggeredComponents);
       }
     }
-
-    return triggeredComponents;
   }
 
   /**

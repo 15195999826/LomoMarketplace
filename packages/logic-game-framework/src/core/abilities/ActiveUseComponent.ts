@@ -13,6 +13,75 @@
  * | 默认触发器 | ❌ 必须指定 | ✅ 可选，默认监听 AbilityActivateEvent |
  * | 用途 | 周期效果、被动触发 | 主动技能入口 |
  *
+ * ## 执行流程与事件顺序
+ *
+ * ### 完整执行流程
+ *
+ * ```
+ * 1. AbilityActivateEvent 触发
+ *    └─ ActiveUseComponent.onEvent() 被调用
+ *
+ * 2. 检查触发器 (checkTriggers)
+ *    └─ 验证事件类型和匹配规则
+ *
+ * 3. 获取 AbilitySet (getAbilitySet)
+ *    └─ 从 gameplayState 获取 AbilitySet 引用
+ *
+ * 4. 检查释放条件 (checkConditions)
+ *    ├─ 遍历所有 conditions
+ *    └─ 任何条件不满足则返回 false
+ *
+ * 5. 检查消耗是否可支付 (checkCosts)
+ *    ├─ 遍历所有 costs
+ *    └─ 任何消耗不足则返回 false
+ *
+ * 6. 支付消耗 (payCosts)  ← 关键点
+ *    ├─ 调用每个 Cost.pay()
+ *    └─ 可能触发 tagChanged 事件（如冷却）
+ *       例如：cooldown:ability_18 (0 → 1)
+ *
+ * 7. 激活执行实例 (activateWithoutChecks)
+ *    ├─ 调用父类 ActivateInstanceComponent.onEvent()
+ *    └─ 创建 AbilityExecutionInstance
+ *       └─ 触发 abilityTriggered 事件
+ * ```
+ *
+ * ### 录像事件顺序
+ *
+ * **重要**：由于执行流程中先支付消耗（步骤 6），再激活实例（步骤 7），
+ * 录像记录的事件顺序会是：
+ *
+ * ```json
+ * {
+ *   "frame": 8,
+ *   "events": [
+ *     {
+ *       "kind": "tagChanged",           // ← 先记录：冷却添加
+ *       "actorId": "Character_16",
+ *       "tag": "cooldown:ability_18",
+ *       "oldCount": 0,
+ *       "newCount": 1
+ *     },
+ *     {
+ *       "kind": "abilityTriggered",     // ← 后记录：技能触发
+ *       "actorId": "Character_16",
+ *       "abilityInstanceId": "ability_18",
+ *       "abilityConfigId": "skill_swift_strike",
+ *       "triggerEventKind": "abilityActivate"
+ *     }
+ *   ]
+ * }
+ * ```
+ *
+ * 这个顺序虽然看起来不符合"先触发技能，再产生副作用"的认知，
+ * 但它准确反映了代码的实际执行顺序，因此被保留。
+ *
+ * ### 顺序的影响
+ *
+ * - **回放系统**：需要正确处理 `tagChanged` 先于 `abilityTriggered` 的情况
+ * - **日志分析**：在分析录像时，应注意这个顺序特点
+ * - **未来优化**：如果需要调整顺序，可以在事件记录层实现优先级机制
+ *
  * ## 使用示例
  *
  * ```typescript
@@ -240,8 +309,9 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
     context: ComponentLifecycleContext,
     gameplayState: unknown
   ): boolean {
-    // 调用父类的 onEvent，但触发器已检查过，会通过
-    return super.onEvent(event, context, gameplayState);
+    // 直接调用父类的激活逻辑，避免重复检查触发器
+    this.activateExecution(event, context, gameplayState);
+    return true;
   }
 
   /**

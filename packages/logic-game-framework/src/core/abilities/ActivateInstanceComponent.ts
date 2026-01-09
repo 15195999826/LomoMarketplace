@@ -170,7 +170,7 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
   /**
    * 激活执行实例
    */
-  private activateExecution(
+  protected activateExecution(
     event: GameEventBase,
     context: ComponentLifecycleContext,
     gameplayState: unknown

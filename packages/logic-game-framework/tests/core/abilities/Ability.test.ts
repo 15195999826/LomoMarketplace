@@ -51,8 +51,9 @@ class MockComponent extends BaseAbilityComponent {
     this.onTickCalls.push(dt);
   }
 
-  onEvent(event: GameEventBase, _context: ComponentLifecycleContext, gameplayState: unknown): void {
+  onEvent(event: GameEventBase, _context: ComponentLifecycleContext, gameplayState: unknown): boolean {
     this.onEventCalls.push({ event, gameplayState });
+    return true; // 表示响应了事件
   }
 
   serialize(): object {

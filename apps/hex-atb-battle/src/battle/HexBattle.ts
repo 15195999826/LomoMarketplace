@@ -26,6 +26,7 @@ import {
   DistanceCollisionDetector,
   BattleRecorder,
   ReplayLogPrinter,
+  type IActorInitData,
 } from '@lomo/logic-game-framework/stdlib';
 
 import { HexGridModel, axial, hexNeighbors, hexDistance, type AxialCoord } from '@lomo/hex-grid';
@@ -499,11 +500,12 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
         );
       } else if (isActorSpawnedEvent(event)) {
         // Actor 生成
-        const actor = this.getActor<CharacterActor>(event.actorId);
+        const actorData = event.actor as IActorInitData;
+        const actor = this.getActor<CharacterActor>(actorData.id);
         this._logger.actorSpawned(
-          event.actorId,
-          actor?.displayName ?? event.actorId,
-          event.displayName
+          actorData.id,
+          actor?.displayName ?? actorData.displayName,
+          actorData.displayName
         );
       } else if (isActorDestroyedEvent(event)) {
         // Actor 销毁
