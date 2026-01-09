@@ -7,7 +7,7 @@
 | Phase | 名称 | 状态 | 完成日期 |
 |-------|------|------|----------|
 | Phase 1 | 核心类型定义 | ✅ 完成 | 2026-01-10 |
-| Phase 2 | Visualizer 注册机制 | ⏳ 待开始 | - |
+| Phase 2 | Visualizer 注册机制 | ✅ 完成 | 2026-01-10 |
 | Phase 3 | ActionScheduler + RenderWorld | ⏳ 待开始 | - |
 | Phase 4 | 重构 BattleReplayPlayer | ⏳ 待开始 | - |
 | Phase 5 | 配置化 | ⏳ 待开始 | - |
@@ -66,21 +66,36 @@
 
 ---
 
-## Phase 2: Visualizer 注册机制 ⏳
+## Phase 2: Visualizer 注册机制 ✅
 
 **目标**：可插拔的事件→动作转换器
 
-### 待创建文件
+### 完成的文件
 
-| 文件 | 说明 |
-|------|------|
-| `lib/battle-replay/visualizers/IVisualizer.ts` | 接口定义 |
-| `lib/battle-replay/visualizers/VisualizerRegistry.ts` | 注册表 |
-| `lib/battle-replay/visualizers/impl/MoveVisualizer.ts` | 移动事件转换器 |
-| `lib/battle-replay/visualizers/impl/DamageVisualizer.ts` | 伤害事件转换器 |
-| `lib/battle-replay/visualizers/impl/HealVisualizer.ts` | 治疗事件转换器 |
-| `lib/battle-replay/visualizers/impl/index.ts` | 实现导出 |
-| `lib/battle-replay/visualizers/index.ts` | 模块导出 |
+| 文件 | 说明 | 状态 |
+|------|------|------|
+| `lib/battle-replay/visualizers/IVisualizer.ts` | 接口定义 | ✅ |
+| `lib/battle-replay/visualizers/VisualizerRegistry.ts` | 注册表 | ✅ |
+| `lib/battle-replay/visualizers/impl/MoveVisualizer.ts` | 移动事件转换器 | ✅ |
+| `lib/battle-replay/visualizers/impl/DamageVisualizer.ts` | 伤害事件转换器 | ✅ |
+| `lib/battle-replay/visualizers/impl/SkillVisualizer.ts` | 技能事件转换器 | ✅ |
+| `lib/battle-replay/visualizers/impl/HealVisualizer.ts` | 治疗事件转换器 | ✅ |
+| `lib/battle-replay/visualizers/impl/index.ts` | 实现导出 | ✅ |
+| `lib/battle-replay/visualizers/index.ts` | 模块导出 | ✅ |
+
+### 实现的 Visualizer
+
+| Visualizer | 输入事件 | 输出动作 |
+|------------|----------|----------|
+| `MoveVisualizer` | `move_start` | `MoveAction` |
+| `DamageVisualizer` | `damage` | `FloatingTextAction` + `UpdateHPAction` |
+| `SkillVisualizer` | `skillUse` | `MeleeStrikeAction` |
+| `HealVisualizer` | `heal` | `FloatingTextAction` + `UpdateHPAction` |
+
+### 验证
+
+- [x] TypeScript 编译通过
+- [x] 类型导出正确
 
 ---
 
@@ -145,14 +160,16 @@ inkmon-pokedex/
 │       │   ├── RenderState.ts        # ✅
 │       │   └── index.ts              # ✅
 │       │
-│       ├── visualizers/              # ⏳ Phase 2
-│       │   ├── IVisualizer.ts
-│       │   ├── VisualizerRegistry.ts
+│       ├── visualizers/              # ✅ Phase 2
+│       │   ├── IVisualizer.ts        # ✅
+│       │   ├── VisualizerRegistry.ts # ✅
 │       │   ├── impl/
-│       │   │   ├── MoveVisualizer.ts
-│       │   │   ├── DamageVisualizer.ts
-│       │   │   └── index.ts
-│       │   └── index.ts
+│       │   │   ├── MoveVisualizer.ts    # ✅
+│       │   │   ├── DamageVisualizer.ts  # ✅
+│       │   │   ├── SkillVisualizer.ts   # ✅
+│       │   │   ├── HealVisualizer.ts    # ✅
+│       │   │   └── index.ts             # ✅
+│       │   └── index.ts              # ✅
 │       │
 │       ├── scheduler/                # ⏳ Phase 3
 │       │   ├── ActionScheduler.ts
