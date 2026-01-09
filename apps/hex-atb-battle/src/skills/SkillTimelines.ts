@@ -91,14 +91,17 @@ export const HOLY_HEAL_TIMELINE: TimelineAsset = {
 };
 
 /**
- * 移动 Timeline
- * - 移动到相邻格子，0.2s 完成
+ * 移动 Timeline（两阶段）
+ * - 0ms: 开始移动，预订目标格子（激活时立即触发）
+ * - 100ms: 应用移动，实际到达目标格子
+ * - 200ms: 结束
  */
 export const MOVE_TIMELINE: TimelineAsset = {
   id: 'action_move',
   totalDuration: 200,
   tags: {
-    execute: 100, // 100ms 时执行移动
+    start: 0,     // 0ms 时执行 StartMoveAction（立即预订）
+    execute: 100, // 100ms 时执行 ApplyMoveAction（实际移动）
     end: 200,
   },
 };

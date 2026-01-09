@@ -56,9 +56,9 @@ import type { ActorRef } from '@lomo/logic-game-framework';
 
 /** AI 决策结果 */
 type ActionDecision = {
-  type: 'move' | 'skill';
+  type: 'move' | 'skill' | 'skip';
   /** 要激活的 Ability 实例 ID */
-  abilityInstanceId: string;
+  abilityInstanceId?: string;
   /** 目标 Actor（单体技能用） */
   target?: ActorRef;
   /** 目标坐标（移动/范围技能用） */
@@ -370,7 +370,23 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
     // AI 决策
     const decision = this.decideAction(actor);
-    const decisionText = decision.type === 'move' ? '移动' : '使用技能';
+
+    // 如果决策是跳过，则不执行任何操作
+    if (decision.type === 'skip') {
+      this._logger.log(`⏭️ ${actor.displayName} 无法行动，跳过本次决策`);
+      actor.resetATB();
+      return;
+    }
+
+    // 格式化决策信息
+    let decisionText = '';
+    if (decision.type === 'move') {
+      const coord = decision.targetCoord;
+      decisionText = `移动到 (${coord?.q}, ${coord?.r})`;
+    } else {
+      const targetName = decision.target ? this.getActor(decision.target.id)?.displayName : '未知';
+      decisionText = `使用技能 → ${targetName}`;
+    }
     this._logger.aiDecision(actor.id, actor.displayName, decisionText);
 
     // 记录执行前的实例数量
@@ -383,7 +399,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
 
     // 创建事件并广播
     const event = createActionUseEvent(
-      decision.abilityInstanceId,
+      decision.abilityInstanceId!,
       actor.id,
       { target: decision.target, targetCoord: decision.targetCoord }
     );
@@ -405,6 +421,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
         }
       }
     }
+
+    // 注意：执行实例在创建时已自动触发 dt=0 的 tick（框架行为）
+    // 因此 timeline 中 0ms 的 tags（如移动的预订）会立即执行
 
     // 重置 ATB
     actor.resetATB();
@@ -448,7 +467,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
       if (myPos) {
         const neighbors = hexNeighbors(myPos);
         const validNeighbors = neighbors.filter((n: AxialCoord) =>
-          this._context.grid.hasTile(n) && !this._context.grid.isOccupied(n)
+          this._context.grid.hasTile(n) &&
+          !this._context.grid.isOccupied(n) &&
+          !this._context.grid.isReserved(n)  // ✅ 检查格子是否已被预订
         );
 
         if (validNeighbors.length > 0) {
@@ -471,11 +492,9 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
         };
       }
 
-      // 兜底：移动到原地
+      // 无法移动也无法释放技能，跳过这一帧
       return {
-        type: 'move',
-        abilityInstanceId: actor.moveAbility.id,
-        targetCoord: myPos,
+        type: 'skip',
       };
     }
   }

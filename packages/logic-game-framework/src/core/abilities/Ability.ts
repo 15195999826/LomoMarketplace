@@ -328,6 +328,10 @@ export class Ability implements IAbilityForComponent {
 
     this.executionInstances.push(instance);
 
+    // 立即触发一次 dt=0 的 tick，执行 timeline 中 0ms 的 tags
+    // 这允许 Ability 在激活时立即执行初始化逻辑（如预订资源）
+    instance.tick(0);
+
     return instance;
   }
 

@@ -57,9 +57,9 @@ export interface HealEvent extends GameEventBase {
 }
 
 /**
- * 移动事件
+ * 移动事件（已废弃，使用 MoveStartEvent 和 MoveCompleteEvent 替代）
  *
- * 由 MoveAction 产生。
+ * @deprecated 使用两阶段移动事件代替
  */
 export interface MoveEvent extends GameEventBase {
   readonly kind: 'move';
@@ -71,6 +71,36 @@ export interface MoveEvent extends GameEventBase {
   readonly toHex: { q: number; r: number };
   /** 路径（可选，用于多格移动动画） */
   readonly path?: Array<{ q: number; r: number }>;
+}
+
+/**
+ * 开始移动事件
+ *
+ * 由 StartMoveAction 产生，表示角色开始向目标格子移动（订阅目标格子）。
+ */
+export interface MoveStartEvent extends GameEventBase {
+  readonly kind: 'move_start';
+  /** 移动的 Actor ID */
+  readonly actorId: string;
+  /** 起始坐标 */
+  readonly fromHex: { q: number; r: number };
+  /** 目标坐标（预订的格子） */
+  readonly toHex: { q: number; r: number };
+}
+
+/**
+ * 移动完成事件
+ *
+ * 由 ApplyMoveAction 产生，表示角色到达目标格子（实际移动完成）。
+ */
+export interface MoveCompleteEvent extends GameEventBase {
+  readonly kind: 'move_complete';
+  /** 移动的 Actor ID */
+  readonly actorId: string;
+  /** 起始坐标 */
+  readonly fromHex: { q: number; r: number };
+  /** 目标坐标 */
+  readonly toHex: { q: number; r: number };
 }
 
 /**
@@ -126,6 +156,7 @@ export function createHealEvent(
 
 /**
  * 创建移动事件
+ * @deprecated 使用 createMoveStartEvent 和 createMoveCompleteEvent 替代
  */
 export function createMoveEvent(
   actorId: string,
@@ -139,6 +170,38 @@ export function createMoveEvent(
     fromHex,
     toHex,
     path,
+  };
+}
+
+/**
+ * 创建开始移动事件
+ */
+export function createMoveStartEvent(
+  actorId: string,
+  fromHex: { q: number; r: number },
+  toHex: { q: number; r: number }
+): MoveStartEvent {
+  return {
+    kind: 'move_start',
+    actorId,
+    fromHex,
+    toHex,
+  };
+}
+
+/**
+ * 创建移动完成事件
+ */
+export function createMoveCompleteEvent(
+  actorId: string,
+  fromHex: { q: number; r: number },
+  toHex: { q: number; r: number }
+): MoveCompleteEvent {
+  return {
+    kind: 'move_complete',
+    actorId,
+    fromHex,
+    toHex,
   };
 }
 
@@ -168,6 +231,14 @@ export function isHealEvent(event: GameEventBase): event is HealEvent {
 
 export function isMoveEvent(event: GameEventBase): event is MoveEvent {
   return event.kind === 'move';
+}
+
+export function isMoveStartEvent(event: GameEventBase): event is MoveStartEvent {
+  return event.kind === 'move_start';
+}
+
+export function isMoveCompleteEvent(event: GameEventBase): event is MoveCompleteEvent {
+  return event.kind === 'move_complete';
 }
 
 export function isDeathEvent(event: GameEventBase): event is DeathEvent {

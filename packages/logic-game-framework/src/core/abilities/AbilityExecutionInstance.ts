@@ -173,12 +173,12 @@ export class AbilityExecutionInstance {
     const triggeredThisTick: TagTriggeredEvent[] = [];
 
     for (const [tagName, tagTime] of Object.entries(this.timeline.tags)) {
-      // 检查是否在本次 tick 中越过了 Tag 时间点
-      if (
-        previousElapsed < tagTime &&
-        this._elapsed >= tagTime &&
-        !this.triggeredTags.has(tagName)
-      ) {
+      // 特殊处理：tagTime=0 在激活时（previousElapsed=0, elapsed=0）立即触发
+      const shouldTrigger = tagTime === 0
+        ? (previousElapsed === 0 && this._elapsed >= 0 && !this.triggeredTags.has(tagName))
+        : (previousElapsed < tagTime && this._elapsed >= tagTime && !this.triggeredTags.has(tagName));
+
+      if (shouldTrigger) {
         this.triggeredTags.add(tagName);
         triggeredThisTick.push({
           tagName,

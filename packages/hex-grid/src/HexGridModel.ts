@@ -215,6 +215,9 @@ export class HexGridModel<T = unknown> {
   /** 占用者位置索引 */
   private occupantPositions: Map<string, AxialCoord> = new Map();
 
+  /** 格子预订状态（坐标 key -> 占用者 ID） */
+  private reservations: Map<string, string> = new Map();
+
   /** 完整配置 */
   readonly config: Required<
     Pick<HexGridConfig, 'drawMode' | 'hexSize' | 'mapCenter' | 'orientation' | 'defaultTerrain'>
@@ -473,10 +476,19 @@ export class HexGridModel<T = unknown> {
     if (!this.hasTile(to)) return false;
     if (this.occupants.has(toKey)) return false;
 
+    // 检查目标格子是否被其他人预订
+    const reservation = this.reservations.get(toKey);
+    if (reservation && reservation !== occupant.id) return false;
+
     // 执行移动
     this.occupants.delete(fromKey);
     this.occupants.set(toKey, occupant);
     this.occupantPositions.set(occupant.id, to);
+
+    // 自动取消目标格子的预订（仅当预订是自己的）
+    if (reservation === occupant.id) {
+      this.reservations.delete(toKey);
+    }
 
     // 触发事件
     this.onOccupantMove.emit({ occupant, from, to });
@@ -496,6 +508,71 @@ export class HexGridModel<T = unknown> {
    */
   findOccupantPosition(occupantId: string): AxialCoord | undefined {
     return this.occupantPositions.get(occupantId);
+  }
+
+  // ========== 格子预订机制 ==========
+
+  /**
+   * 预订目标格子
+   *
+   * 用于防止移动冲突：在移动开始时预订目标格子，在移动完成时取消预订。
+   *
+   * @param coord 目标坐标
+   * @param occupantId 预订的占用者 ID
+   * @returns 是否预订成功（如果格子已被其他单位预订或占用则失败）
+   */
+  reserveTile(coord: AxialCoord, occupantId: string): boolean {
+    const key = hexKey(coord);
+
+    // 检查格子是否存在
+    if (!this.hasTile(coord)) {
+      return false;
+    }
+
+    // 检查格子是否已被预订
+    const existingReservation = this.reservations.get(key);
+    if (existingReservation && existingReservation !== occupantId) {
+      return false;
+    }
+
+    // 检查格子是否已被占用（排除自己）
+    const occupant = this.occupants.get(key);
+    if (occupant && occupant.id !== occupantId) {
+      return false;
+    }
+
+    // 预订成功
+    this.reservations.set(key, occupantId);
+    return true;
+  }
+
+  /**
+   * 取消格子预订
+   *
+   * @param coord 目标坐标
+   */
+  cancelReservation(coord: AxialCoord): void {
+    this.reservations.delete(hexKey(coord));
+  }
+
+  /**
+   * 获取格子的预订状态
+   *
+   * @param coord 目标坐标
+   * @returns 预订该格子的占用者 ID，如果未被预订则返回 undefined
+   */
+  getReservation(coord: AxialCoord): string | undefined {
+    return this.reservations.get(hexKey(coord));
+  }
+
+  /**
+   * 检查格子是否已被预订
+   *
+   * @param coord 目标坐标
+   * @returns 格子是否已被预订
+   */
+  isReserved(coord: AxialCoord): boolean {
+    return this.reservations.has(hexKey(coord));
   }
 
   // ========== 范围查询 ==========
@@ -673,6 +750,7 @@ export class HexGridModel<T = unknown> {
    * 清理所有事件监听器
    */
   destroy(): void {
+    this.reservations.clear();
     this.onTileUpdate.clear();
     this.onOccupantUpdate.clear();
     this.onOccupantMove.clear();
