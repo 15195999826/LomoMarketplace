@@ -18,13 +18,18 @@ import type { TimelineAsset } from '@lomo/logic-game-framework';
 
 /**
  * 移动 Timeline
- * - 移动到相邻格子
+ *
+ * 两阶段移动：
+ * - start (0ms): StartMoveAction - 预订目标格子，创建 MoveStartEvent
+ * - execute (250ms): ApplyMoveAction - 实际移动，创建 MoveCompleteEvent
+ * - end (500ms): 结束
  */
 export const MOVE_TIMELINE: TimelineAsset = {
   id: 'action_move',
   totalDuration: 500,
   tags: {
-    execute: 250, // 中点执行移动逻辑
+    start: 0,     // 0ms 时执行 StartMoveAction（立即预订）
+    execute: 250, // 250ms 时执行 ApplyMoveAction（实际移动）
     end: 500,
   },
 };

@@ -31,7 +31,8 @@ import type { Element } from '@inkmon/core';
 
 import { DamageAction } from '../actions/DamageAction.js';
 import { HealAction } from '../actions/HealAction.js';
-import { MoveAction } from '../actions/MoveAction.js';
+import { StartMoveAction } from '../actions/StartMoveAction.js';
+import { ApplyMoveAction } from '../actions/ApplyMoveAction.js';
 import { CooldownReadyCondition, CooldownCost } from './CooldownSystem.js';
 import { TIMELINE_ID } from './InkMonTimelines.js';
 
@@ -118,6 +119,11 @@ const DEFAULT_SKILL_COOLDOWN = 3000;
  * 移动 - 移动到相邻格子
  *
  * 使用 ActivateInstanceComponent，需要显式指定 triggers。
+ *
+ * ## 两阶段移动
+ *
+ * - **start (0ms)**: StartMoveAction - 预订目标格子，创建 MoveStartEvent
+ * - **execute (250ms)**: ApplyMoveAction - 实际移动，创建 MoveCompleteEvent
  */
 export const MOVE_ABILITY: AbilityConfig = {
   configId: 'action_move',
@@ -136,8 +142,15 @@ export const MOVE_ABILITY: AbilityConfig = {
         ],
         timelineId: TIMELINE_ID.MOVE,
         tagActions: {
+          start: [
+            new StartMoveAction({
+              targetSelector: abilityOwnerSelector,
+              targetCoord: (ctx) =>
+                (getCurrentEvent(ctx) as ActionUseEvent).targetCoord!,
+            }),
+          ],
           execute: [
-            new MoveAction({
+            new ApplyMoveAction({
               targetSelector: abilityOwnerSelector,
               targetCoord: (ctx) =>
                 (getCurrentEvent(ctx) as ActionUseEvent).targetCoord!,

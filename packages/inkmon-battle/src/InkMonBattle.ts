@@ -21,11 +21,11 @@ import {
   type GameEventBase,
   type AbilitySet,
   type IAbilitySetProvider,
-  EventCollector,
   type IGameplayStateProvider,
   Actor,
   getTimelineRegistry,
   type ActorRef,
+  GameWorld,
 } from "@lomo/logic-game-framework";
 
 import {
@@ -73,9 +73,9 @@ export type BattleResult = "ongoing" | "teamA_win" | "teamB_win" | "draw";
 
 /** AI 决策结果 */
 type ActionDecision = {
-  type: "move" | "attack";
-  /** 要激活的 Ability 实例 ID */
-  abilityInstanceId: string;
+  type: "move" | "attack" | "skip";
+  /** 要激活的 Ability 实例 ID（skip 时为 undefined） */
+  abilityInstanceId?: string;
   /** 目标 Actor（攻击用） */
   target?: ActorRef;
   /** 目标坐标（移动用） */
@@ -159,9 +159,6 @@ export class InkMonBattle
   /** 日志系统 */
   readonly logger: BattleLogger;
 
-  /** 事件收集器 */
-  readonly eventCollector: EventCollector;
-
   /** 战斗录制器 */
   private _recorder!: BattleRecorder;
 
@@ -203,9 +200,6 @@ export class InkMonBattle
 
     // 初始化日志系统
     this.logger = new BattleLogger("full");
-
-    // 初始化事件收集器
-    this.eventCollector = new EventCollector();
   }
 
   // ========== Getter ==========
@@ -363,7 +357,9 @@ export class InkMonBattle
 
     return hexNeighbors(pos).filter(
       (n: AxialCoord) =>
-        this._context.grid.hasTile(n) && !this._context.grid.isOccupied(n),
+        this._context.grid.hasTile(n) &&
+        !this._context.grid.isOccupied(n) &&
+        !this._context.grid.isReserved(n),
     );
   }
 
@@ -508,7 +504,7 @@ export class InkMonBattle
     const teamAIds = this._context.teamA.map((a) => a.id);
     const teamBIds = this._context.teamB.map((a) => a.id);
     const startEvent = createBattleStartEvent(teamAIds, teamBIds);
-    this.eventCollector.push(startEvent);
+    GameWorld.getInstance().eventCollector.push(startEvent);
 
     // 使用 BattleLogger 的 battleStart 方法
     const teamAInfo = this._context.teamA.map((a) => ({
@@ -575,7 +571,7 @@ export class InkMonBattle
     }
 
     // 收集本帧事件
-    const frameEvents = this.eventCollector.flush();
+    const frameEvents = GameWorld.getInstance().eventCollector.flush();
 
     // 调试：打印事件数量和类型
     if (frameEvents.length > 0) {
@@ -609,7 +605,7 @@ export class InkMonBattle
 
     // 产生回合开始事件
     const turnStartEvent = createTurnStartEvent(this._turnCount, actor.id);
-    this.eventCollector.push(turnStartEvent);
+    GameWorld.getInstance().eventCollector.push(turnStartEvent);
 
     // 日志
     this.logger.turnStart(actor.displayName, actor.hp, actor.maxHp);
@@ -617,9 +613,16 @@ export class InkMonBattle
     // AI 决策
     const decision = this.decideAction(actor);
 
+    // 如果决策是跳过，则不执行任何操作
+    if (decision.type === "skip") {
+      this.logger.skip(actor.displayName);
+      actor.resetATB();
+      return;
+    }
+
     // 创建事件并广播给 AbilitySet
     const event = createActionUseEvent(
-      decision.abilityInstanceId,
+      decision.abilityInstanceId!,
       actor.id,
       {
         target: decision.target,
@@ -642,7 +645,7 @@ export class InkMonBattle
   }
 
   /**
-   * AI 决策（优先攻击，否则移动）
+   * AI 决策（优先攻击，否则移动，无法行动则跳过）
    */
   private decideAction(actor: InkMonActor): ActionDecision {
     // 查找攻击目标
@@ -667,9 +670,14 @@ export class InkMonBattle
         power: 60,
         damageCategory: "physical",
       };
-    } else {
-      // 无可攻击目标 -> 尝试移动
-      const moveTarget = this.findMoveTarget(actor);
+    }
+
+    // 无可攻击目标 -> 尝试移动
+    const movablePositions = this.getMovablePositions(actor);
+
+    if (movablePositions.length > 0) {
+      // 有可移动位置 -> 移动
+      const moveTarget = this.findMoveTarget(actor, movablePositions);
 
       // 查找移动 Ability
       const moveAbility = actor.findAbilityByConfigId(ABILITY_CONFIG_ID.MOVE);
@@ -683,22 +691,30 @@ export class InkMonBattle
         targetCoord: moveTarget,
       };
     }
+
+    // 无法攻击也无法移动 -> 跳过
+    return {
+      type: "skip",
+    };
   }
 
   /**
    * 寻找移动目标（向最近的敌人靠近）
+   *
+   * @param actor 要移动的角色
+   * @param movablePositions 可移动的位置列表（必须非空）
    */
-  private findMoveTarget(actor: InkMonActor): AxialCoord {
+  private findMoveTarget(actor: InkMonActor, movablePositions: AxialCoord[]): AxialCoord {
     const pos = actor.hexPosition;
-    if (!pos) {
-      // 无位置，返回原地
-      return axial(0, 0);
+    if (!pos || movablePositions.length === 0) {
+      // 不应该发生，但作为防御性编程
+      throw new Error(`[findMoveTarget] Invalid state: pos=${pos}, movable=${movablePositions.length}`);
     }
 
     const enemies = this.aliveActors.filter((a) => a.team !== actor.team);
     if (enemies.length === 0) {
-      // 无敌人，返回原地
-      return pos;
+      // 无敌人，随机选择一个可移动位置
+      return movablePositions[0];
     }
 
     // 找最近的敌人
@@ -716,19 +732,13 @@ export class InkMonBattle
     }
 
     if (!nearestEnemy || !nearestEnemy.hexPosition) {
-      return pos;
-    }
-
-    // 找可移动的格子
-    const movable = this.getMovablePositions(actor);
-    if (movable.length === 0) {
-      return pos;
+      return movablePositions[0];
     }
 
     // 选择最靠近敌人的格子
-    let bestPos = movable[0];
+    let bestPos = movablePositions[0];
     let bestDist = hexDistance(bestPos, nearestEnemy.hexPosition);
-    for (const p of movable) {
+    for (const p of movablePositions) {
       const d = hexDistance(p, nearestEnemy.hexPosition);
       if (d < bestDist) {
         bestDist = d;
@@ -736,12 +746,7 @@ export class InkMonBattle
       }
     }
 
-    // 只有更近才移动，否则原地
-    if (bestDist < nearestDist) {
-      return bestPos;
-    }
-
-    return pos;
+    return bestPos;
   }
 
   /**
@@ -789,7 +794,7 @@ export class InkMonBattle
       this._turnCount,
       survivors,
     );
-    this.eventCollector.push(endEvent);
+    GameWorld.getInstance().eventCollector.push(endEvent);
 
     // 使用 BattleLogger 的 battleEnd 方法
     const survivorInfo = this.aliveActors.map((a) => ({

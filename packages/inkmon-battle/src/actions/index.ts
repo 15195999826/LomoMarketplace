@@ -6,6 +6,7 @@
  * - STAB 加成
  * - 暴击系统
  * - Pre/Post 双阶段事件处理
+ * - 两阶段移动（预订 + 实际移动）
  */
 
 // DamageAction
@@ -27,9 +28,21 @@ export {
   type PreHealEvent,
 } from './HealAction.js';
 
-// MoveAction
+// MoveAction (deprecated)
 export {
   MoveAction,
   createMoveAction,
   type MoveActionParams,
 } from './MoveAction.js';
+
+// StartMoveAction - 移动第一阶段（预订格子）
+export {
+  StartMoveAction,
+  type StartMoveActionParams,
+} from './StartMoveAction.js';
+
+// ApplyMoveAction - 移动第二阶段（实际移动）
+export {
+  ApplyMoveAction,
+  type ApplyMoveActionParams,
+} from './ApplyMoveAction.js';
