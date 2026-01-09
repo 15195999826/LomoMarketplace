@@ -26,6 +26,7 @@ import type {
 } from './AbilityComponent.js';
 import { AbilityExecutionInstance } from './AbilityExecutionInstance.js';
 import type { ActiveUseComponent } from './ActiveUseComponent.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 /**
  * Component 构造函数类型
@@ -371,7 +372,7 @@ export class Ability implements IAbilityForComponent {
    * @param context 组件生命周期上下文
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    */
-  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): void {
+  receiveEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: IGameplayStateProvider): void {
     if (this._state === 'expired') return;
 
     const triggeredComponents: string[] = [];

@@ -68,6 +68,7 @@ import { getLogger, debugLog } from '../utils/Logger.js';
 // 复用 NoInstanceComponent 的类型定义
 import type { EventTrigger, TriggerMode } from './NoInstanceComponent.js';
 import { createEventTrigger } from './NoInstanceComponent.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // 重新导出以保持 API 兼容
 export type { EventTrigger, TriggerMode };
@@ -120,7 +121,7 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
    *
    * 匹配条件后创建 ExecutionInstance
    */
-  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): boolean {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: IGameplayStateProvider): boolean {
     const shouldActivate = this.checkTriggers(event, context);
 
     if (shouldActivate) {
@@ -173,7 +174,7 @@ export class ActivateInstanceComponent extends BaseAbilityComponent {
   protected activateExecution(
     event: GameEventBase,
     context: ComponentLifecycleContext,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): void {
     const ability = context.ability;
 

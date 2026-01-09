@@ -25,6 +25,7 @@
 import type { ActorRef } from '../types/common.js';
 import type { EventCollector } from '../events/EventCollector.js';
 import type { GameEventBase } from '../events/GameEvent.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // 前向声明（避免循环依赖）
 export interface IAbility {
@@ -88,18 +89,20 @@ export type ExecutionContext = {
   /**
    * 游戏状态
    *
-   * 框架层不对类型做假设，由项目层定义具体类型。
-   * 项目可以传入：
-   * - 游戏实例引用（实时数据）
-   * - 状态快照（事件发生时的数据）
+   * 提供统一的游戏状态访问接口：
+   * - aliveActors: 当前存活的 Actor 列表
+   * - getActor(id): 根据 ID 获取 Actor
+   *
+   * 项目层可以传入实现了 IGameplayStateProvider 的实例。
+   * 如需访问项目特有的方法，可以进行类型断言。
    *
    * @example
    * ```typescript
-   * const battle = ctx.gameplayState as MyBattleState;
-   * const actor = battle.getActor(targetId);
+   * const actor = ctx.gameplayState.getActor(targetId);
+   * const aliveCount = ctx.gameplayState.aliveActors.length;
    * ```
    */
-  readonly gameplayState: unknown;
+  readonly gameplayState: IGameplayStateProvider;
 
   // ========== 能力信息 ==========
 
@@ -164,7 +167,7 @@ export function getOriginalEvent(ctx: ExecutionContext): GameEventBase {
  */
 export function createExecutionContext(params: {
   eventChain: GameEventBase[];
-  gameplayState: unknown;
+  gameplayState: IGameplayStateProvider;
   eventCollector: EventCollector;
   ability?: IAbility;
   execution?: ExecutionInstanceInfo;

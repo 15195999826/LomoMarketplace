@@ -233,7 +233,7 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
       {/* 战斗结果 - 全宽展示 */}
       {battle.status === "success" && battle.replay && (
         <div className={styles.resultSection}>
-          <BattleReplayPlayer replay={battle.replay} log={battle.log ?? undefined} />
+          <BattleReplayPlayer replay={battle.replay} />
         </div>
       )}
 

@@ -71,6 +71,7 @@ import type { ComponentLifecycleContext } from './AbilityComponent.js';
 import { getLogger, debugLog } from '../utils/Logger.js';
 import { GameWorld } from '../world/GameWorld.js';
 import { TagContainer, createTagContainer } from '../tags/TagContainer.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // Re-export TagContainer types for backwards compatibility
 export type { DurationTagEntry, TagChangedCallback } from '../tags/TagContainer.js';
@@ -393,7 +394,7 @@ export class AbilitySet {
    * @param event 游戏事件
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    */
-  receiveEvent(event: GameEventBase, gameplayState: unknown): void {
+  receiveEvent(event: GameEventBase, gameplayState: IGameplayStateProvider): void {
     this.processAbilities((ability) => {
       try {
         const context = this.createLifecycleContext(ability);

@@ -20,6 +20,8 @@
 import type { IBattleRecord, IFrameData, GameEventBase } from "@inkmon/battle";
 import {
   isMoveEvent,
+  isMoveStartEvent,
+  isMoveCompleteEvent,
   isDamageEvent,
   isHealEvent,
   isDeathEvent,
@@ -91,7 +93,27 @@ export function applyEvent(
 
   // ========== 业务事件：表演效果 + 状态更新 ==========
 
-  // 移动事件：更新 Actor 位置（这是状态变化）
+  // 移动开始事件：触发移动动画（表演层关心这个）
+  // 注意：不更新 Actor 位置，位置由 move_complete 更新
+  if (isMoveStartEvent(event)) {
+    // 表演层会在 BattleReplayPlayer 中处理动画
+    // reducer 不需要做任何状态更新
+    return state;
+  }
+
+  // 移动完成事件：更新 Actor 位置（数据层）
+  if (isMoveCompleteEvent(event)) {
+    const actor = actors.get(event.actorId);
+    if (actor) {
+      actors.set(event.actorId, {
+        ...actor,
+        position: { q: event.toHex.q, r: event.toHex.r },
+      });
+    }
+    return { ...state, actors };
+  }
+
+  // 移动事件（旧版兼容）：更新 Actor 位置（这是状态变化）
   if (isMoveEvent(event)) {
     const actor = actors.get(event.actorId);
     if (actor) {
@@ -188,6 +210,10 @@ export function applyFrame(
     ...state,
     currentFrame: frameData.frame,
     currentEvents: frameData.events,
+    // 将本帧事件添加到历史记录（只有非空事件才添加）
+    eventHistory: frameData.events.length > 0
+      ? [...state.eventHistory, { frame: frameData.frame, events: frameData.events }]
+      : state.eventHistory,
   };
 
   // 逐个应用事件到状态（支持所有 GameEventBase 类型）

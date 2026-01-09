@@ -17,6 +17,7 @@ import type { ActorRef } from '../types/common.js';
 import type { IAttributeModifierTarget } from '../attributes/defineAttributes.js';
 import type { GameEventBase } from '../events/GameEvent.js';
 import type { IAction } from '../actions/Action.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // ========== 执行实例相关类型（前向声明）==========
 
@@ -31,7 +32,7 @@ export type ActivateExecutionConfig = {
   /** 触发事件链 */
   readonly eventChain: GameEventBase[];
   /** 游戏状态引用 */
-  readonly gameplayState: unknown;
+  readonly gameplayState: IGameplayStateProvider;
 };
 
 /**
@@ -153,7 +154,7 @@ export interface IAbilityComponent {
    * @param gameplayState 游戏状态（快照或实例引用，由项目决定）
    * @returns 是否响应了此事件（true 表示该 Component 处理了此事件，false 表示事件与该 Component 无关）
    */
-  onEvent?(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): boolean;
+  onEvent?(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: IGameplayStateProvider): boolean;
 
   // ═══════ 序列化 ═══════
 

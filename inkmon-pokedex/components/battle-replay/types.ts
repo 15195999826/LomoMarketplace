@@ -56,6 +56,8 @@ export type InkMonReplayEvent =
   | BattleEndEvent
   | TurnStartEvent
   | MoveEvent
+  | MoveStartEvent
+  | MoveCompleteEvent
   | SkillUseEvent
   | DamageEvent
   | HealEvent
@@ -84,6 +86,20 @@ export interface TurnStartEvent {
 
 export interface MoveEvent {
   kind: "move";
+  actorId: string;
+  fromHex: { q: number; r: number };
+  toHex: { q: number; r: number };
+}
+
+export interface MoveStartEvent {
+  kind: "move_start";
+  actorId: string;
+  fromHex: { q: number; r: number };
+  toHex: { q: number; r: number };
+}
+
+export interface MoveCompleteEvent {
+  kind: "move_complete";
   actorId: string;
   fromHex: { q: number; r: number };
   toHex: { q: number; r: number };
@@ -185,11 +201,25 @@ export interface PendingEffect {
 }
 
 /**
- * 动画状态联合类型
+ * 动画数据联合类型（不含 null，用于 Map 值）
  */
-export type AnimationState = MoveAnimationData | SkillAnimationData | null;
+export type AnimationData = MoveAnimationData | SkillAnimationData;
+
+/**
+ * 动画状态联合类型（兼容旧代码，含 null）
+ * @deprecated 使用 activeAnimations Map 替代
+ */
+export type AnimationState = AnimationData | null;
 
 // ========== Replay Player State ==========
+
+/**
+ * 帧事件记录（用于事件历史）
+ */
+export interface FrameEventRecord {
+  frame: number;
+  events: GameEventBase[];
+}
 
 /**
  * 播放器状态
@@ -202,11 +232,13 @@ export interface ReplayPlayerState {
   /** 当前帧号（逻辑帧） */
   currentFrame: number;
   /** 播放速度 */
-  speed: 0.5 | 1 | 2 | 4;
+  speed: 0.1 | 0.5 | 1 | 2 | 4;
   /** 所有 Actor 的当前状态 */
   actors: Map<string, ActorState>;
   /** 当前帧的事件（来自 IBattleRecord.timeline[].events） */
   currentEvents: GameEventBase[];
+  /** 事件历史（按帧分组） */
+  eventHistory: FrameEventRecord[];
   /** 战斗结果 */
   battleResult: string | null;
   /** 当前回合号 */
@@ -215,8 +247,8 @@ export interface ReplayPlayerState {
   currentActorId: string | null;
   /** 当前渲染帧计数（用于动画插值） */
   renderFrameCount: number;
-  /** 当前动画状态 */
-  currentAnimation: AnimationState;
+  /** 活跃的动画（按 actorId 索引，支持多单位并发动画） */
+  activeAnimations: Map<string, AnimationData>;
   /** 插值位置（用于渲染移动动画） */
   interpolatedPositions: Map<string, { q: number; r: number }>;
 }
@@ -258,11 +290,12 @@ export function createInitialState(replay: IBattleRecord): ReplayPlayerState {
     speed: 1,
     actors,
     currentEvents: [],
+    eventHistory: [],
     battleResult: null,
     turnNumber: 0,
     currentActorId: null,
     renderFrameCount: 0,
-    currentAnimation: null,
+    activeAnimations: new Map(),
     interpolatedPositions: new Map(),
   };
 }

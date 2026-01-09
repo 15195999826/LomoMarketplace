@@ -51,6 +51,7 @@ import type { ExecutionContext } from '../actions/ExecutionContext.js';
 import { createExecutionContext } from '../actions/ExecutionContext.js';
 import { GameWorld } from '../world/GameWorld.js';
 import { getLogger } from '../utils/Logger.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // ========== 类型定义 ==========
 
@@ -125,7 +126,7 @@ export class NoInstanceComponent extends BaseAbilityComponent {
    *
    * 根据 triggerMode 检查触发器，匹配后执行 Action 链
    */
-  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: unknown): boolean {
+  onEvent(event: GameEventBase, context: ComponentLifecycleContext, gameplayState: IGameplayStateProvider): boolean {
     const shouldExecute = this.checkTriggers(event, context);
 
     if (shouldExecute) {
@@ -180,7 +181,7 @@ export class NoInstanceComponent extends BaseAbilityComponent {
   private executeActions(
     event: GameEventBase,
     context: ComponentLifecycleContext,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): void {
     const execContext = this.buildExecutionContext(event, context, gameplayState);
 
@@ -204,7 +205,7 @@ export class NoInstanceComponent extends BaseAbilityComponent {
   private buildExecutionContext(
     event: GameEventBase,
     context: ComponentLifecycleContext,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): ExecutionContext {
     return createExecutionContext({
       eventChain: [event],

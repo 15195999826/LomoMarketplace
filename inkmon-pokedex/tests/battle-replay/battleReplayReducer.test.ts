@@ -62,11 +62,12 @@ function createMockState(actors: Map<string, ActorState>): ReplayPlayerState {
     speed: 1,
     actors,
     currentEvents: [],
+    eventHistory: [],
     battleResult: null,
     turnNumber: 0,
     currentActorId: null,
     renderFrameCount: 0,
-    currentAnimation: null,
+    activeAnimations: new Map(),
     interpolatedPositions: new Map(),
   };
 }

@@ -47,6 +47,7 @@ import {
   createTraceId,
 } from './EventPhase.js';
 import { getLogger } from '../utils/Logger.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // ========== 配置类型 ==========
 
@@ -177,7 +178,7 @@ export class EventProcessor {
    */
   processPreEvent<T extends GameEventBase>(
     event: T,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): MutableEvent<T> {
     const mutable = createMutableEvent(event, 'pre') as MutableEventImpl<T>;
 
@@ -305,7 +306,7 @@ export class EventProcessor {
   processPostEvent(
     event: GameEventBase,
     actors: Actor[],
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): void {
     // 深度检查
     if (this.currentDepth >= this.maxDepth) {
@@ -352,7 +353,7 @@ export class EventProcessor {
     event: GameEventBase,
     actors: Actor[],
     relatedActorIds: Set<string>,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): void {
     // 深度检查
     if (this.currentDepth >= this.maxDepth) {

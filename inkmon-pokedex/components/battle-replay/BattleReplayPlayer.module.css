@@ -52,6 +52,38 @@
   flex-shrink: 0;
 }
 
+/* 导出按钮 */
+.exportBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.exportBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.exportBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* ========== 左侧：队伍信息 ========== */
 .teamsContainer {
   flex: 1;
@@ -386,6 +418,37 @@
   border-left: 3px solid #3b82f6;
   color: #cbd5e1;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 帧分组 ========== */
+.frameGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.frameDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.frameDividerLine {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.frameDividerText {
+  font-size: 0.65rem;
+  color: #64748b;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  padding: 2px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
 }
 
 .noEvents {

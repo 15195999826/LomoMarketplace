@@ -26,6 +26,7 @@ import type { TimelineAsset } from '../timeline/Timeline.js';
 import { getTimelineRegistry } from '../timeline/Timeline.js';
 import type { ActorRef } from '../types/common.js';
 import { GameWorld } from '../world/GameWorld.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 // ========== 类型定义 ==========
 
@@ -55,7 +56,7 @@ export type ExecutionInstanceConfig = {
   readonly eventChain: GameEventBase[];
 
   /** 游戏状态引用 */
-  readonly gameplayState: unknown;
+  readonly gameplayState: IGameplayStateProvider;
 
   /** 所属 Ability 信息 */
   readonly abilityInfo: {
@@ -97,7 +98,7 @@ export class AbilityExecutionInstance {
   private readonly eventChain: GameEventBase[];
 
   /** 游戏状态引用 */
-  private readonly gameplayState: unknown;
+  private readonly gameplayState: IGameplayStateProvider;
 
   /** Ability 信息 */
   private readonly abilityInfo: ExecutionInstanceConfig['abilityInfo'];

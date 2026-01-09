@@ -18,8 +18,11 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { IBattleRecord, GameEventBase } from "@inkmon/battle";
+import { saveBattleLog } from "@/app/actions/saveBattleLog";
 import {
   isMoveEvent,
+  isMoveStartEvent,
+  isMoveCompleteEvent,
   isDamageEvent,
   isHealEvent,
   isDeathEvent,
@@ -33,7 +36,7 @@ import {
   isAbilityActivatedEvent,
   isTagChangedEvent,
 } from "@inkmon/battle";
-import type { ReplayPlayerState, MoveAnimationData, SkillAnimationData, PendingEffect } from "./types";
+import type { ReplayPlayerState, MoveAnimationData, SkillAnimationData, PendingEffect, FrameEventRecord, AnimationData } from "./types";
 import {
   createInitialState,
   getReplaySummary,
@@ -63,7 +66,6 @@ function easeInOutQuad(t: number): number {
 
 interface BattleReplayPlayerProps {
   replay: IBattleRecord;
-  log?: string;
   /** 是否显示 BattleStage 地图（默认 true） */
   showBattleStage?: boolean;
 }
@@ -72,13 +74,11 @@ interface BattleReplayPlayerProps {
 
 export function BattleReplayPlayer({
   replay,
-  log,
   showBattleStage = true,
 }: BattleReplayPlayerProps) {
   const [state, setState] = useState<ReplayPlayerState>(() =>
     createInitialState(replay),
   );
-  const [showLog, setShowLog] = useState(false);
   const [showActorsPanel, setShowActorsPanel] = useState(true);
   /** 触发的效果（用于飘字） */
   const [triggeredEffects, setTriggeredEffects] = useState<Array<{
@@ -89,6 +89,8 @@ export function BattleReplayPlayer({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   /** 渲染帧计数器（在逻辑帧内的位置，0-4） */
   const renderFrameInLogicRef = useRef(0);
+  /** 事件列表滚动容器 ref */
+  const eventsListRef = useRef<HTMLDivElement | null>(null);
 
   const summary = getReplaySummary(replay);
 
@@ -109,6 +111,13 @@ export function BattleReplayPlayer({
       }
     };
   }, []);
+
+  // 事件历史更新时自动滚动到底部
+  useEffect(() => {
+    if (eventsListRef.current && state.eventHistory.length > 0) {
+      eventsListRef.current.scrollTop = eventsListRef.current.scrollHeight;
+    }
+  }, [state.eventHistory.length]);
 
   /**
    * 渲染帧 Tick
@@ -174,7 +183,7 @@ export function BattleReplayPlayer({
   }, [replay, frameDataMap]);
 
   /**
-   * 更新动画插值位置
+   * 更新所有活跃动画的插值位置
    * 返回更新后的状态和触发的效果
    */
   const updateAnimationInterpolation = (state: ReplayPlayerState): {
@@ -183,95 +192,107 @@ export function BattleReplayPlayer({
   } => {
     const effects: Array<{ type: 'damage' | 'heal'; targetActorId: string; value: number }> = [];
 
-    if (!state.currentAnimation) {
+    if (state.activeAnimations.size === 0) {
       return { state, effects };
     }
 
-    const anim = state.currentAnimation;
-    const elapsedFrames = state.renderFrameCount - anim.startRenderFrame;
-    const elapsedMs = elapsedFrames * BASE_RENDER_TICK_MS;
-    const progress = Math.min(1, elapsedMs / anim.duration);
+    const newActiveAnimations = new Map(state.activeAnimations);
+    const interpolatedPositions = new Map(state.interpolatedPositions);
+    const completedActorIds: string[] = [];
 
-    if (anim.type === 'move') {
-      // 移动动画插值
-      const interpolatedPositions = new Map(state.interpolatedPositions);
-      const q = lerp(anim.fromPos.q, anim.toPos.q, easeInOutQuad(progress));
-      const r = lerp(anim.fromPos.r, anim.toPos.r, easeInOutQuad(progress));
-      interpolatedPositions.set(anim.actorId, { q, r });
+    // 遍历所有活跃动画
+    for (const [actorId, anim] of newActiveAnimations) {
+      const elapsedFrames = state.renderFrameCount - anim.startRenderFrame;
+      const elapsedMs = elapsedFrames * BASE_RENDER_TICK_MS;
+      const progress = Math.min(1, elapsedMs / anim.duration);
 
-      // 动画结束
-      if (progress >= 1) {
-        return {
-          state: {
-            ...state,
-            interpolatedPositions,
-            currentAnimation: null,
-          },
-          effects,
-        };
-      }
+      if (anim.type === 'move') {
+        // 移动动画插值
+        const q = lerp(anim.fromPos.q, anim.toPos.q, easeInOutQuad(progress));
+        const r = lerp(anim.fromPos.r, anim.toPos.r, easeInOutQuad(progress));
+        interpolatedPositions.set(actorId, { q, r });
 
-      return { state: { ...state, interpolatedPositions }, effects };
-    }
+        // 动画结束
+        if (progress >= 1) {
+          completedActorIds.push(actorId);
+          interpolatedPositions.delete(actorId);
+        }
+      } else if (anim.type === 'skill') {
+        // 技能动画：检查 Tag 触发
+        let updated = false;
+        const triggeredTags = new Set(anim.triggeredTags);
 
-    if (anim.type === 'skill') {
-      // 技能动画：检查 Tag 触发
-      const triggeredTags = new Set(anim.triggeredTags);
-
-      for (const [tagName, tagTime] of Object.entries(anim.tags)) {
-        if (elapsedMs >= tagTime && !triggeredTags.has(tagName)) {
-          triggeredTags.add(tagName);
-          // 收集该 Tag 对应的效果
-          for (const effect of anim.pendingEffects) {
-            if (effect.triggerTag === tagName) {
-              effects.push({
-                type: effect.type,
-                targetActorId: effect.targetActorId,
-                value: effect.value,
-              });
+        for (const [tagName, tagTime] of Object.entries(anim.tags)) {
+          if (elapsedMs >= tagTime && !triggeredTags.has(tagName)) {
+            triggeredTags.add(tagName);
+            updated = true;
+            // 收集该 Tag 对应的效果
+            for (const effect of anim.pendingEffects) {
+              if (effect.triggerTag === tagName) {
+                effects.push({
+                  type: effect.type,
+                  targetActorId: effect.targetActorId,
+                  value: effect.value,
+                });
+              }
             }
           }
         }
-      }
 
-      // 动画结束
-      if (progress >= 1) {
-        return {
-          state: {
-            ...state,
-            currentAnimation: null,
-          },
-          effects,
-        };
-      }
+        // 更新 triggeredTags
+        if (updated) {
+          newActiveAnimations.set(actorId, { ...anim, triggeredTags });
+        }
 
-      // 更新动画状态
-      return {
-        state: {
-          ...state,
-          currentAnimation: {
-            ...anim,
-            triggeredTags,
-          },
-        },
-        effects,
-      };
+        // 动画结束
+        if (progress >= 1) {
+          completedActorIds.push(actorId);
+        }
+      }
     }
 
-    return { state, effects };
+    // 移除已完成的动画
+    for (const actorId of completedActorIds) {
+      newActiveAnimations.delete(actorId);
+    }
+
+    return {
+      state: {
+        ...state,
+        activeAnimations: newActiveAnimations,
+        interpolatedPositions,
+      },
+      effects,
+    };
   };
 
   /**
-   * 处理事件，创建动画
+   * 处理事件，创建动画（支持多动画并发）
    */
   const processEventsForAnimation = (
     state: ReplayPlayerState,
     events: GameEventBase[]
   ): ReplayPlayerState => {
-    let newState = state;
+    const activeAnimations = new Map(state.activeAnimations);
+    const interpolatedPositions = new Map(state.interpolatedPositions);
 
     for (const event of events) {
-      // 移动事件 -> 创建移动动画
+      // 移动开始事件 -> 创建移动动画（新版两阶段移动）
+      if (isMoveStartEvent(event)) {
+        const moveAnim: MoveAnimationData = {
+          type: 'move',
+          actorId: event.actorId,
+          fromPos: { q: event.fromHex.q, r: event.fromHex.r },
+          toPos: { q: event.toHex.q, r: event.toHex.r },
+          duration: MOVE_DURATION_MS,
+          startRenderFrame: state.renderFrameCount,
+        };
+        activeAnimations.set(event.actorId, moveAnim);
+        // 初始化插值位置
+        interpolatedPositions.set(event.actorId, { q: event.fromHex.q, r: event.fromHex.r });
+      }
+
+      // 移动事件 -> 创建移动动画（旧版兼容）
       if (isMoveEvent(event)) {
         const moveAnim: MoveAnimationData = {
           type: 'move',
@@ -281,14 +302,9 @@ export function BattleReplayPlayer({
           duration: MOVE_DURATION_MS,
           startRenderFrame: state.renderFrameCount,
         };
-        newState = {
-          ...newState,
-          currentAnimation: moveAnim,
-        };
+        activeAnimations.set(event.actorId, moveAnim);
         // 初始化插值位置
-        const interpolatedPositions = new Map(newState.interpolatedPositions);
         interpolatedPositions.set(event.actorId, { q: event.fromHex.q, r: event.fromHex.r });
-        newState.interpolatedPositions = interpolatedPositions;
       }
 
       // 技能使用事件 -> 创建技能动画
@@ -324,14 +340,15 @@ export function BattleReplayPlayer({
           triggeredTags: new Set(),
           pendingEffects,
         };
-        newState = {
-          ...newState,
-          currentAnimation: skillAnim,
-        };
+        activeAnimations.set(event.actorId, skillAnim);
       }
     }
 
-    return newState;
+    return {
+      ...state,
+      activeAnimations,
+      interpolatedPositions,
+    };
   };
 
   // 播放/暂停切换
@@ -368,7 +385,7 @@ export function BattleReplayPlayer({
 
   // 调整播放速度
   const handleSpeedChange = useCallback(
-    (speed: 0.5 | 1 | 2 | 4) => {
+    (speed: 0.1 | 0.5 | 1 | 2 | 4) => {
       setState((prev) => {
         // 如果正在播放，重新设置定时器
         if (prev.isPlaying && intervalRef.current) {
@@ -381,6 +398,44 @@ export function BattleReplayPlayer({
     },
     [renderTick],
   );
+
+  // 导出战斗日志
+  const handleExportLog = useCallback(async () => {
+    // 生成格式化的日志文本
+    const lines: string[] = [];
+
+    // 头部信息
+    lines.push("=".repeat(50));
+    lines.push(`战斗日志 - ${summary.battleId}`);
+    lines.push(`导出时间: ${new Date().toLocaleString()}`);
+    lines.push(`总帧数: ${summary.totalFrames}`);
+    lines.push(`参战单位: ${summary.actorCount}`);
+    if (summary.result) {
+      lines.push(`战斗结果: ${summary.result}`);
+    }
+    lines.push("=".repeat(50));
+    lines.push("");
+
+    // 事件历史
+    for (const frameRecord of state.eventHistory) {
+      lines.push(`--- 第 ${frameRecord.frame} 帧 ---`);
+      for (const event of frameRecord.events) {
+        lines.push(`  ${formatEvent(event)}`);
+      }
+      lines.push("");
+    }
+
+    const logContent = lines.join("\n");
+
+    // 调用 Server Action 保存
+    const result = await saveBattleLog(summary.battleId, logContent);
+
+    if (result.success) {
+      alert(`日志已保存到: ${result.filePath}`);
+    } else {
+      alert(`保存失败: ${result.error}`);
+    }
+  }, [summary, state.eventHistory]);
 
   // 获取事件显示文本（使用 Type Guards 转换事件类型）
   const formatEvent = (event: GameEventBase): string => {
@@ -419,7 +474,15 @@ export function BattleReplayPlayer({
     }
 
     if (isTurnStartEvent(event)) {
-      return `🔄 回合 ${event.turnNumber}: ${event.actorId} 行动`;
+      return `🔄 第 ${event.turnNumber} 次行动: ${event.actorId}`;
+    }
+
+    if (isMoveStartEvent(event)) {
+      return `🚶 ${event.actorId} 开始移动 (${event.fromHex.q},${event.fromHex.r}) → (${event.toHex.q},${event.toHex.r})`;
+    }
+
+    if (isMoveCompleteEvent(event)) {
+      return `✅ ${event.actorId} 到达 (${event.toHex.q},${event.toHex.r})`;
     }
 
     if (isMoveEvent(event)) {
@@ -597,7 +660,7 @@ export function BattleReplayPlayer({
           </div>
 
           <div className={styles.speedSelector}>
-            {([0.5, 1, 2, 4] as const).map((speed) => (
+            {([0.1, 0.5, 1, 2, 4] as const).map((speed) => (
               <button
                 key={speed}
                 onClick={() => handleSpeedChange(speed)}
@@ -609,38 +672,45 @@ export function BattleReplayPlayer({
           </div>
         </div>
 
-        {/* 事件与日志 */}
+        {/* 事件历史 */}
         <div className={styles.rightContent}>
           <div className={styles.eventsSection}>
             <div className={styles.sidebarHeader} style={{ fontSize: '0.75rem', padding: '8px 16px' }}>
-              <span>当前帧事件</span>
+              <span>事件历史</span>
+              <button
+                className={styles.exportBtn}
+                onClick={handleExportLog}
+                disabled={state.eventHistory.length === 0}
+                title="导出战斗日志"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
             </div>
-            <div className={styles.eventsList}>
-              {state.currentEvents.length === 0 ? (
+            <div className={styles.eventsList} ref={eventsListRef}>
+              {state.eventHistory.length === 0 ? (
                 <div className={styles.noEvents} style={{ textAlign: 'center', opacity: 0.3, padding: '20px', fontSize: '0.8rem' }}>
                   无事件
                 </div>
               ) : (
-                state.currentEvents.map((event, idx) => (
-                  <div key={idx} className={styles.eventItem}>{formatEvent(event)}</div>
+                state.eventHistory.map((frameRecord, frameIdx) => (
+                  <div key={frameRecord.frame} className={styles.frameGroup}>
+                    <div className={styles.frameDivider}>
+                      <span className={styles.frameDividerLine} />
+                      <span className={styles.frameDividerText}>第 {frameRecord.frame} 帧</span>
+                      <span className={styles.frameDividerLine} />
+                    </div>
+                    {frameRecord.events.map((event, eventIdx) => (
+                      <div key={eventIdx} className={styles.eventItem}>{formatEvent(event)}</div>
+                    ))}
+                  </div>
                 ))
               )}
             </div>
           </div>
-
-          {log && (
-            <div className={styles.logSection}>
-              <div
-                className={styles.sidebarHeader}
-                style={{ fontSize: '0.75rem', padding: '4px 0', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                onClick={() => setShowLog(!showLog)}
-              >
-                <span>历史日志</span>
-                <span>{showLog ? "▼" : "▶"}</span>
-              </div>
-              {showLog && <pre className={styles.logContent}>{log}</pre>}
-            </div>
-          )}
         </div>
       </div>
     </div>

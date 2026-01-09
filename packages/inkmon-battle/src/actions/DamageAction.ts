@@ -36,16 +36,6 @@ import type { InkMonActor } from "../actors/InkMonActor.js";
 
 // ========== 类型定义 ==========
 
-/** 带有 getActor 方法的游戏状态 */
-interface GameplayStateWithGetActor {
-  getActor(id: string): InkMonActor | undefined;
-}
-
-/** 带有 aliveActors 的游戏状态 */
-interface GameplayStateWithAliveActors {
-  aliveActors: InkMonActor[];
-}
-
 /**
  * Pre 阶段伤害事件（用于减伤/免疫等被动修改）
  */
@@ -105,30 +95,6 @@ function logMessage(message: string): void {
 }
 
 /**
- * 检查对象是否有 getActor 方法
- */
-function hasGetActor(obj: unknown): obj is GameplayStateWithGetActor {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "getActor" in obj &&
-    typeof (obj as GameplayStateWithGetActor).getActor === "function"
-  );
-}
-
-/**
- * 检查对象是否有 aliveActors 属性
- */
-function hasAliveActors(obj: unknown): obj is GameplayStateWithAliveActors {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "aliveActors" in obj &&
-    Array.isArray((obj as GameplayStateWithAliveActors).aliveActors)
-  );
-}
-
-/**
  * 计算类型相克倍率
  *
  * @param attackElement 攻击属性
@@ -164,24 +130,6 @@ export function hasSTAB(
   return attackerElements.includes(attackElement);
 }
 
-/**
- * 获取 Actor 的 displayName（安全获取）
- */
-function getActorDisplayName(
-  ref: ActorRef | undefined,
-  ctx: ExecutionContext,
-): string {
-  if (!ref) return "Unknown";
-
-  const gameplayState = ctx.gameplayState;
-  if (hasGetActor(gameplayState)) {
-    const actor = gameplayState.getActor(ref.id);
-    return actor?.displayName ?? ref.id;
-  }
-
-  return ref.id;
-}
-
 // ========== DamageAction ==========
 
 /**
@@ -203,6 +151,7 @@ export class DamageAction extends BaseAction<DamageActionParams> {
   execute(ctx: ExecutionContext): ActionResult {
     const source = ctx.ability?.owner;
     const targets = this.getTargets(ctx);
+    const state = ctx.gameplayState;
 
     // 解析参数
     const baseDamage = resolveParam(this.params.damage, ctx);
@@ -239,22 +188,17 @@ export class DamageAction extends BaseAction<DamageActionParams> {
 
     // 获取攻击方属性（用于 STAB 判断）
     let attackerElements: Element[] = [];
-    if (source && hasGetActor(ctx.gameplayState)) {
-      const attacker = ctx.gameplayState.getActor(source.id);
-      if (attacker && typeof attacker.getElements === "function") {
+    if (source) {
+      const attacker = state.getActor(source.id) as InkMonActor | undefined;
+      if (attacker) {
         attackerElements = attacker.getElements();
       }
     }
 
     for (const target of targets) {
-      // 获取防御方属性
-      let defenderElements: Element[] = [];
-      if (hasGetActor(ctx.gameplayState)) {
-        const defender = ctx.gameplayState.getActor(target.id);
-        if (defender && typeof defender.getElements === "function") {
-          defenderElements = defender.getElements();
-        }
-      }
+      // 获取防御方
+      const defender = state.getActor(target.id) as InkMonActor | undefined;
+      const defenderElements = defender?.getElements() ?? [];
 
       // 计算类型相克倍率
       const typeMultiplier = useTypeEffectiveness
@@ -263,7 +207,7 @@ export class DamageAction extends BaseAction<DamageActionParams> {
 
       // 如果免疫，跳过
       if (typeMultiplier === 0) {
-        const targetName = getActorDisplayName(target, ctx);
+        const targetName = defender?.displayName ?? target.id;
         logMessage(`  [DamageAction] ${targetName} 免疫 ${element} 属性攻击`);
 
         // 产生免疫事件
@@ -313,12 +257,12 @@ export class DamageAction extends BaseAction<DamageActionParams> {
 
       const mutable = eventProcessor.processPreEvent(
         preEvent,
-        ctx.gameplayState,
+        state,
       );
 
       // 如果被取消（如护盾、免疫技能），跳过
       if (mutable.cancelled) {
-        const targetName = getActorDisplayName(target, ctx);
+        const targetName = defender?.displayName ?? target.id;
         logMessage(`  [DamageAction] ${targetName} 的伤害被取消`);
         continue;
       }
@@ -327,8 +271,9 @@ export class DamageAction extends BaseAction<DamageActionParams> {
       const modifiedDamage = mutable.getCurrentValue("damage") as number;
 
       // 打印日志
-      const sourceName = getActorDisplayName(source, ctx);
-      const targetName = getActorDisplayName(target, ctx);
+      const attacker = source ? state.getActor(source.id) : undefined;
+      const sourceName = attacker?.displayName ?? source?.id ?? "Unknown";
+      const targetName = defender?.displayName ?? target.id;
       const effectivenessText = this.getEffectivenessLogText(effectiveness);
       const critText = isCritical ? " 暴击!" : "";
       const stabText = isSTAB ? " STAB" : "";
@@ -350,17 +295,15 @@ export class DamageAction extends BaseAction<DamageActionParams> {
       );
       allEvents.push(damageEvent);
 
+      // ========== 实际应用伤害 ==========
+      if (defender) {
+        defender.takeDamage(modifiedDamage);
+      }
+
       // ========== Post 阶段 ==========
-      // 获取所有 Actor 用于广播 Post 事件
-      if (hasAliveActors(ctx.gameplayState)) {
-        const actors = ctx.gameplayState.aliveActors;
-        if (actors.length > 0) {
-          eventProcessor.processPostEvent(
-            damageEvent,
-            actors,
-            ctx.gameplayState,
-          );
-        }
+      const actors = state.aliveActors;
+      if (actors.length > 0) {
+        eventProcessor.processPostEvent(damageEvent, actors, state);
       }
     }
 

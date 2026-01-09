@@ -21,6 +21,7 @@ import {
   AbilitySet,
   Ability,
   Vector3,
+  GameWorld,
   type AttributeSet,
   type AttributeDefConfig,
   type AbilityConfig,
@@ -33,6 +34,7 @@ import { hexToWorld, type AxialCoord } from '@lomo/hex-grid';
 import type { InkMon, Element } from '@inkmon/core';
 
 import { getDefaultBattleAbilities } from '../skills/index.js';
+import { createDeathEvent } from '../events/ReplayEvents.js';
 
 // ========== 属性定义 ==========
 
@@ -352,6 +354,19 @@ export class InkMonActor extends Actor implements IRecordableActor {
 
     this.attributeSet.modifyBase('hp', actualHeal);
     return actualHeal;
+  }
+
+  /**
+   * 死亡处理（重写基类方法）
+   * 产生死亡事件并设置状态
+   */
+  override onDeath(): void {
+    // 调用基类方法设置状态
+    super.onDeath();
+
+    // 产生死亡事件
+    const deathEvent = createDeathEvent(this.id);
+    GameWorld.getInstance().eventCollector.push(deathEvent);
   }
 
   // ========== IRecordableActor 实现 ==========

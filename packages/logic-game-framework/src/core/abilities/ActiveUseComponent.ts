@@ -176,6 +176,7 @@ import type { Condition, ConditionContext } from './Condition.js';
 import type { Cost, CostContext } from './Cost.js';
 import { isAbilitySetProvider, type AbilitySet } from './AbilitySet.js';
 import { debugLog } from '../utils/Logger.js';
+import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
 /**
  * ActiveUseComponent 配置
@@ -251,7 +252,7 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
   override onEvent(
     event: GameEventBase,
     context: ComponentLifecycleContext,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): boolean {
     // 检查是否是使用Ability的事件
     if (!this.checkTriggers(event, context)) {
@@ -307,7 +308,7 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
   private activateWithoutChecks(
     event: GameEventBase,
     context: ComponentLifecycleContext,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): boolean {
     // 直接调用父类的激活逻辑，避免重复检查触发器
     this.activateExecution(event, context, gameplayState);
@@ -365,7 +366,7 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
    */
   protected getAbilitySet(
     context: ComponentLifecycleContext,
-    gameplayState: unknown
+    gameplayState: IGameplayStateProvider
   ): AbilitySet | undefined {
     // 使用 IAbilitySetProvider 接口
     if (isAbilitySetProvider(gameplayState)) {
@@ -378,7 +379,7 @@ export class ActiveUseComponent extends ActivateInstanceComponent {
   /**
    * 从事件或游戏状态获取逻辑时间
    */
-  protected getLogicTime(event: GameEventBase, gameplayState: unknown): number {
+  protected getLogicTime(event: GameEventBase, gameplayState: IGameplayStateProvider): number {
     // 优先从事件获取
     if ('logicTime' in event && typeof event.logicTime === 'number') {
       return event.logicTime;
