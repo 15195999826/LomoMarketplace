@@ -23,6 +23,10 @@ import type { ActionResult } from './ActionResult.js';
 import type { TargetSelector } from './TargetSelector.js';
 import { getLogger } from '../utils/Logger.js';
 
+// 重新导出 ActionResult（供测试使用）
+export type { ActionResult } from './ActionResult.js';
+export { createSuccessResult, createFailureResult, mergeResults } from './ActionResult.js';
+
 /**
  * 默认目标选择器
  * 尝试从当前触发事件中获取 target 或 targets

@@ -28,13 +28,6 @@ export {
   type PreHealEvent,
 } from './HealAction.js';
 
-// MoveAction (deprecated)
-export {
-  MoveAction,
-  createMoveAction,
-  type MoveActionParams,
-} from './MoveAction.js';
-
 // StartMoveAction - 移动第一阶段（预订格子）
 export {
   StartMoveAction,

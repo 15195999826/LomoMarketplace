@@ -232,21 +232,6 @@ export class AbilityExecutionInstance {
     }
   }
 
-  /**
-   * 获取收集的事件（不清空）
-   *
-   * 返回事件数组的副本，不会清空内部缓冲区。
-   * 适用于调试、日志或只读查询。
-   *
-   * @returns 事件数组副本（从 GameWorld.eventCollector）
-   *
-   * @deprecated 事件现在统一收集到 GameWorld.eventCollector，
-   * 请直接使用 GameWorld.getInstance().eventCollector.collect()
-   */
-  getCollectedEvents(): GameEventBase[] {
-    return GameWorld.getInstance().eventCollector.collect();
-  }
-
   // ========== 内部方法 ==========
 
   /**

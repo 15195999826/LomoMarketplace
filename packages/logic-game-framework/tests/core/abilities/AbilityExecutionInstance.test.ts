@@ -23,6 +23,7 @@ import {
 import type { IAction, ActionResult } from '../../../src/core/actions/Action.js';
 import type { ExecutionContext } from '../../../src/core/actions/ExecutionContext.js';
 import { GameWorld } from '../../../src/core/world/GameWorld.js';
+import type { IGameplayStateProvider } from '../../../src/core/world/IGameplayStateProvider.js';
 
 // ========== 测试用 Mock ==========
 
@@ -34,7 +35,7 @@ function createMockAction(type: string): IAction & { executeCalls: ExecutionCont
     executeCalls,
     execute(ctx: ExecutionContext): ActionResult {
       executeCalls.push(ctx);
-      return { events: [] };
+      return { success: true, events: [] };
     },
   };
 }
@@ -45,7 +46,7 @@ function createMockActionWithEvent(type: string, eventKind: string): IAction {
     type,
     execute(ctx: ExecutionContext): ActionResult {
       ctx.eventCollector.push({ kind: eventKind });
-      return {};
+      return { success: true, events: [] };
     },
   };
 }
@@ -64,13 +65,21 @@ function createTestConfig(
     timelineId,
     tagActions,
     eventChain: [],
-    gameplayState: {},
+    gameplayState: createMockGameplayState(),
     abilityInfo: {
       id: 'ability_1',
       configId: 'config_1',
       owner: { id: 'owner_1' },
       source: { id: 'source_1' },
     },
+  };
+}
+
+/** 创建 Mock GameplayState */
+function createMockGameplayState(): IGameplayStateProvider {
+  return {
+    aliveActors: [],
+    getActor: () => undefined,
   };
 }
 
@@ -109,7 +118,7 @@ describe('AbilityExecutionInstance', () => {
     });
 
     it('Timeline 不存在时应该发出警告但不抛出', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const config = createTestConfig('non_existent_timeline');
       const instance = new AbilityExecutionInstance(config);
@@ -135,7 +144,6 @@ describe('AbilityExecutionInstance', () => {
 
     it('应该在越过 Tag 时间点时触发', () => {
       const timeline = createTestTimeline('test', 1000, {
-        cast: 0,
         hit: 300,
         end: 1000,
       });
@@ -340,7 +348,7 @@ describe('AbilityExecutionInstance', () => {
 
       instance.tick(200);
 
-      const events = instance.getCollectedEvents();
+      const events = GameWorld.getInstance().eventCollector.collect();
       expect(events.length).toBe(1);
       expect(events[0].kind).toBe('damage');
     });
@@ -412,9 +420,8 @@ describe('AbilityExecutionInstance', () => {
       expect(triggered).toEqual(['hit']); // Tag 被触发，但无 Action 执行
     });
 
-    it('Tag 时间为 0 不会被触发（边界行为：previousElapsed < tagTime）', () => {
-      // 注意：当前实现中 tagTime=0 时，条件 previousElapsed < tagTime 为 0 < 0 = false
-      // 所以 tagTime=0 的 Tag 永远不会触发。如需支持，应改为 previousElapsed <= tagTime
+    it('Tag 时间为 0 会在首次 tick 时触发', () => {
+      // tagTime=0 的 Tag 在第一次 tick 时触发
       const timeline = createTestTimeline('test', 1000, { instant: 0 });
       registry.register(timeline);
 
@@ -423,9 +430,8 @@ describe('AbilityExecutionInstance', () => {
       const instance = new AbilityExecutionInstance(config);
 
       const triggered = instance.tick(1);
-      // 当前行为：tagTime=0 不触发
-      expect(triggered).toEqual([]);
-      expect(action.executeCalls.length).toBe(0);
+      expect(triggered).toEqual(['instant']);
+      expect(action.executeCalls.length).toBe(1);
     });
 
     it('Tag 时间为 1 应该在首次 tick(1+) 时触发', () => {
@@ -441,8 +447,8 @@ describe('AbilityExecutionInstance', () => {
       expect(action.executeCalls.length).toBe(1);
     });
 
-    it('dt 为 0 不应该触发任何 Tag', () => {
-      const timeline = createTestTimeline('test', 1000, { hit: 0 });
+    it('dt 为 0 不应该触发任何 Tag（除非 tagTime=0）', () => {
+      const timeline = createTestTimeline('test', 1000, { hit: 100 });
       registry.register(timeline);
 
       const action = createMockAction('hit');
@@ -472,11 +478,12 @@ describe('AbilityExecutionInstance', () => {
       registry.register(timeline);
 
       const action = createMockAction('test');
+      const mockGameState = createMockGameplayState();
       const config: ExecutionInstanceConfig = {
         timelineId: 'test',
         tagActions: { hit: [action] },
         eventChain: [{ kind: 'input' }],
-        gameplayState: { battleId: 'battle_1' },
+        gameplayState: mockGameState,
         abilityInfo: {
           id: 'ability_123',
           configId: 'fireball',
@@ -492,7 +499,7 @@ describe('AbilityExecutionInstance', () => {
       const ctx = action.executeCalls[0];
 
       expect(ctx.eventChain).toEqual([{ kind: 'input' }]);
-      expect(ctx.gameplayState).toEqual({ battleId: 'battle_1' });
+      expect(ctx.gameplayState).toBe(mockGameState);
       expect(ctx.ability?.id).toBe('ability_123');
       expect(ctx.ability?.configId).toBe('fireball');
       expect(ctx.execution?.timelineId).toBe('test');

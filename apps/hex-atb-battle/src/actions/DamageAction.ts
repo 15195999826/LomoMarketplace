@@ -26,9 +26,6 @@ import {
 import { getActorsFromGameplayState, getActorDisplayName } from '../utils/ActionUtils.js';
 import { createDamageEvent, type DamageType } from '../events/index.js';
 
-// 重新导出 DamageType 以保持 API 兼容
-export type { DamageType } from '../events/index.js';
-
 /**
  * Pre 阶段伤害事件
  */

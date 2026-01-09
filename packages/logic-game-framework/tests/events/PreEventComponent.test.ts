@@ -21,6 +21,13 @@ import {
 import type { ActorRef } from '../../src/core/types/common.js';
 import type { IAttributeModifierTarget } from '../../src/core/attributes/defineAttributes.js';
 import { GameWorld } from '../../src/core/world/GameWorld.js';
+import type { IGameplayStateProvider } from '../../src/core/world/IGameplayStateProvider.js';
+
+// Mock GameplayStateProvider
+const createMockGameplayState = (): IGameplayStateProvider => ({
+  aliveActors: [],
+  getActor: () => undefined,
+});
 
 // 测试用事件类型
 interface PreDamageEvent extends GameEventBase {
@@ -33,10 +40,11 @@ interface PreDamageEvent extends GameEventBase {
 
 // Mock AttributeModifierTarget
 const createMockModifierTarget = (): IAttributeModifierTarget => ({
-  addModifier: () => 'mod-1',
+  addModifier: () => {},
   removeModifier: () => true,
+  removeModifiersBySource: () => 0,
+  getModifiers: () => [],
   hasModifier: () => false,
-  getModifierCount: () => 0,
 });
 
 describe('PreEventComponent', () => {
@@ -49,7 +57,7 @@ describe('PreEventComponent', () => {
     // 初始化 GameWorld（EventProcessor 在其中创建）
     GameWorld.init({ eventProcessor: { maxDepth: 10, traceLevel: 2 } });
     eventProcessor = GameWorld.getInstance().eventProcessor;
-    owner = { id: 'unit-1', displayName: 'Test Unit' };
+    owner = { id: 'unit-1' };
     modifierTarget = createMockModifierTarget();
     abilitySet = new AbilitySet({
       owner,
@@ -92,7 +100,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
 
       expect(mutable.cancelled).toBe(false);
       expect(mutable.getCurrentValue('damage')).toBe(70); // 100 * 0.7
@@ -129,7 +137,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
 
       expect(mutable.getCurrentValue('damage')).toBe(100); // 未减伤
     });
@@ -145,7 +153,7 @@ describe('PreEventComponent', () => {
             new PreEventComponent<PreDamageEvent>({
               eventKind: 'pre_damage',
               filter: (e, ctx) => e.targetId === ctx.owner.id,
-              handler: (mutable, ctx) => cancelIntent(ctx.ability.id, '免疫伤害'),
+              handler: (_mutable, ctx) => cancelIntent(ctx.ability.id, '免疫伤害'),
             }),
         ],
       };
@@ -162,7 +170,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
 
       expect(mutable.cancelled).toBe(true);
       expect(mutable.cancelReason).toBe('免疫伤害');
@@ -192,7 +200,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
 
       expect(mutable.cancelled).toBe(false);
       expect(mutable.getCurrentValue('damage')).toBe(100);
@@ -230,7 +238,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable1 = eventProcessor.processPreEvent(physicalEvent, {});
+      const mutable1 = eventProcessor.processPreEvent(physicalEvent, createMockGameplayState());
       expect(mutable1.getCurrentValue('damage')).toBe(50);
 
       // 魔法伤害 - 不应该减伤
@@ -243,7 +251,7 @@ describe('PreEventComponent', () => {
         damageType: 'magic',
       };
 
-      const mutable2 = eventProcessor.processPreEvent(magicEvent, {});
+      const mutable2 = eventProcessor.processPreEvent(magicEvent, createMockGameplayState());
       expect(mutable2.getCurrentValue('damage')).toBe(100);
     });
   });
@@ -294,7 +302,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
 
       // 计算：100 + (-10) = 90, 90 * 0.7 = 63
       expect(mutable.getCurrentValue('damage')).toBeCloseTo(63);
@@ -334,7 +342,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      eventProcessor.processPreEvent(event, {});
+      eventProcessor.processPreEvent(event, createMockGameplayState());
 
       expect(capturedOwnerId).toBe('unit-1');
       expect(capturedAbilityConfigId).toBe('buff_test');
@@ -370,7 +378,7 @@ describe('PreEventComponent', () => {
       };
 
       // 应该不抛异常，返回 pass
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
       expect(mutable.cancelled).toBe(false);
       expect(mutable.getCurrentValue('damage')).toBe(100);
 
@@ -430,7 +438,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
 
       // 获取计算步骤
       const impl = mutable as import('../../src/core/events/MutableEvent.js').MutableEventImpl<PreDamageEvent>;
@@ -476,7 +484,7 @@ describe('PreEventComponent', () => {
         damageType: 'physical',
       };
 
-      const mutable = eventProcessor.processPreEvent(event, {});
+      const mutable = eventProcessor.processPreEvent(event, createMockGameplayState());
       const impl = mutable as import('../../src/core/events/MutableEvent.js').MutableEventImpl<PreDamageEvent>;
       const log = impl.formatComputationLog('damage');
 

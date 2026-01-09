@@ -57,23 +57,6 @@ export interface HealEvent extends GameEventBase {
 }
 
 /**
- * 移动事件（已废弃，使用 MoveStartEvent 和 MoveCompleteEvent 替代）
- *
- * @deprecated 使用两阶段移动事件代替
- */
-export interface MoveEvent extends GameEventBase {
-  readonly kind: 'move';
-  /** 移动的 Actor ID */
-  readonly actorId: string;
-  /** 起始坐标 */
-  readonly fromHex: { q: number; r: number };
-  /** 目标坐标 */
-  readonly toHex: { q: number; r: number };
-  /** 路径（可选，用于多格移动动画） */
-  readonly path?: Array<{ q: number; r: number }>;
-}
-
-/**
  * 开始移动事件
  *
  * 由 StartMoveAction 产生，表示角色开始向目标格子移动（订阅目标格子）。
@@ -155,25 +138,6 @@ export function createHealEvent(
 }
 
 /**
- * 创建移动事件
- * @deprecated 使用 createMoveStartEvent 和 createMoveCompleteEvent 替代
- */
-export function createMoveEvent(
-  actorId: string,
-  fromHex: { q: number; r: number },
-  toHex: { q: number; r: number },
-  path?: Array<{ q: number; r: number }>
-): MoveEvent {
-  return {
-    kind: 'move',
-    actorId,
-    fromHex,
-    toHex,
-    path,
-  };
-}
-
-/**
  * 创建开始移动事件
  */
 export function createMoveStartEvent(
@@ -227,10 +191,6 @@ export function isDamageEvent(event: GameEventBase): event is DamageEvent {
 
 export function isHealEvent(event: GameEventBase): event is HealEvent {
   return event.kind === 'heal';
-}
-
-export function isMoveEvent(event: GameEventBase): event is MoveEvent {
-  return event.kind === 'move';
 }
 
 export function isMoveStartEvent(event: GameEventBase): event is MoveStartEvent {

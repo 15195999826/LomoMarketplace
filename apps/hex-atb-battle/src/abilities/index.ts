@@ -13,5 +13,4 @@ export {
   CooldownReadyCondition,
   TimedCooldownCost,
   TurnCooldownCost,
-  CooldownCost,
 } from './CooldownSystem.js';

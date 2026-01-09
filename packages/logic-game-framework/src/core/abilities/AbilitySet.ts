@@ -73,9 +73,6 @@ import { GameWorld } from '../world/GameWorld.js';
 import { TagContainer, createTagContainer } from '../tags/TagContainer.js';
 import type { IGameplayStateProvider } from '../world/IGameplayStateProvider.js';
 
-// Re-export TagContainer types for backwards compatibility
-export type { DurationTagEntry, TagChangedCallback } from '../tags/TagContainer.js';
-
 // ========== 类型定义 ==========
 
 /**
@@ -132,7 +129,7 @@ export class AbilitySet {
    * Tag 容器（组合模式）
    *
    * Tag 管理已独立到 TagContainer，AbilitySet 持有并代理其方法。
-   * 这样设计允许 Tag 功能独立使用，同时保持 AbilitySet API 的向后兼容。
+   * 这样设计允许 Tag 功能独立使用。
    */
   readonly tagContainer: TagContainer;
 

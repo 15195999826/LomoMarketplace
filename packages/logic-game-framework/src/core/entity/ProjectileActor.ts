@@ -18,7 +18,7 @@
  */
 
 import { Vector3 } from '@lomo/core';
-import type { ActorRef, Position } from '../types/common.js';
+import type { ActorRef } from '../types/common.js';
 import { Actor } from './Actor.js';
 
 /**
@@ -64,9 +64,9 @@ export interface ProjectileLaunchParams {
   /** 目标引用（可选，追踪弹/MobaBullet 需要） */
   target?: ActorRef;
   /** 起始位置 */
-  startPosition: Position;
+  startPosition: Vector3;
   /** 目标位置（可选，直线弹需要） */
-  targetPosition?: Position;
+  targetPosition?: Vector3;
   /** 发射方向（弧度，0=右，可选） */
   direction?: number;
   /** 额外数据（由使用方自定义） */
@@ -163,7 +163,7 @@ export class ProjectileActor extends Actor {
     }
 
     this._launchParams = params;
-    this._position = Vector3.from(params.startPosition);
+    this._position = params.startPosition.clone();
     this._projectileState = 'flying';
     this._flyTime = 0;
     this._flyDistance = 0;
@@ -172,7 +172,7 @@ export class ProjectileActor extends Actor {
     if (this.config.projectileType === 'hitscan') {
       // HitScan 的位置直接设为目标位置
       if (params.targetPosition) {
-        this._position = Vector3.from(params.targetPosition);
+        this._position = params.targetPosition.clone();
       }
     }
   }
@@ -231,7 +231,7 @@ export class ProjectileActor extends Actor {
       );
     } else if (this._launchParams.targetPosition) {
       // 朝向目标位置
-      const target = Vector3.from(this._launchParams.targetPosition);
+      const target = this._launchParams.targetPosition;
       const direction = target.sub(this._position);
       const distanceToTarget = direction.length();
 
@@ -257,8 +257,7 @@ export class ProjectileActor extends Actor {
       return Infinity;
     }
 
-    const target = Vector3.from(this._launchParams.targetPosition);
-    return this._position.distanceTo(target);
+    return this._position.distanceTo(this._launchParams.targetPosition);
   }
 
   /**
@@ -290,7 +289,7 @@ export class ProjectileActor extends Actor {
   /**
    * 未命中处理
    */
-  miss(reason: string = 'no_target'): void {
+  miss(_reason: string = 'no_target'): void {
     if (this._projectileState !== 'flying') {
       return;
     }

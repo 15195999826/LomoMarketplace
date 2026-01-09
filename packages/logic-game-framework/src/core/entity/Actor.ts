@@ -6,7 +6,7 @@
  */
 
 import { Vector3 } from '@lomo/core';
-import type { ActorRef, Position } from '../types/common.js';
+import type { ActorRef } from '../types/common.js';
 import { generateId } from '../utils/IdGenerator.js';
 
 /**
@@ -73,17 +73,9 @@ export abstract class Actor {
 
   /**
    * 设置位置
-   * 支持 Vector3 或简单的 { x, y } 对象（向后兼容）
    */
-  set position(pos: Vector3 | Position | undefined) {
-    if (!pos) {
-      this._position = undefined;
-    } else if (pos instanceof Vector3) {
-      this._position = pos;
-    } else {
-      // 兼容 { x, y } 格式，z 默认为 0
-      this._position = new Vector3(pos.x, pos.y, 0);
-    }
+  set position(pos: Vector3 | undefined) {
+    this._position = pos;
   }
 
   get team(): string | undefined {

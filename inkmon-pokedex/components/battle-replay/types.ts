@@ -2,7 +2,7 @@
  * Battle Replay Types - Web 端播放状态类型定义
  */
 
-import type { IBattleRecord, IActorInitData, IFrameData, GameEventBase } from "@inkmon/battle";
+import type { IBattleRecord, IActorInitData, GameEventBase } from "@inkmon/battle";
 import { worldToHex, type HexMapConfig } from "@lomo/hex-grid";
 
 // 重新导出 GameEventBase（来自 @lomo/logic-game-framework）

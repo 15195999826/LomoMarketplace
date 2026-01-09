@@ -20,6 +20,7 @@ import type {
   ActivateExecutionConfig,
   ComponentLifecycleContext,
 } from '../../../src/core/abilities/AbilityComponent.js';
+import type { IGameplayStateProvider } from '../../../src/core/world/IGameplayStateProvider.js';
 import type { GameEventBase } from '../../../src/core/events/GameEvent.js';
 import type { IAction } from '../../../src/core/actions/Action.js';
 
@@ -40,7 +41,7 @@ interface DamageEvent extends GameEventBase {
 function createMockAction(type: string): IAction {
   return {
     type,
-    execute: vi.fn(() => ({ events: [] })),
+    execute: vi.fn(() => ({ success: true, events: [] })),
   };
 }
 
@@ -80,8 +81,18 @@ function createMockContext(ability: IAbilityForComponent): ComponentLifecycleCon
       addModifier: vi.fn(),
       removeModifier: vi.fn(),
       removeModifiersBySource: vi.fn(),
+      getModifiers: vi.fn(() => []),
+      hasModifier: vi.fn(() => false),
     },
     ability,
+  };
+}
+
+/** 创建 Mock GameplayState */
+function createMockGameplayState(): IGameplayStateProvider {
+  return {
+    aliveActors: [],
+    getActor: vi.fn(() => undefined),
   };
 }
 
@@ -133,7 +144,7 @@ describe('ActivateInstanceComponent', () => {
 
       // 测试默认 any 模式 - 单个触发器匹配即可
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(1);
     });
@@ -145,7 +156,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(1);
       expect(mockAbility.activatedConfigs[0].timelineId).toBe('test_timeline');
@@ -156,7 +167,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: DamageEvent = { kind: 'damage',  damage: 100 };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(0);
     });
@@ -168,7 +179,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(0);
     });
@@ -180,8 +191,8 @@ describe('ActivateInstanceComponent', () => {
       const event1: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
       const event2: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
 
-      component.onEvent(event1, mockContext, {});
-      component.onEvent(event2, mockContext, {});
+      component.onEvent(event1, mockContext, createMockGameplayState());
+      component.onEvent(event2, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(2);
     });
@@ -200,7 +211,7 @@ describe('ActivateInstanceComponent', () => {
 
         // 只匹配第一个触发器
         const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-        component.onEvent(event, mockContext, {});
+        component.onEvent(event, mockContext, createMockGameplayState());
 
         expect(mockAbility.activatedConfigs.length).toBe(1);
       });
@@ -216,7 +227,7 @@ describe('ActivateInstanceComponent', () => {
 
         // 不匹配任何触发器
         const event: GameEventBase = { kind: 'heal' };
-        component.onEvent(event, mockContext, {});
+        component.onEvent(event, mockContext, createMockGameplayState());
 
         expect(mockAbility.activatedConfigs.length).toBe(0);
       });
@@ -241,12 +252,12 @@ describe('ActivateInstanceComponent', () => {
 
         // 事件匹配第一个触发器，但 filter 不通过
         const event1: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_normal' };
-        component.onEvent(event1, mockContext, {});
+        component.onEvent(event1, mockContext, createMockGameplayState());
         expect(mockAbility.activatedConfigs.length).toBe(0);
 
         // 事件同时满足两个触发器
         const event2: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_special' };
-        component.onEvent(event2, mockContext, {});
+        component.onEvent(event2, mockContext, createMockGameplayState());
         expect(mockAbility.activatedConfigs.length).toBe(1);
       });
 
@@ -261,7 +272,7 @@ describe('ActivateInstanceComponent', () => {
 
         // 只能匹配一个 eventKind
         const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-        component.onEvent(event, mockContext, {});
+        component.onEvent(event, mockContext, createMockGameplayState());
 
         expect(mockAbility.activatedConfigs.length).toBe(0);
       });
@@ -283,7 +294,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(1);
     });
@@ -302,7 +313,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_2' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs.length).toBe(0);
     });
@@ -326,7 +337,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(capturedContext).toBe(mockContext);
     });
@@ -340,7 +351,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs[0].timelineId).toBe('fireball_timeline');
     });
@@ -360,7 +371,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs[0].tagActions).toEqual({
         hit: [hitAction],
@@ -373,7 +384,7 @@ describe('ActivateInstanceComponent', () => {
       component.initialize(mockAbility);
 
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
-      component.onEvent(event, mockContext, {});
+      component.onEvent(event, mockContext, createMockGameplayState());
 
       expect(mockAbility.activatedConfigs[0].eventChain).toEqual([event]);
     });
@@ -382,7 +393,7 @@ describe('ActivateInstanceComponent', () => {
       const component = new ActivateInstanceComponent(createTestConfig());
       component.initialize(mockAbility);
 
-      const gameplayState = { battleId: 'battle_1', turn: 5 };
+      const gameplayState = createMockGameplayState();
       const event: InputActionEvent = { kind: 'inputAction',  actionId: 'skill_1' };
       component.onEvent(event, mockContext, gameplayState);
 

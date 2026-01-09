@@ -2,7 +2,7 @@
  * hex-atb-battle Actions
  */
 
-export { DamageAction, type DamageType } from './DamageAction.js';
+export { DamageAction } from './DamageAction.js';
 export { HealAction } from './HealAction.js';
 export { StartMoveAction } from './StartMoveAction.js';
 export { ApplyMoveAction } from './ApplyMoveAction.js';

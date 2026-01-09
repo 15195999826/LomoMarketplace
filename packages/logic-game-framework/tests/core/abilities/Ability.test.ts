@@ -26,8 +26,10 @@ import {
   type TimelineAsset,
 } from '../../../src/core/timeline/Timeline.js';
 import { GameWorld } from '../../../src/core/world/GameWorld.js';
+import type { IGameplayStateProvider } from '../../../src/core/world/IGameplayStateProvider.js';
 import type { GameEventBase } from '../../../src/core/events/GameEvent.js';
-import type { IAction } from '../../../src/core/actions/Action.js';
+import type { IAction, ActionResult } from '../../../src/core/actions/Action.js';
+import type { Actor } from '../../../src/core/entity/Actor.js';
 
 // ========== Mock Component ==========
 
@@ -91,7 +93,7 @@ function createMockAction(type: string): IAction & { executeCalls: number } {
     executeCalls: 0,
     execute() {
       (this as { executeCalls: number }).executeCalls++;
-      return { events: [] };
+      return { success: true, events: [] };
     },
   };
 }
@@ -104,8 +106,18 @@ function createMockContext(ability: IAbilityForComponent): ComponentLifecycleCon
       addModifier: vi.fn(),
       removeModifier: vi.fn(),
       removeModifiersBySource: vi.fn(),
+      getModifiers: vi.fn(() => []),
+      hasModifier: vi.fn(() => false),
     },
     ability,
+  };
+}
+
+/** 创建 Mock GameplayState */
+function createMockGameplayState(): IGameplayStateProvider {
+  return {
+    aliveActors: [],
+    getActor: vi.fn(() => undefined),
   };
 }
 
@@ -401,7 +413,7 @@ describe('Ability', () => {
         timelineId: 'test',
         tagActions: { hit: [action] },
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
 
       const triggered = ability.tickExecutions(400);
@@ -424,7 +436,7 @@ describe('Ability', () => {
         timelineId: 'test',
         tagActions: { hit: [action] },
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
       ability.expire('test');
 
@@ -447,7 +459,7 @@ describe('Ability', () => {
         timelineId: 'test',
         tagActions: {},
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
 
       expect(ability.getExecutingInstances().length).toBe(1);
@@ -469,7 +481,7 @@ describe('Ability', () => {
       ability.applyEffects(createMockContext(ability));
 
       const event: GameEventBase = { kind: 'damage' };
-      const gameplayState = { battleId: 'b1' };
+      const gameplayState = createMockGameplayState();
       ability.receiveEvent(event, createMockContext(ability), gameplayState);
 
       expect(comp1.onEventCalls.length).toBe(1);
@@ -488,7 +500,7 @@ describe('Ability', () => {
       ability.expire('test');
 
       const event: GameEventBase = { kind: 'damage' };
-      ability.receiveEvent(event, createMockContext(ability), {});
+      ability.receiveEvent(event, createMockContext(ability), createMockGameplayState());
 
       expect(component.onEventCalls.length).toBe(0);
     });
@@ -503,7 +515,7 @@ describe('Ability', () => {
       component.markExpired();
 
       const event: GameEventBase = { kind: 'damage' };
-      ability.receiveEvent(event, createMockContext(ability), {});
+      ability.receiveEvent(event, createMockContext(ability), createMockGameplayState());
 
       expect(component.onEventCalls.length).toBe(0);
     });
@@ -566,7 +578,7 @@ describe('Ability', () => {
         timelineId: 'test',
         tagActions: {},
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
 
       expect(instance.id).toMatch(/^execution_/);
@@ -587,7 +599,7 @@ describe('Ability', () => {
         timelineId: 'test',
         tagActions: {},
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
 
       expect(ability.getExecutingInstances().length).toBe(1);
@@ -610,13 +622,13 @@ describe('Ability', () => {
         timelineId: 'test',
         tagActions: {},
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
       ability.activateNewExecutionInstance({
         timelineId: 'test',
         tagActions: {},
         eventChain: [],
-        gameplayState: {},
+        gameplayState: createMockGameplayState(),
       });
 
       expect(ability.getAllExecutionInstances().length).toBe(2);

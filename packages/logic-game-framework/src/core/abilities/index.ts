@@ -23,10 +23,8 @@ export {
   AbilityRevokeReason,
   AbilityGrantedCallback,
   AbilityRevokedCallback,
-  TagChangedCallback,
   createAbilitySet,
   hasAbilitySet,
-  DurationTagEntry,
   // Provider 接口
   IAbilitySetProvider,
   isAbilitySetProvider,

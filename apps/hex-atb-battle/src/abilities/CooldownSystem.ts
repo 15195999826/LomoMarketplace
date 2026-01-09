@@ -84,12 +84,3 @@ export class TurnCooldownCost implements Cost {
     ctx.abilitySet.addLooseTag(cooldownTag, this.turns);
   }
 }
-
-// ========== 兼容别名 ==========
-
-/**
- * CooldownCost - TimedCooldownCost 的别名
- *
- * 保持向后兼容，本项目默认使用时间制冷却。
- */
-export const CooldownCost = TimedCooldownCost;

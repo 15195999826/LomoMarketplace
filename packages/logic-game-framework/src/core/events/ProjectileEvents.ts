@@ -6,7 +6,8 @@
  * - 通过 EventCollector 输出给表演层
  */
 
-import type { ActorRef, Position } from '../types/common.js';
+import type { ActorRef } from '../types/common.js';
+import { Vector3 } from '@lomo/core';
 import type { GameEventBase } from './GameEvent.js';
 
 // ========== 事件类型常量 ==========
@@ -33,9 +34,9 @@ export interface ProjectileLaunchedEvent extends GameEventBase {
   /** 目标引用（可选） */
   readonly target?: ActorRef;
   /** 起始位置 */
-  readonly startPosition: Position;
+  readonly startPosition: Vector3;
   /** 目标位置（可选） */
-  readonly targetPosition?: Position;
+  readonly targetPosition?: Vector3;
   /** 投射物类型 */
   readonly projectileType: string;
   /** 飞行速度 */
@@ -56,7 +57,7 @@ export interface ProjectileHitEvent extends GameEventBase {
   /** 命中目标引用 */
   readonly target: ActorRef;
   /** 命中位置 */
-  readonly hitPosition: Position;
+  readonly hitPosition: Vector3;
   /** 伤害值（可选） */
   readonly damage?: number;
   /** 伤害类型（可选） */
@@ -87,7 +88,7 @@ export interface ProjectileMissEvent extends GameEventBase {
   /** 未命中原因 */
   readonly reason: string;
   /** 最终位置 */
-  readonly finalPosition: Position;
+  readonly finalPosition: Vector3;
   /** 飞行时间（毫秒） */
   readonly flyTime: number;
 }
@@ -121,7 +122,7 @@ export interface ProjectilePierceEvent extends GameEventBase {
   /** 被穿透的目标 */
   readonly target: ActorRef;
   /** 穿透位置 */
-  readonly piercePosition: Position;
+  readonly piercePosition: Vector3;
   /** 当前穿透次数 */
   readonly pierceCount: number;
   /** 伤害值（可选） */
@@ -148,11 +149,11 @@ export type ProjectileEvent =
 export function createProjectileLaunchedEvent(
   projectileId: string,
   source: ActorRef,
-  startPosition: Position,
+  startPosition: Vector3,
   projectileType: string,
   speed: number,
   target?: ActorRef,
-  targetPosition?: Position
+  targetPosition?: Vector3
 ): ProjectileLaunchedEvent {
   return {
     kind: PROJECTILE_LAUNCHED_EVENT,
@@ -173,7 +174,7 @@ export function createProjectileHitEvent(
   projectileId: string,
   source: ActorRef,
   target: ActorRef,
-  hitPosition: Position,
+  hitPosition: Vector3,
   flyTime: number,
   flyDistance: number,
   options?: {
@@ -202,7 +203,7 @@ export function createProjectileMissEvent(
   projectileId: string,
   source: ActorRef,
   reason: string,
-  finalPosition: Position,
+  finalPosition: Vector3,
   flyTime: number,
   target?: ActorRef
 ): ProjectileMissEvent {
@@ -240,7 +241,7 @@ export function createProjectilePierceEvent(
   projectileId: string,
   source: ActorRef,
   target: ActorRef,
-  piercePosition: Position,
+  piercePosition: Vector3,
   pierceCount: number,
   damage?: number
 ): ProjectilePierceEvent {

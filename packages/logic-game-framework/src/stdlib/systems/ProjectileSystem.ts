@@ -33,7 +33,8 @@ import { System, SystemPriority } from '../../core/entity/System.js';
 import type { Actor } from '../../core/entity/Actor.js';
 import { ProjectileActor } from '../../core/entity/ProjectileActor.js';
 import type { EventCollector } from '../../core/events/EventCollector.js';
-import type { ActorRef, Position } from '../../core/types/common.js';
+import type { ActorRef } from '../../core/types/common.js';
+import { Vector3 } from '@lomo/core';
 import {
   createProjectileHitEvent,
   createProjectileMissEvent,
@@ -51,7 +52,7 @@ export interface CollisionResult {
   /** 命中的目标（如果有） */
   target?: ActorRef;
   /** 碰撞位置 */
-  hitPosition?: Position;
+  hitPosition?: Vector3;
   /** 额外数据 */
   data?: Record<string, unknown>;
 }
@@ -100,7 +101,7 @@ export class DistanceCollisionDetector implements ICollisionDetector {
         return {
           hit: true,
           target: target.toRef(),
-          hitPosition: { ...projectilePos },
+          hitPosition: new Vector3(projectilePos.x, projectilePos.y, projectilePos.z ?? 0),
         };
       }
     }
@@ -131,7 +132,7 @@ export class MobaCollisionDetector implements ICollisionDetector {
       return {
         hit: true,
         target,
-        hitPosition: projectile.position ? { ...projectile.position } : undefined,
+        hitPosition: projectile.position ? new Vector3(projectile.position.x, projectile.position.y, projectile.position.z ?? 0) : undefined,
       };
     }
 
@@ -285,7 +286,7 @@ export class ProjectileSystem extends System {
     if (projectile.target) {
       const targetActor = potentialTargets.find((a) => a.id === projectile.target!.id);
       if (targetActor && targetActor.isActive) {
-        const hitPosition = projectile.position ?? targetActor.position ?? { x: 0, y: 0 };
+        const hitPosition = projectile.position ?? targetActor.position ?? new Vector3(0, 0, 0);
         projectile.hit(projectile.target.id);
         this.emitHitEvent(projectile, projectile.target, hitPosition, logicTime);
         this.markForRemoval(projectile);
@@ -300,7 +301,7 @@ export class ProjectileSystem extends System {
       this.emitHitEvent(
         projectile,
         collision.target,
-        collision.hitPosition ?? projectile.position ?? { x: 0, y: 0 },
+        collision.hitPosition ?? projectile.position ?? new Vector3(0, 0, 0),
         logicTime
       );
     } else {
@@ -396,7 +397,7 @@ export class ProjectileSystem extends System {
   private emitHitEvent(
     projectile: ProjectileActor,
     target: ActorRef,
-    hitPosition: Position,
+    hitPosition: Vector3,
     logicTime: number
   ): void {
     if (!this.eventCollector) {
@@ -431,7 +432,7 @@ export class ProjectileSystem extends System {
     }
 
     const source = projectile.source ?? { id: 'unknown' };
-    const finalPosition = projectile.position ?? { x: 0, y: 0 };
+    const finalPosition = projectile.position ?? new Vector3(0, 0, 0);
 
     const event = createProjectileMissEvent(
       projectile.id,
@@ -456,7 +457,7 @@ export class ProjectileSystem extends System {
   private emitPierceEvent(
     projectile: ProjectileActor,
     target: ActorRef,
-    piercePosition: Position,
+    piercePosition: Vector3,
     logicTime: number
   ): void {
     if (!this.eventCollector) {
@@ -500,7 +501,7 @@ export class ProjectileSystem extends System {
   forceHit(
     projectile: ProjectileActor,
     target: ActorRef,
-    hitPosition: Position
+    hitPosition: Vector3
   ): void {
     if (!projectile.isFlying) {
       return;

@@ -20,10 +20,11 @@ import {
   ProjectileActor,
   type ProjectileConfig,
   createProjectileLaunchedEvent,
+  Vector3,
 } from '@lomo/logic-game-framework';
 
 import { type HexBattle } from '../battle/HexBattle.js';
-import type { DamageType } from './DamageAction.js';
+import type { DamageType } from '../events/index.js';
 
 /**
  * 投射物类型
@@ -149,8 +150,8 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
 
     // 转换为世界坐标
     const grid = battle.grid;
-    const sourceWorldPos = sourceHexPos ? grid.coordToWorld(sourceHexPos) : { x: 0, y: 0 };
-    const targetWorldPos = targetHexPos ? grid.coordToWorld(targetHexPos) : { x: 0, y: 0 };
+    const sourceWorldPos = sourceHexPos ? Vector3.from(grid.coordToWorld(sourceHexPos)) : Vector3.zero();
+    const targetWorldPos = targetHexPos ? Vector3.from(grid.coordToWorld(targetHexPos)) : Vector3.zero();
 
     // 创建投射物配置
     const projectileConfig: Partial<ProjectileConfig> = {
@@ -181,7 +182,7 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
     const launchedEvent = createProjectileLaunchedEvent(
       projectile.id,
       source,
-      projectile.position ?? { x: 0, y: 0 },
+      projectile.position ?? Vector3.zero(),
       projectileConfig.projectileType ?? 'bullet',
       projectileConfig.speed ?? 300,
       target,

@@ -26,7 +26,7 @@ import {
   defaultTargetSelector,
 } from '@lomo/logic-game-framework';
 
-import { CooldownReadyCondition, CooldownCost } from '../abilities/index.js';
+import { CooldownReadyCondition, TimedCooldownCost } from '../abilities/index.js';
 
 import type { AxialCoord } from '@lomo/hex-grid';
 
@@ -183,7 +183,7 @@ export const SLASH_ABILITY: AbilityConfig = {
   activeUseComponents: [
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
-      costs: [new CooldownCost(SKILL_COOLDOWNS.slash)],
+      costs: [new TimedCooldownCost(SKILL_COOLDOWNS.slash)],
       timelineId: TIMELINE_ID.SLASH,
       tagActions: {
         hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 50, damageType: 'physical' })],
@@ -206,7 +206,7 @@ export const PRECISE_SHOT_ABILITY: AbilityConfig = {
   activeUseComponents: [
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
-      costs: [new CooldownCost(SKILL_COOLDOWNS.preciseShot)],
+      costs: [new TimedCooldownCost(SKILL_COOLDOWNS.preciseShot)],
       timelineId: TIMELINE_ID.PRECISE_SHOT,
       tagActions: {
         // 在 launch 时发射箭矢，而不是 hit 时直接造成伤害
@@ -235,7 +235,7 @@ export const FIREBALL_ABILITY: AbilityConfig = {
   activeUseComponents: [
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
-      costs: [new CooldownCost(SKILL_COOLDOWNS.fireball)],
+      costs: [new TimedCooldownCost(SKILL_COOLDOWNS.fireball)],
       timelineId: TIMELINE_ID.FIREBALL,
       tagActions: {
         // 在 cast 后发射火球
@@ -263,7 +263,7 @@ export const CRUSHING_BLOW_ABILITY: AbilityConfig = {
   activeUseComponents: [
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
-      costs: [new CooldownCost(SKILL_COOLDOWNS.crushingBlow)],
+      costs: [new TimedCooldownCost(SKILL_COOLDOWNS.crushingBlow)],
       timelineId: TIMELINE_ID.CRUSHING_BLOW,
       tagActions: {
         hit: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 90, damageType: 'physical' })],
@@ -285,7 +285,7 @@ export const SWIFT_STRIKE_ABILITY: AbilityConfig = {
   activeUseComponents: [
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
-      costs: [new CooldownCost(SKILL_COOLDOWNS.swiftStrike)],
+      costs: [new TimedCooldownCost(SKILL_COOLDOWNS.swiftStrike)],
       timelineId: TIMELINE_ID.SWIFT_STRIKE,
       tagActions: {
         hit1: [new DamageAction({ targetSelector: defaultTargetSelector, damage: 10, damageType: 'physical' })],
@@ -309,7 +309,7 @@ export const HOLY_HEAL_ABILITY: AbilityConfig = {
   activeUseComponents: [
     () => new ActiveUseComponent({
       conditions: [new CooldownReadyCondition()],
-      costs: [new CooldownCost(SKILL_COOLDOWNS.holyHeal)],
+      costs: [new TimedCooldownCost(SKILL_COOLDOWNS.holyHeal)],
       timelineId: TIMELINE_ID.HOLY_HEAL,
       tagActions: {
         heal: [new HealAction({ targetSelector: defaultTargetSelector, healAmount: 40 })],

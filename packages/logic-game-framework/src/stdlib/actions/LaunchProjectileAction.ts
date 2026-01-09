@@ -34,7 +34,8 @@
  * 6. Ability 系统捕获事件并触发 onHit 回调
  */
 
-import type { ActorRef, Position } from '../../core/types/common.js';
+import type { ActorRef } from '../../core/types/common.js';
+import { Vector3 } from '@lomo/core';
 import type { ExecutionContext } from '../../core/actions/ExecutionContext.js';
 import { getCurrentEvent } from '../../core/actions/ExecutionContext.js';
 import type { ActionResult } from '../../core/actions/ActionResult.js';
@@ -58,7 +59,7 @@ import {
 /**
  * 位置解析器类型
  */
-export type PositionResolver = (ctx: ExecutionContext) => Position | undefined;
+export type PositionResolver = (ctx: ExecutionContext) => Vector3 | undefined;
 
 /**
  * LaunchProjectileAction 参数
@@ -216,7 +217,7 @@ export class LaunchProjectileAction extends BaseAction<LaunchProjectileActionPar
 export function createActorPositionResolver(
   actorRefResolver: (ctx: ExecutionContext) => ActorRef | undefined
 ): PositionResolver {
-  return (ctx: ExecutionContext): Position | undefined => {
+  return (ctx: ExecutionContext): Vector3 | undefined => {
     const actorRef = actorRefResolver(ctx);
     if (!actorRef) {
       return undefined;
@@ -225,7 +226,7 @@ export function createActorPositionResolver(
     // 从 gameplayState 获取 Actor 的位置
     // 这里需要项目层实现具体逻辑
     const state = ctx.gameplayState as {
-      getActor?: (id: string) => { position?: Position } | undefined;
+      getActor?: (id: string) => { position?: Vector3 } | undefined;
     };
 
     if (state.getActor) {
@@ -240,22 +241,22 @@ export function createActorPositionResolver(
 /**
  * 创建固定位置解析器
  */
-export function createFixedPositionResolver(position: Position): PositionResolver {
+export function createFixedPositionResolver(position: Vector3): PositionResolver {
   return () => position;
 }
 
 /**
  * 从事件中获取源位置的解析器
  */
-export function sourcePositionResolver(ctx: ExecutionContext): Position | undefined {
-  const event = getCurrentEvent(ctx) as { sourcePosition?: Position };
+export function sourcePositionResolver(ctx: ExecutionContext): Vector3 | undefined {
+  const event = getCurrentEvent(ctx) as { sourcePosition?: Vector3 };
   return event.sourcePosition;
 }
 
 /**
  * 从事件中获取目标位置的解析器
  */
-export function targetPositionResolver(ctx: ExecutionContext): Position | undefined {
-  const event = getCurrentEvent(ctx) as { targetPosition?: Position };
+export function targetPositionResolver(ctx: ExecutionContext): Vector3 | undefined {
+  const event = getCurrentEvent(ctx) as { targetPosition?: Vector3 };
   return event.targetPosition;
 }

@@ -61,21 +61,6 @@ export interface TurnStartEvent extends GameEventBase {
 // ========== 行动事件 ==========
 
 /**
- * 移动事件（已废弃，使用 MoveStartEvent 和 MoveCompleteEvent 替代）
- *
- * @deprecated 使用两阶段移动事件代替
- */
-export interface MoveEvent extends GameEventBase {
-  readonly kind: 'move';
-  /** 移动的 Actor ID */
-  readonly actorId: string;
-  /** 起始坐标 */
-  readonly fromHex: { q: number; r: number };
-  /** 目标坐标 */
-  readonly toHex: { q: number; r: number };
-}
-
-/**
  * 移动开始事件
  *
  * 由 StartMoveAction 产生，表示角色开始向目标格子移动（预订目标格子）。
@@ -191,7 +176,6 @@ export type InkMonReplayEvent =
   | BattleStartEvent
   | BattleEndEvent
   | TurnStartEvent
-  | MoveEvent
   | MoveStartEvent
   | MoveCompleteEvent
   | SkillUseEvent
@@ -236,18 +220,6 @@ export function createTurnStartEvent(
   actorId: string
 ): TurnStartEvent {
   return { kind: 'turnStart', turnNumber, actorId };
-}
-
-/**
- * 创建移动事件
- * @deprecated 使用 createMoveStartEvent 和 createMoveCompleteEvent 替代
- */
-export function createMoveEvent(
-  actorId: string,
-  fromHex: { q: number; r: number },
-  toHex: { q: number; r: number }
-): MoveEvent {
-  return { kind: 'move', actorId, fromHex, toHex };
 }
 
 /**
@@ -360,10 +332,6 @@ export function isBattleEndEvent(event: GameEventBase): event is BattleEndEvent 
 
 export function isTurnStartEvent(event: GameEventBase): event is TurnStartEvent {
   return event.kind === 'turnStart';
-}
-
-export function isMoveEvent(event: GameEventBase): event is MoveEvent {
-  return event.kind === 'move';
 }
 
 export function isMoveStartEvent(event: GameEventBase): event is MoveStartEvent {

@@ -8,6 +8,7 @@
  * - 事件发送
  */
 import { describe, it, expect, beforeEach } from 'vitest';
+import { Vector3 } from '@lomo/core';
 import { Actor } from '../../src/core/entity/Actor.js';
 import {
   ProjectileActor,
@@ -34,7 +35,7 @@ class TestTarget extends Actor {
   constructor(name: string, x: number, y: number) {
     super();
     this.displayName = name;
-    this._position = { x, y };
+    this._position = new Vector3(x, y, 0);
   }
 }
 
@@ -85,13 +86,12 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
       expect(projectile.projectileState).toBe('flying');
       expect(projectile.isFlying).toBe(true);
-      // position 现在是 Vector3，包含 z 分量
       expect(projectile.position?.x).toBe(0);
       expect(projectile.position?.y).toBe(0);
       expect(projectile.position?.z).toBe(0);
@@ -99,15 +99,14 @@ describe('Projectile System Integration', () => {
     });
 
     it('should update position during flight', () => {
-      const projectile = new ProjectileActor({ speed: 100 }); // 100 units/second
+      const projectile = new ProjectileActor({ speed: 100 });
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
-      // Update for 500ms = 0.5s, should move 50 units
       projectile.update(500);
 
       expect(projectile.position!.x).toBeCloseTo(50, 1);
@@ -123,11 +122,10 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 1000, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(1000, 0, 0),
       });
 
-      // Update past lifetime
       projectile.update(1100);
 
       expect(projectile.projectileState).toBe('missed');
@@ -142,21 +140,18 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
       });
 
-      // First hit - should continue
       const continue1 = projectile.hit('target_1');
       expect(continue1).toBe(true);
       expect(projectile.pierceCount).toBe(1);
       expect(projectile.isFlying).toBe(true);
 
-      // Second hit - should continue
       const continue2 = projectile.hit('target_2');
       expect(continue2).toBe(true);
       expect(projectile.pierceCount).toBe(2);
 
-      // Third hit - should stop
       const continue3 = projectile.hit('target_3');
       expect(continue3).toBe(false);
       expect(projectile.projectileState).toBe('hit');
@@ -167,7 +162,7 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
       });
 
       projectile.hit('target_1');
@@ -180,17 +175,11 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
       expect(projectile.getDistanceToTarget()).toBe(100);
-
-      // Move halfway
-      projectile.update(500); // speed=500, dt=500ms -> 250 units... wait, that's too far
-
-      // Let me recalculate: speed=500 units/s, dt=500ms=0.5s, move=250 units
-      // But target is at 100, so it should stop at or past 100
     });
   });
 
@@ -199,16 +188,15 @@ describe('Projectile System Integration', () => {
       const projectile = new ProjectileActor({ speed: 100, maxLifetime: 5000 });
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 500, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(500, 0, 0),
       });
 
       const actors: Actor[] = [projectile];
 
-      // Tick for 100ms
       projectileSystem.tick(actors, 100);
 
-      expect(projectile.position!.x).toBeCloseTo(10, 1); // 100 units/s * 0.1s = 10
+      expect(projectile.position!.x).toBeCloseTo(10, 1);
     });
 
     it('should detect collision and emit hit event', () => {
@@ -217,13 +205,12 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
       const actors: Actor[] = [projectile, target];
 
-      // Tick until projectile reaches target (need ~500ms to reach x=50)
       for (let i = 0; i < 10; i++) {
         projectileSystem.tick(actors, 100);
         if (!projectile.isFlying) break;
@@ -231,7 +218,6 @@ describe('Projectile System Integration', () => {
 
       expect(projectile.projectileState).toBe('hit');
 
-      // Check events
       const events = eventCollector.collect();
       const hitEvents = events.filter(isProjectileHitEvent);
 
@@ -247,13 +233,12 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 1000, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(1000, 0, 0),
       });
 
       const actors: Actor[] = [projectile];
 
-      // Tick past lifetime
       projectileSystem.tick(actors, 250);
 
       expect(projectile.projectileState).toBe('missed');
@@ -268,7 +253,7 @@ describe('Projectile System Integration', () => {
     it('should handle hitscan projectile instantly', () => {
       const projectile = new ProjectileActor({
         projectileType: 'hitscan',
-        speed: 0, // Irrelevant for hitscan
+        speed: 0,
       });
 
       const target = new TestTarget('Target', 100, 0);
@@ -276,13 +261,12 @@ describe('Projectile System Integration', () => {
       projectile.launch({
         source: { id: 'source_1' },
         target: target.toRef(),
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
       const actors: Actor[] = [projectile, target];
 
-      // Single tick should resolve hitscan
       projectileSystem.tick(actors, 16);
 
       expect(projectile.projectileState).toBe('hit');
@@ -307,19 +291,17 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 200, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(200, 0, 0),
       });
 
       const actors: Actor[] = [projectile, target1, target2, target3];
 
-      // Tick multiple times to pass through targets
       for (let i = 0; i < 20; i++) {
         projectileSystem.tick(actors, 50);
         if (!projectile.isFlying) break;
       }
 
-      // Should have pierced first target, hit second (reached max pierce)
       expect(projectile.projectileState).toBe('hit');
       expect(projectile.pierceCount).toBe(2);
 
@@ -332,28 +314,24 @@ describe('Projectile System Integration', () => {
     });
 
     it('should not hit source actor', () => {
-      // Create source at origin
       const source = new TestTarget('Source', 0, 0);
 
       const projectile = new ProjectileActor({ speed: 100, maxLifetime: 500 });
 
       projectile.launch({
         source: source.toRef(),
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
-      // Put source as actor and also a target further away
       const target = new TestTarget('Target', 50, 0);
       const actors: Actor[] = [projectile, source, target];
 
-      // Tick
       for (let i = 0; i < 10; i++) {
         projectileSystem.tick(actors, 100);
         if (!projectile.isFlying) break;
       }
 
-      // Should hit target, not source
       const events = eventCollector.collect();
       const hitEvents = events.filter(isProjectileHitEvent);
 
@@ -367,9 +345,8 @@ describe('Projectile System Integration', () => {
       const p3 = new ProjectileActor();
       const target = new TestTarget('Target', 100, 0);
 
-      p1.launch({ source: { id: 's1' }, startPosition: { x: 0, y: 0 } });
-      p2.launch({ source: { id: 's2' }, startPosition: { x: 0, y: 0 } });
-      // p3 not launched
+      p1.launch({ source: { id: 's1' }, startPosition: new Vector3(0, 0, 0) });
+      p2.launch({ source: { id: 's2' }, startPosition: new Vector3(0, 0, 0) });
 
       const actors: Actor[] = [p1, p2, p3, target];
 
@@ -387,14 +364,13 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 1000, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(1000, 0, 0),
       });
 
       const actors: Actor[] = [projectile, target];
 
-      // Force hit before projectile reaches target
-      projectileSystem.forceHit(projectile, target.toRef(), { x: 500, y: 0 });
+      projectileSystem.forceHit(projectile, target.toRef(), new Vector3(500, 0, 0));
 
       expect(projectile.projectileState).toBe('hit');
 
@@ -402,7 +378,7 @@ describe('Projectile System Integration', () => {
       const hitEvents = events.filter(isProjectileHitEvent);
 
       expect(hitEvents.length).toBe(1);
-      expect(hitEvents[0].hitPosition).toEqual({ x: 500, y: 0 });
+      expect(hitEvents[0].hitPosition).toEqual(new Vector3(500, 0, 0));
     });
 
     it('should force miss projectile', () => {
@@ -410,7 +386,7 @@ describe('Projectile System Integration', () => {
 
       projectile.launch({
         source: { id: 'source_1' },
-        startPosition: { x: 0, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
       });
 
       const actors: Actor[] = [projectile];
@@ -429,7 +405,6 @@ describe('Projectile System Integration', () => {
 
   describe('Full Flow: Launch → Fly → Hit', () => {
     it('should complete full projectile lifecycle', () => {
-      // Setup
       const source = new TestTarget('Shooter', 0, 0);
       const target = new TestTarget('Enemy', 100, 0);
 
@@ -440,12 +415,11 @@ describe('Projectile System Integration', () => {
         damage: 50,
       });
 
-      // Launch
       projectile.launch({
         source: source.toRef(),
         target: target.toRef(),
-        startPosition: { x: 0, y: 0 },
-        targetPosition: { x: 100, y: 0 },
+        startPosition: new Vector3(0, 0, 0),
+        targetPosition: new Vector3(100, 0, 0),
       });
 
       expect(projectile.isFlying).toBe(true);
@@ -454,18 +428,15 @@ describe('Projectile System Integration', () => {
 
       const actors: Actor[] = [projectile, source, target];
 
-      // Fly and hit
       let tickCount = 0;
       while (projectile.isFlying && tickCount < 100) {
         projectileSystem.tick(actors, 50);
         tickCount++;
       }
 
-      // Verify hit
       expect(projectile.projectileState).toBe('hit');
       expect(projectile.hasHitTarget(target.id)).toBe(true);
 
-      // Check events
       const events = eventCollector.collect();
 
       const hitEvents = events.filter(isProjectileHitEvent);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useReducer, useCallback, useState } from 'react';
+import { useEffect, useReducer, useCallback, useState } from 'react';
 import {
   HexGridModel,
   HexGridGraph,
@@ -8,7 +8,6 @@ import {
   HexPathFilter,
   type AxialCoord,
   type HexGridConfig,
-  type PixelCoord,
   hexKey,
   hexEquals,
   PathfindingResult,

@@ -51,16 +51,6 @@ export function createActivationError(code: string, message: string): Activation
 }
 
 /**
- * 位置信息（2D，用于向后兼容）
- *
- * @deprecated 推荐使用 Vector3 作为位置类型
- */
-export type Position = {
-  readonly x: number;
-  readonly y: number;
-};
-
-/**
  * 方向枚举
  */
 export type Direction = 'up' | 'down' | 'left' | 'right';

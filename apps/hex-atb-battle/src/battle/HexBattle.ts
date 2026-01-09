@@ -19,6 +19,7 @@ import {
   isActorDestroyedEvent,
   Ability,
   IGameplayStateProvider,
+  Vector3,
 } from '@lomo/logic-game-framework';
 
 import {
@@ -552,7 +553,7 @@ export class HexBattle extends GameplayInstance implements IAbilitySetProvider, 
         // 仅当位置变化时更新世界坐标
         if (cachedKey !== hexKey) {
           const worldPos = this._context.grid.coordToWorld(hexPos);
-          actor.position = worldPos;
+          actor.position = Vector3.from(worldPos);
           this._actorHexPositionCache.set(actor.id, hexKey);
         }
       }

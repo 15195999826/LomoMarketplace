@@ -196,7 +196,7 @@ function runBattleWithReplay(): void {
   console.log(`   总帧数: ${replay.meta.totalFrames}`);
   console.log(`   初始单位数: ${replay.initialActors.length}`);
   console.log(`   时间线条目数: ${replay.timeline.length}`);
-  console.log(`   结束原因: ${replay.meta.endReason}`);
+  console.log(`   结束原因: ${replay.meta.result ?? 'N/A'}`);
 
   // 打印回放日志摘要
   console.log("\n📋 回放日志摘要:");
