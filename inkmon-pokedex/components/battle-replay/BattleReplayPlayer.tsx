@@ -20,7 +20,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { IBattleRecord, GameEventBase } from "@inkmon/battle";
 import { saveBattleLog } from "@/app/actions/saveBattleLog";
 import {
-  isMoveEvent,
   isMoveStartEvent,
   isMoveCompleteEvent,
   isDamageEvent,
@@ -277,23 +276,8 @@ export function BattleReplayPlayer({
     const interpolatedPositions = new Map(state.interpolatedPositions);
 
     for (const event of events) {
-      // 移动开始事件 -> 创建移动动画（新版两阶段移动）
+      // 移动开始事件 -> 创建移动动画
       if (isMoveStartEvent(event)) {
-        const moveAnim: MoveAnimationData = {
-          type: 'move',
-          actorId: event.actorId,
-          fromPos: { q: event.fromHex.q, r: event.fromHex.r },
-          toPos: { q: event.toHex.q, r: event.toHex.r },
-          duration: MOVE_DURATION_MS,
-          startRenderFrame: state.renderFrameCount,
-        };
-        activeAnimations.set(event.actorId, moveAnim);
-        // 初始化插值位置
-        interpolatedPositions.set(event.actorId, { q: event.fromHex.q, r: event.fromHex.r });
-      }
-
-      // 移动事件 -> 创建移动动画（旧版兼容）
-      if (isMoveEvent(event)) {
         const moveAnim: MoveAnimationData = {
           type: 'move',
           actorId: event.actorId,
@@ -483,10 +467,6 @@ export function BattleReplayPlayer({
 
     if (isMoveCompleteEvent(event)) {
       return `✅ ${event.actorId} 到达 (${event.toHex.q},${event.toHex.r})`;
-    }
-
-    if (isMoveEvent(event)) {
-      return `🚶 ${event.actorId} 移动 (${event.fromHex.q},${event.fromHex.r}) → (${event.toHex.q},${event.toHex.r})`;
     }
 
     if (isSkillUseEvent(event)) {

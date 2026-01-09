@@ -42,3 +42,5 @@ apps/hex-atb-battle/Replays/
 TurnbasedRef
 dev_docs/ralph_doc.md
 /.gemini-clipboard
+packages/inkmon-battle/debugReplay
+inkmon-pokedex/data/battle-logs

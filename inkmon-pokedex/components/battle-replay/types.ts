@@ -55,7 +55,6 @@ export type InkMonReplayEvent =
   | BattleStartEvent
   | BattleEndEvent
   | TurnStartEvent
-  | MoveEvent
   | MoveStartEvent
   | MoveCompleteEvent
   | SkillUseEvent
@@ -82,13 +81,6 @@ export interface TurnStartEvent {
   kind: "turnStart";
   turnNumber: number;
   actorId: string;
-}
-
-export interface MoveEvent {
-  kind: "move";
-  actorId: string;
-  fromHex: { q: number; r: number };
-  toHex: { q: number; r: number };
 }
 
 export interface MoveStartEvent {
@@ -204,12 +196,6 @@ export interface PendingEffect {
  * 动画数据联合类型（不含 null，用于 Map 值）
  */
 export type AnimationData = MoveAnimationData | SkillAnimationData;
-
-/**
- * 动画状态联合类型（兼容旧代码，含 null）
- * @deprecated 使用 activeAnimations Map 替代
- */
-export type AnimationState = AnimationData | null;
 
 // ========== Replay Player State ==========
 

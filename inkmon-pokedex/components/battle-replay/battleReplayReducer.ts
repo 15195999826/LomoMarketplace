@@ -14,12 +14,11 @@
  *    - DamageEvent: 伤害飘字、震屏、音效
  *    - HealEvent: 治疗飘字、特效
  *    - SkillUseEvent: 技能特效、动画
- *    - MoveEvent: 移动动画
+ *    - MoveStartEvent/MoveCompleteEvent: 移动动画
  */
 
 import type { IBattleRecord, IFrameData, GameEventBase } from "@inkmon/battle";
 import {
-  isMoveEvent,
   isMoveStartEvent,
   isMoveCompleteEvent,
   isDamageEvent,
@@ -113,49 +112,18 @@ export function applyEvent(
     return { ...state, actors };
   }
 
-  // 移动事件（旧版兼容）：更新 Actor 位置（这是状态变化）
-  if (isMoveEvent(event)) {
-    const actor = actors.get(event.actorId);
-    if (actor) {
-      actors.set(event.actorId, {
-        ...actor,
-        position: { q: event.toHex.q, r: event.toHex.r },
-      });
-    }
-    return { ...state, actors };
-  }
-
   // 伤害事件：记录用于表演（伤害飘字、震屏、音效）
   // 注意：HP 的实际更新由 AttributeChangedEvent 处理
   if (isDamageEvent(event)) {
     // TODO: 未来可以记录到 state.pendingEffects 用于显示特效
-    // 向后兼容：如果没有 AttributeChangedEvent，手动更新 HP
-    const target = actors.get(event.targetActorId);
-    if (target) {
-      const newHp = Math.max(0, target.hp - event.damage);
-      actors.set(event.targetActorId, {
-        ...target,
-        hp: newHp,
-        ...(newHp <= 0 ? { isAlive: false } : {}),
-      });
-    }
-    return { ...state, actors };
+    return state;
   }
 
   // 治疗事件：记录用于表演（治疗飘字、特效）
   // 注意：HP 的实际更新由 AttributeChangedEvent 处理
   if (isHealEvent(event)) {
     // TODO: 未来可以记录到 state.pendingEffects 用于显示特效
-    // 向后兼容：如果没有 AttributeChangedEvent，手动更新 HP
-    const target = actors.get(event.targetActorId);
-    if (target) {
-      const newHp = Math.min(target.maxHp, target.hp + event.healAmount);
-      actors.set(event.targetActorId, {
-        ...target,
-        hp: newHp,
-      });
-    }
-    return { ...state, actors };
+    return state;
   }
 
   // 死亡事件：标记为死亡
