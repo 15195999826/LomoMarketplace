@@ -233,14 +233,13 @@ export function BattleStage({
 
     // 绘制近战打击特效
     if (externalMeleeStrikes && externalMeleeStrikes.length > 0) {
-      const now = Date.now();
       // 坐标缩放因子：RenderWorld 使用逻辑层 hexSize (50)，BattleStage 使用渲染层 hexSize (52)
       const logicHexSize = mapConfig?.hexSize ?? 50;
       const scaleFactor = RENDER_HEX_SIZE / logicHexSize;
 
       for (const strike of externalMeleeStrikes) {
-        const elapsed = now - strike.startTime;
-        const progress = Math.min(1, elapsed / strike.duration);
+        // 使用 ActionScheduler 计算的 progress，避免时间不同步
+        const progress = strike.progress;
 
         // 计算屏幕坐标
         const fromX = strike.from.x * scaleFactor + offsetX;

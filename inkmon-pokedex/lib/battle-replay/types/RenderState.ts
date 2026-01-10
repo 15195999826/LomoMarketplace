@@ -135,6 +135,8 @@ export interface MeleeStrikeInstance {
   startTime: number;
   /** 持续时间 */
   duration: number;
+  /** 动画进度（0~1），由 ActionScheduler 计算 */
+  progress: number;
 }
 
 // ========== 完整渲染状态 ==========

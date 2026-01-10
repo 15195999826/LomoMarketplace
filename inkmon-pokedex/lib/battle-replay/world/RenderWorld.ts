@@ -242,7 +242,7 @@ export class RenderWorld {
     } else if (isFloatingTextAction(action)) {
       this.applyFloatingTextAction(action, activeAction.id);
     } else if (isMeleeStrikeAction(action)) {
-      this.applyMeleeStrikeAction(action, activeAction.id);
+      this.applyMeleeStrikeAction(action, activeAction.id, progress);
     } else if (isSpriteVFXAction(action)) {
       this.applySpriteVFXAction(action, activeAction.id);
     } else if (isProceduralVFXAction(action)) {
@@ -312,20 +312,26 @@ export class RenderWorld {
   /**
    * 应用近战打击动作
    */
-  private applyMeleeStrikeAction(action: MeleeStrikeAction, actionId: string): void {
-    // 检查是否已存在
-    const exists = this.meleeStrikes.some((s) => s.id === actionId);
-    if (exists) return;
+  private applyMeleeStrikeAction(action: MeleeStrikeAction, actionId: string, progress: number): void {
+    // 查找是否已存在
+    const existingIndex = this.meleeStrikes.findIndex((s) => s.id === actionId);
 
-    this.meleeStrikes.push({
-      id: actionId,
-      from: action.from,
-      to: action.to,
-      style: action.style,
-      color: action.color,
-      startTime: Date.now(),
-      duration: action.duration,
-    });
+    if (existingIndex >= 0) {
+      // 已存在：更新 progress
+      this.meleeStrikes[existingIndex].progress = progress;
+    } else {
+      // 新建实例
+      this.meleeStrikes.push({
+        id: actionId,
+        from: action.from,
+        to: action.to,
+        style: action.style,
+        color: action.color,
+        startTime: Date.now(),
+        duration: action.duration,
+        progress,
+      });
+    }
   }
 
   /**
