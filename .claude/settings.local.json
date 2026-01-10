@@ -84,7 +84,19 @@
       "Bash(break)",
       "Bash(done)",
       "Bash(for:*)",
-      "Bash(do echo \"Run $i...\")"
+      "Bash(do echo \"Run $i...\")",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show --stat HEAD)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show HEAD -- packages/logic-game-framework/src/core/events/GameEvent.ts)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show HEAD -- packages/logic-game-framework/src/stdlib/replay/RecordingUtils.ts)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show 4a30bce --stat)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show 3a0cacd --stat)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show 4a30bce -- inkmon-pokedex/lib/battle-replay/visualizers/impl/StageCueVisualizer.ts)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show 4a30bce -- packages/inkmon-battle/src/skills/InkMonAbilities.ts packages/inkmon-battle/src/skills/InkMonTimelines.ts)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show 4a30bce -- packages/logic-game-framework/src/core/abilities/AbilityExecutionInstance.ts packages/logic-game-framework/src/core/abilities/AbilityComponent.ts)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" show 3a0cacd -- inkmon-pokedex/lib/battle-replay/visualizers/impl/ExecutionVisualizer.ts)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" rev-parse HEAD)",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" log 9265a1ca51c9b70bdddb9d71af12ed725e56b8b9..HEAD --name-only --pretty=format:\"\")",
+      "Bash(git -C \"E:\\\\talk\\\\LomoMarketplace\" add -A)"
     ]
   },
   "enableAllProjectMcpServers": true,

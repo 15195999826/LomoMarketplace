@@ -10,7 +10,7 @@ last_updated: "2026-01-11"
 <!-- region Generated Config End -->
 
 <!-- SECTION: core-concepts -->
-<!-- TRACKED_FILES: Actor.ts, AttributeSet.ts, Ability.ts, Action.ts, GameEvent.ts, Timeline.ts, AbilityExecutionInstance.ts, StageCueAction.ts -->
+<!-- TRACKED_FILES: Actor.ts, AttributeSet.ts, Ability.ts, Action.ts, GameEvent.ts, Timeline.ts, AbilityExecutionInstance.ts, StageCueAction.ts, BattleRecorder.ts, RecordingUtils.ts -->
 ## 1. Core Concepts
 
 | Concept | Responsibility |
@@ -24,6 +24,8 @@ last_updated: "2026-01-11"
 | `GameEvent` | 通用事件信封，用于事件链传递和回调触发 |
 | `StageCueAction` | 舞台提示 Action，向表演层传递视觉数据 |
 | `System` | 全局逻辑处理器（如回合系统、ATB 系统） |
+| `BattleRecorder` | 战斗录像器，收集事件并导出为 JSON |
+| `RecordingUtils` | 录像工具函数，订阅组件变化并转换为事件 |
 
 ### 架构分层
 
@@ -63,9 +65,13 @@ Action.execute() → 收集 GameEvent
 | `attributeChanged` | 属性值变化 |
 | `abilityActivated` | Ability 激活完成 |
 | `abilityTriggered` | Ability 被事件触发 |
+| `abilityGranted` | Ability 被授予 |
+| `abilityRemoved` | Ability 被移除 |
 | `executionActivated` | 执行实例创建 |
 | `tagChanged` | Tag 层数变化 |
 | `stageCue` | 舞台提示（表演层动画触发） |
+| `actorSpawned` | Actor 动态生成 |
+| `actorDestroyed` | Actor 被销毁 |
 <!-- END_SECTION -->
 
 <!-- SECTION: design-decisions -->
@@ -91,6 +97,13 @@ Action.execute() → 收集 GameEvent
 ### 2.4 Action 回调深度限制
 **Decision**: 最大回调深度 10 层
 **Rationale**: 防止 onHit → onDamage → onHit 等无限循环
+
+### 2.5 录像系统控制反转
+**Decision**: Actor 实现 `IRecordableActor` 接口，自行订阅组件变化
+**Rationale**:
+- Core 层保持纯粹，不依赖 EventCollector
+- 录制功能可选，不开启时无性能损耗
+- Actor 可选择性订阅需要的组件
 <!-- END_SECTION -->
 
 <!-- SECTION: api-interfaces -->
@@ -186,6 +199,19 @@ interface StageCueEvent extends GameEventBase {
 | `isAbilityActivatedEvent(event)` | 检查是否为 Ability 激活事件 |
 | `isTagChangedEvent(event)` | 检查是否为 Tag 变化事件 |
 | `isStageCueEvent(event)` | 检查是否为舞台提示事件 |
+
+### 3.4 录像系统 API
+
+| API | Description |
+|-----|-------------|
+| `BattleRecorder.startRecording(actors, configs)` | 开始录制，捕获初始状态 |
+| `BattleRecorder.recordFrame(frame, events)` | 记录一帧事件 |
+| `BattleRecorder.stopRecording(result?)` | 停止录制，返回 `IBattleRecord` |
+| `BattleRecorder.exportJSON()` | 导出为 JSON 字符串 |
+| `recordAttributeChanges(attrSet, ctx)` | 订阅属性变化 |
+| `recordAbilitySetChanges(abilitySet, ctx)` | 订阅 Ability 生命周期 + Tag 变化 |
+| `recordTagChanges(tagSource, ctx)` | 单独订阅 Tag 变化 |
+| `recordActorLifecycle(actor, ctx)` | 订阅 Actor 生成/销毁 |
 <!-- END_SECTION -->
 
 <!-- SECTION: formulas-algorithms -->
@@ -279,6 +305,45 @@ attrs.addModifier({
   source: 'equipment',
 });
 console.log(attrs.getCurrentValue('atk'));  // 150
+
+// ===== 3. 录像系统 =====
+
+import {
+  BattleRecorder,
+  IRecordableActor,
+  IRecordingContext,
+  recordAttributeChanges,
+  recordAbilitySetChanges,
+} from '@lomo/logic-game-framework/stdlib';
+
+// Actor 实现 IRecordableActor 接口
+class CharacterActor implements IRecordableActor {
+  getAttributeSnapshot() { return { hp: 100, atk: 20 }; }
+  getAbilitySnapshot() { return [{ instanceId: 'ab_1', configId: 'skill_slash' }]; }
+  getTagSnapshot() { return {}; }
+
+  setupRecording(ctx: IRecordingContext) {
+    return [
+      recordAttributeChanges(this.attributeSet, ctx),
+      ...recordAbilitySetChanges(this.abilitySet, ctx),
+    ];
+  }
+}
+
+// 战斗中使用 BattleRecorder
+const recorder = new BattleRecorder({
+  battleId: 'battle_001',
+  tickInterval: 100,
+  getLogicTime: () => logicTime,
+});
+recorder.startRecording(actors, { map: mapConfig });
+
+// 每帧记录
+recorder.recordFrame(frameNumber, actionEvents);
+
+// 结束时导出
+const record = recorder.stopRecording('team1_win');
+const json = recorder.exportJSON();
 ```
 
 ## 6. Extension Guide
@@ -289,6 +354,7 @@ How to extend this module:
 2. **Adding new Component**: 实现 `IAbilityComponent` 接口
 3. **Custom Attribute Logic**: 使用 `setHooks()` 添加属性变化钩子
 4. **Custom Event Types**: 定义新的 Payload 类型，使用 `createBattleEvent()`
+5. **Recording Custom Data**: Actor 实现 `IRecordableActor`，在 `setupRecording()` 中订阅组件变化
 
 ## 7. Common Issues
 
@@ -300,3 +366,5 @@ How to extend this module:
 | Timeline 未找到 | 确保在 `getTimelineRegistry().register()` 注册 |
 | Tag 未触发 | 检查 `tagActions` key 是否与 timeline tags 一致 |
 | 事件链为空 | 确保 `createCallbackContext` 正确传入父 context |
+| 录像事件缺失 | 确保 Actor 在 `setupRecording()` 中订阅了对应组件 |
+| 录像事件重复 | 检查是否同时订阅了 AbilitySet 和 TagContainer |
