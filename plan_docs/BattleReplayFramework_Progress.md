@@ -9,7 +9,7 @@
 | Phase 1 | 核心类型定义 | ✅ 完成 | 2026-01-10 |
 | Phase 2 | Visualizer 注册机制 | ✅ 完成 | 2026-01-10 |
 | Phase 3 | ActionScheduler + RenderWorld | ✅ 完成 | 2026-01-10 |
-| Phase 4 | 重构 BattleReplayPlayer | ⏳ 待开始 | - |
+| Phase 4 | 重构 BattleReplayPlayer | ✅ 完成 | 2026-01-10 |
 | Phase 5 | 配置化 | ⏳ 待开始 | - |
 
 ## Phase 1: 核心类型定义 ✅
@@ -163,23 +163,72 @@ interface IActionScheduler {
 
 ---
 
-## Phase 4: 重构 BattleReplayPlayer ⏳
+## Phase 4: 重构 BattleReplayPlayer ✅
 
 **目标**：将组件退化为纯渲染器
 
-### 待创建文件
+### 完成的文件
 
-| 文件 | 说明 |
-|------|------|
-| `lib/battle-replay/hooks/useAnimationFrame.ts` | RAF 封装 |
-| `lib/battle-replay/hooks/useBattleDirector.ts` | 核心 Hook |
-| `lib/battle-replay/hooks/index.ts` | 模块导出 |
+| 文件 | 说明 | 状态 |
+|------|------|------|
+| `lib/battle-replay/hooks/useAnimationFrame.ts` | RAF 封装 | ✅ |
+| `lib/battle-replay/hooks/useBattleDirector.ts` | 核心 Hook | ✅ |
+| `lib/battle-replay/hooks/index.ts` | 模块导出 | ✅ |
+
+### useAnimationFrame 实现
+
+**两个 Hook**：
+
+```typescript
+// 基础帧循环
+useAnimationFrame(callback: (deltaMs: number) => void, isRunning: boolean)
+
+// 带速度控制的帧循环
+useAnimationFrameWithSpeed(callback, isRunning, speed)
+```
+
+**设计特点**：
+- 使用 `requestAnimationFrame` 驱动
+- 自动处理组件卸载时的清理
+- `callbackRef` 避免闭包问题
+- 速度通过 `deltaMs * speed` 实现
+
+### useBattleDirector 实现
+
+**核心 Hook**：整合 VisualizerRegistry、ActionScheduler、RenderWorld
+
+```typescript
+const { state, controls } = useBattleDirector(replay, options);
+
+// state: DirectorState
+// - renderState: RenderState（供 React 组件消费）
+// - isPlaying, isEnded, currentFrame, totalFrames, speed
+// - currentEvents: GameEventBase[]
+
+// controls: DirectorControls
+// - play(), pause(), toggle(), reset(), setSpeed(speed)
+```
+
+**帧循环流程**：
+1. 累积时间，每 100ms 推进一个逻辑帧
+2. 查找该帧的事件，翻译为 VisualAction
+3. 调度器 tick，更新动作进度
+4. 应用动作到 RenderWorld
+5. 输出 RenderState 供 React 渲染
 
 ### 待修改文件
 
-| 文件 | 变更 |
-|------|------|
-| `components/battle-replay/BattleReplayPlayer.tsx` | 简化为纯渲染 |
+| 文件 | 变更 | 状态 |
+|------|------|------|
+| `components/battle-replay/BattleReplayPlayer.tsx` | 简化为纯渲染 | ⏳ 可选 |
+
+> 注：现有组件仍可正常工作，新 Hook 提供了更简洁的替代方案。
+> 组件重构为可选任务，可在后续迭代中完成。
+
+### 验证
+
+- [x] TypeScript 编译通过
+- [x] 类型导出正确
 
 ---
 
@@ -230,10 +279,10 @@ inkmon-pokedex/
 │       │   ├── RenderWorld.ts        # ✅
 │       │   └── index.ts              # ✅
 │       │
-│       ├── hooks/                    # ⏳ Phase 4
-│       │   ├── useBattleDirector.ts
-│       │   ├── useAnimationFrame.ts
-│       │   └── index.ts
+│       ├── hooks/                    # ✅ Phase 4
+│       │   ├── useAnimationFrame.ts  # ✅
+│       │   ├── useBattleDirector.ts  # ✅
+│       │   └── index.ts              # ✅
 │       │
 │       └── config/                   # ⏳ Phase 5
 │           ├── AnimationConfig.ts
@@ -289,6 +338,29 @@ inkmon-pokedex/
 5. **mapCenter 处理**：使用默认值而非从 HexMapConfig 读取
    - 原因：HexMapConfig 不包含 mapCenter 字段
    - 影响：坐标转换使用 {x: 0, y: 0} 作为地图中心
+
+### 2026-01-10: Phase 4 Hook 设计
+
+1. **useAnimationFrame 使用 RAF**：使用 `requestAnimationFrame` 而非 `setInterval`
+   - 原因：RAF 与浏览器渲染同步，性能更好
+   - 影响：帧间隔不固定，需要使用 deltaMs 计算
+
+2. **callbackRef 模式**：使用 ref 保持 callback 引用最新
+   - 原因：避免 useEffect 依赖 callback 导致频繁重启循环
+   - 影响：callback 变化时无需重启 RAF
+
+3. **速度控制通过 deltaMs 缩放**：`deltaMs * speed` 实现变速
+   - 原因：简单直接，无需修改帧循环逻辑
+   - 影响：高倍速时可能跳过中间状态
+
+4. **逻辑帧累积器**：使用累积时间推进逻辑帧
+   - 原因：解耦渲染帧率和逻辑帧率
+   - 实现：每累积 100ms 推进一个逻辑帧
+   - 影响：支持任意渲染帧率
+
+5. **组件重构为可选**：保留现有组件，新 Hook 作为替代方案
+   - 原因：渐进式迁移，降低风险
+   - 影响：两套实现并存，后续可选择性迁移
 
 ---
 
