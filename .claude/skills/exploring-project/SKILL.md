@@ -7,8 +7,8 @@ description: Provides project architecture overview including directory structur
 
 <!-- region Generated Config Start -->
 ```yaml
-last_tracked_commit: "9265a1ca51c9b70bdddb9d71af12ed725e56b8b9"
-last_updated: "2026-01-02"
+last_tracked_commit: "ea7f00a1e3e95e4316a7fa03b76d33ff9fc33b81"
+last_updated: "2026-01-11"
 ```
 <!-- region Generated Config End -->
 
@@ -46,6 +46,7 @@ LomoMarketplace/
 | Module | Description | Doc |
 |--------|-------------|-----|
 | inkmon-core | InkMon 核心库，包含类型定义、Zod 验证 Schema、SQLite 数据库操作和文件同步功能 | [详情](references/module_inkmon-core.md) |
+| inkmon-web-replay-lib | InkMon 战斗回放可视化库 | [详情](references/module_inkmon-web-replay-lib.md) |
 | logic-game-framework | 逻辑表演分离的通用游戏框架，支持回合制/ATB 战斗 | [详情](references/module_logic-game-framework.md) |
 
 *Run `/track-module <name>` to add modules for detailed tracking.*
@@ -56,5 +57,6 @@ LomoMarketplace/
 - [directory.md](references/directory.md) - Directory Structure
 - [overview.md](references/overview.md) - Project Overview
 - [module_inkmon-core.md](references/module_inkmon-core.md) - InkMon 核心库，包含类型定义、Zod 验证 Schema、SQLite 数据库操作和文件同步功能
+- [module_inkmon-web-replay-lib.md](references/module_inkmon-web-replay-lib.md) - InkMon 战斗回放可视化库
 - [module_logic-game-framework.md](references/module_logic-game-framework.md) - 逻辑表演分离的通用游戏框架，支持回合制/ATB 战斗
 <!-- region Generated References End -->

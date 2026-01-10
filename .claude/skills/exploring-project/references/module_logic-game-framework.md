@@ -5,12 +5,12 @@
 description: "逻辑表演分离的通用游戏框架，支持回合制/ATB 战斗"
 tracked_paths:
   - "packages/logic-game-framework/src/"
-last_updated: "2026-01-02"
+last_updated: "2026-01-11"
 ```
 <!-- region Generated Config End -->
 
 <!-- SECTION: core-concepts -->
-<!-- TRACKED_FILES: Actor.ts, AttributeSet.ts, Ability.ts, Action.ts, BattleEvent.ts, Timeline.ts, AbilityExecutionInstance.ts -->
+<!-- TRACKED_FILES: Actor.ts, AttributeSet.ts, Ability.ts, Action.ts, GameEvent.ts, Timeline.ts, AbilityExecutionInstance.ts, StageCueAction.ts -->
 ## 1. Core Concepts
 
 | Concept | Responsibility |
@@ -22,6 +22,7 @@ last_updated: "2026-01-02"
 | `Action` | 效果执行原语，链式回调机制 |
 | `Timeline` | 时间轴资产，定义 Tag 时间点（从渲染端动画导入） |
 | `GameEvent` | 通用事件信封，用于事件链传递和回调触发 |
+| `StageCueAction` | 舞台提示 Action，向表演层传递视觉数据 |
 | `System` | 全局逻辑处理器（如回合系统、ATB 系统） |
 
 ### 架构分层
@@ -54,6 +55,17 @@ Action.execute() → 收集 GameEvent
     ↓
 表演层消费 events
 ```
+
+### 框架层事件类型
+
+| Event Kind | 用途 |
+|------------|------|
+| `attributeChanged` | 属性值变化 |
+| `abilityActivated` | Ability 激活完成 |
+| `abilityTriggered` | Ability 被事件触发 |
+| `executionActivated` | 执行实例创建 |
+| `tagChanged` | Tag 层数变化 |
+| `stageCue` | 舞台提示（表演层动画触发） |
 <!-- END_SECTION -->
 
 <!-- SECTION: design-decisions -->
@@ -124,6 +136,21 @@ interface ExecutionContext {
   readonly ability?: AbilityInfo;
   readonly execution?: ExecutionInfo;
 }
+
+// 框架层事件基础接口
+interface GameEventBase {
+  readonly kind: string;
+  readonly [key: string]: unknown;
+}
+
+// StageCue 事件（表演层数据传递）
+interface StageCueEvent extends GameEventBase {
+  readonly kind: 'stageCue';
+  readonly sourceActorId: string;
+  readonly targetActorIds: readonly string[];
+  readonly cueId: string;
+  readonly params?: Record<string, unknown>;
+}
 ```
 
 ### 3.1 Public API
@@ -140,6 +167,25 @@ interface ExecutionContext {
 | `AbilityExecutionInstance.tick(dt)` | 推进时间，触发 Tag |
 | `getCurrentEvent(ctx)` | 获取事件链末端事件 |
 | `getOriginalEvent(ctx)` | 获取事件链起始事件 |
+
+### 3.2 框架事件工厂函数
+
+| API | Description |
+|-----|-------------|
+| `createAttributeChangedEvent(...)` | 创建属性变化事件 |
+| `createAbilityActivatedEvent(...)` | 创建 Ability 激活事件 |
+| `createTagChangedEvent(...)` | 创建 Tag 变化事件 |
+| `createStageCueEvent(...)` | 创建舞台提示事件 |
+| `createExecutionActivatedEvent(...)` | 创建执行实例激活事件 |
+
+### 3.3 框架事件类型守卫
+
+| API | Description |
+|-----|-------------|
+| `isAttributeChangedEvent(event)` | 检查是否为属性变化事件 |
+| `isAbilityActivatedEvent(event)` | 检查是否为 Ability 激活事件 |
+| `isTagChangedEvent(event)` | 检查是否为 Tag 变化事件 |
+| `isStageCueEvent(event)` | 检查是否为舞台提示事件 |
 <!-- END_SECTION -->
 
 <!-- SECTION: formulas-algorithms -->
