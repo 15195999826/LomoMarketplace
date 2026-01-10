@@ -21,6 +21,8 @@ export {
   createHealVisualizer,
   DeathVisualizer,
   createDeathVisualizer,
+  ExecutionVisualizer,
+  createExecutionVisualizer,
 } from './impl';
 
 // ========== 默认注册表工厂 ==========
@@ -32,6 +34,7 @@ import {
   createSkillVisualizer,
   createHealVisualizer,
   createDeathVisualizer,
+  createExecutionVisualizer,
 } from './impl';
 
 /**
@@ -43,6 +46,7 @@ import {
  * - SkillVisualizer
  * - HealVisualizer
  * - DeathVisualizer
+ * - ExecutionVisualizer（处理 executionActivated 事件）
  */
 export function createDefaultRegistry(): VisualizerRegistry {
   return new VisualizerRegistry()
@@ -50,5 +54,6 @@ export function createDefaultRegistry(): VisualizerRegistry {
     .register(createDamageVisualizer())
     .register(createSkillVisualizer())
     .register(createHealVisualizer())
-    .register(createDeathVisualizer());
+    .register(createDeathVisualizer())
+    .register(createExecutionVisualizer());
 }

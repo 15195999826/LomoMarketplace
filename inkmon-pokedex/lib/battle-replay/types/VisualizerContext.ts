@@ -55,6 +55,19 @@ export interface VisualizerContext {
    */
   getActorHexPosition(actorId: string): HexCoord;
 
+  /**
+   * 获取角色所属队伍
+   * @param actorId 角色 ID
+   * @returns 队伍标识 ('A' | 'B')，如果角色不存在返回 'A'
+   */
+  getActorTeam(actorId: string): 'A' | 'B';
+
+  /**
+   * 获取所有角色 ID
+   * @returns 所有角色 ID 的数组
+   */
+  getAllActorIds(): string[];
+
   // ========== 配置查询 ==========
 
   /**
@@ -83,6 +96,8 @@ export function createEmptyContext(): VisualizerContext {
     getActorMaxHP: () => 100,
     isActorAlive: () => false,
     getActorHexPosition: () => ({ q: 0, r: 0 }),
+    getActorTeam: () => 'A',
+    getAllActorIds: () => [],
     getAnimationConfig: () => ({
       move: { duration: 500, easing: 'easeInOutQuad' },
       damage: { floatingTextDuration: 1000, hpBarDuration: 300 },

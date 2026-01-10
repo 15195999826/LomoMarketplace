@@ -533,6 +533,14 @@ export class RenderWorld {
         );
       },
 
+      getActorTeam: (actorId: string): 'A' | 'B' => {
+        return this.actors.get(actorId)?.team ?? 'A';
+      },
+
+      getAllActorIds: (): string[] => {
+        return Array.from(this.actors.keys());
+      },
+
       getAnimationConfig: (): AnimationConfig => {
         return this.animationConfig;
       },
