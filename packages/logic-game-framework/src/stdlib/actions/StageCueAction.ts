@@ -75,8 +75,12 @@ export class StageCueAction extends BaseAction<StageCueActionParams> {
    * 执行 Action
    */
   execute(ctx: ExecutionContext): ActionResult {
-    // 获取发起者
-    const sourceActorId = ctx.ability?.source.id ?? ctx.ability?.owner.id ?? 'unknown';
+    // 获取发起者（必须存在）
+    const ability = ctx.ability;
+    if (!ability) {
+      throw new Error('[StageCueAction] ctx.ability is required');
+    }
+    const sourceActorId = ability.source.id;
 
     // 获取目标列表
     const targets = this.getTargets(ctx);

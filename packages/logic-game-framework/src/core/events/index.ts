@@ -19,6 +19,8 @@ export {
   ABILITY_ACTIVATED_EVENT,
   ABILITY_TRIGGERED_EVENT,
   TAG_CHANGED_EVENT,
+  EXECUTION_ACTIVATED_EVENT,
+  STAGE_CUE_EVENT,
   type ActorSpawnedEvent,
   type ActorDestroyedEvent,
   type AttributeChangedEvent,
@@ -27,6 +29,8 @@ export {
   type AbilityActivatedEvent,
   type AbilityTriggeredEvent,
   type TagChangedEvent,
+  type ExecutionActivatedEvent,
+  type StageCueEvent,
   type FrameworkEvent,
   createActorSpawnedEvent,
   createActorDestroyedEvent,
@@ -36,6 +40,8 @@ export {
   createAbilityActivatedEvent,
   createAbilityTriggeredEvent,
   createTagChangedEvent,
+  createExecutionActivatedEvent,
+  createStageCueEvent,
   // 框架事件 Type Guards
   isActorSpawnedEvent,
   isActorDestroyedEvent,
@@ -45,6 +51,8 @@ export {
   isAbilityActivatedEvent,
   isAbilityTriggeredEvent,
   isTagChangedEvent,
+  isExecutionActivatedEvent,
+  isStageCueEvent,
 } from './GameEvent.js';
 
 // 事件收集器

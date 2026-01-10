@@ -322,7 +322,7 @@ export interface AbilityTriggeredEvent extends GameEventBase {
  * 执行实例激活事件
  *
  * 当 Ability 创建新的 ExecutionInstance 时产生。
- * 用于表演层获取 timelineId 以播放对应动画。
+ * 仅用于日志/调试目的，表演层动画触发请使用 StageCueEvent。
  */
 export interface ExecutionActivatedEvent extends GameEventBase {
   readonly kind: typeof EXECUTION_ACTIVATED_EVENT;
@@ -334,12 +334,8 @@ export interface ExecutionActivatedEvent extends GameEventBase {
   readonly abilityConfigId: string;
   /** 执行实例 ID */
   readonly executionId: string;
-  /** Timeline ID（用于表演层获取动画配置） */
+  /** Timeline ID */
   readonly timelineId: string;
-  /** 目标 Actor ID（可选，从触发事件中提取） */
-  readonly targetActorId?: string;
-  /** 目标坐标（可选，从触发事件中提取） */
-  readonly targetCoord?: { q: number; r: number };
 }
 
 // ========== 舞台提示事件（表演层数据传递）==========
@@ -519,11 +515,7 @@ export function createExecutionActivatedEvent(
   abilityInstanceId: string,
   abilityConfigId: string,
   executionId: string,
-  timelineId: string,
-  options?: {
-    targetActorId?: string;
-    targetCoord?: { q: number; r: number };
-  }
+  timelineId: string
 ): ExecutionActivatedEvent {
   return {
     kind: EXECUTION_ACTIVATED_EVENT,
@@ -532,8 +524,6 @@ export function createExecutionActivatedEvent(
     abilityConfigId,
     executionId,
     timelineId,
-    targetActorId: options?.targetActorId,
-    targetCoord: options?.targetCoord,
   };
 }
 

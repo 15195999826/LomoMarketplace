@@ -7,6 +7,8 @@
  * @module lib/battle-replay/visualizers/impl/StageCueVisualizer
  */
 
+import type { StageCueEvent } from '@lomo/logic-game-framework';
+import { isStageCueEvent } from '@lomo/logic-game-framework';
 import type { GameEventBase } from '@lomo/logic-game-framework';
 import type {
   VisualAction,
@@ -15,24 +17,6 @@ import type {
   MeleeStrikeStyle,
 } from '../../types';
 import type { IVisualizer } from '../IVisualizer';
-
-/**
- * 舞台提示事件（来自 @lomo/logic-game-framework）
- */
-interface StageCueEvent extends GameEventBase {
-  readonly kind: 'stageCue';
-  readonly sourceActorId: string;
-  readonly targetActorIds: readonly string[];
-  readonly cueId: string;
-  readonly params?: Record<string, unknown>;
-}
-
-/**
- * 类型守卫：检查是否为 StageCueEvent
- */
-function isStageCueEvent(event: GameEventBase): event is StageCueEvent {
-  return event.kind === 'stageCue';
-}
 
 /**
  * 已知的 Cue ID 常量
