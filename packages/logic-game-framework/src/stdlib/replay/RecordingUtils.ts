@@ -165,13 +165,31 @@ export function recordAbilitySetChanges(
   // 为单个 Ability 订阅执行实例激活事件
   const subscribeAbilityExecutions = (ability: Ability): void => {
     const unsubscribe = ability.addExecutionActivatedListener((instance) => {
+      // 从触发事件中提取目标信息（与 defaultTargetSelector 逻辑一致）
+      const triggerEvent = instance.getTriggerEvent() as {
+        target?: { id: string };
+        targets?: { id: string }[];
+        targetCoord?: { q: number; r: number };
+      } | undefined;
+
+      // 优先使用 targets 数组的第一个，否则使用 target
+      let targetActorId: string | undefined;
+      if (triggerEvent?.targets && triggerEvent.targets.length > 0) {
+        targetActorId = triggerEvent.targets[0].id;
+      } else if (triggerEvent?.target) {
+        targetActorId = triggerEvent.target.id;
+      }
+
+      const targetCoord = triggerEvent?.targetCoord;
+
       ctx.pushEvent(
         createExecutionActivatedEvent(
           ctx.actorId,
           ability.id,
           ability.configId,
           instance.id,
-          instance.timelineId
+          instance.timelineId,
+          { targetActorId, targetCoord }
         )
       );
     });

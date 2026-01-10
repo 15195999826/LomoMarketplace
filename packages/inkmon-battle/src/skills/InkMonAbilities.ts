@@ -24,6 +24,7 @@ import {
   ActiveUseComponent,
   getCurrentEvent,
   defaultTargetSelector,
+  StageCueAction,
 } from '@lomo/logic-game-framework';
 
 import type { AxialCoord } from '@lomo/hex-grid';
@@ -183,6 +184,13 @@ export const BASIC_ATTACK_ABILITY: AbilityConfig = {
         costs: [new CooldownCost(BASIC_ATTACK_COOLDOWN)],
         timelineId: TIMELINE_ID.BASIC_ATTACK,
         tagActions: {
+          start: [
+            // 发送攻击动画提示给表演层
+            new StageCueAction({
+              targetSelector: defaultTargetSelector,
+              cueId: 'attack_slash',
+            }),
+          ],
           hit: [
             new DamageAction({
               targetSelector: defaultTargetSelector,

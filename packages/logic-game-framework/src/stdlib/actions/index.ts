@@ -20,3 +20,10 @@ export {
   sourcePositionResolver,
   targetPositionResolver,
 } from './LaunchProjectileAction.js';
+
+// 舞台提示 Action（表演层数据传递）
+export {
+  StageCueAction,
+  type StageCueActionParams,
+  createStageCueAction,
+} from './StageCueAction.js';

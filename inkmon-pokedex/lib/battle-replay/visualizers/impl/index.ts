@@ -9,4 +9,4 @@ export { DamageVisualizer, createDamageVisualizer } from './DamageVisualizer';
 export { SkillVisualizer, createSkillVisualizer } from './SkillVisualizer';
 export { HealVisualizer, createHealVisualizer } from './HealVisualizer';
 export { DeathVisualizer, createDeathVisualizer } from './DeathVisualizer';
-export { ExecutionVisualizer, createExecutionVisualizer } from './ExecutionVisualizer';
+export { StageCueVisualizer, createStageCueVisualizer } from './StageCueVisualizer';

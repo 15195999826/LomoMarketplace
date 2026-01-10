@@ -148,6 +148,15 @@ export class AbilityExecutionInstance {
     return this._state === 'cancelled';
   }
 
+  /**
+   * 获取触发此执行实例的事件
+   * 返回 eventChain 的最后一个元素（当前触发事件）
+   * 与 ExecutionContext.getCurrentEvent() 一致
+   */
+  getTriggerEvent(): GameEventBase | undefined {
+    return this.eventChain.at(-1);
+  }
+
   // ========== 核心方法 ==========
 
   /**

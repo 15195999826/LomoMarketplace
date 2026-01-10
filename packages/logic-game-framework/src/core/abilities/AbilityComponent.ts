@@ -45,6 +45,12 @@ export interface IAbilityExecutionInstance {
   readonly state: 'executing' | 'completed' | 'cancelled';
   readonly isExecuting: boolean;
   cancel(): void;
+  /**
+   * 获取触发此执行实例的事件
+   * 返回 eventChain 的最后一个元素（当前触发事件）
+   * 与 ExecutionContext.getCurrentEvent() 一致
+   */
+  getTriggerEvent(): GameEventBase | undefined;
 }
 
 // ========== IAbilityForComponent ==========

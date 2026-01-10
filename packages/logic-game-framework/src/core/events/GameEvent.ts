@@ -174,6 +174,7 @@ export const ABILITY_ACTIVATED_EVENT = 'abilityActivated' as const;
 export const ABILITY_TRIGGERED_EVENT = 'abilityTriggered' as const;
 export const EXECUTION_ACTIVATED_EVENT = 'executionActivated' as const;
 export const TAG_CHANGED_EVENT = 'tagChanged' as const;
+export const STAGE_CUE_EVENT = 'stageCue' as const;
 
 // ========== Actor 生命周期事件 ==========
 
@@ -335,6 +336,30 @@ export interface ExecutionActivatedEvent extends GameEventBase {
   readonly executionId: string;
   /** Timeline ID（用于表演层获取动画配置） */
   readonly timelineId: string;
+  /** 目标 Actor ID（可选，从触发事件中提取） */
+  readonly targetActorId?: string;
+  /** 目标坐标（可选，从触发事件中提取） */
+  readonly targetCoord?: { q: number; r: number };
+}
+
+// ========== 舞台提示事件（表演层数据传递）==========
+
+/**
+ * 舞台提示事件
+ *
+ * 由 StageCueAction 产生，用于向表演层传递视觉表现数据。
+ * 支持动画、特效等各类表演需求。
+ */
+export interface StageCueEvent extends GameEventBase {
+  readonly kind: typeof STAGE_CUE_EVENT;
+  /** 发起者 Actor ID */
+  readonly sourceActorId: string;
+  /** 目标 Actor ID 列表（通过 targetSelector 获取） */
+  readonly targetActorIds: readonly string[];
+  /** 提示类型标识（如 'attack_slash', 'skill_fireball', 'effect_heal'） */
+  readonly cueId: string;
+  /** 额外参数（可选，如元素类型、颜色等） */
+  readonly params?: Record<string, unknown>;
 }
 
 // ========== 框架层事件联合类型 ==========
@@ -351,7 +376,8 @@ export type FrameworkEvent =
   | AbilityActivatedEvent
   | AbilityTriggeredEvent
   | ExecutionActivatedEvent
-  | TagChangedEvent;
+  | TagChangedEvent
+  | StageCueEvent;
 
 // ========== 工厂函数 ==========
 
@@ -493,7 +519,11 @@ export function createExecutionActivatedEvent(
   abilityInstanceId: string,
   abilityConfigId: string,
   executionId: string,
-  timelineId: string
+  timelineId: string,
+  options?: {
+    targetActorId?: string;
+    targetCoord?: { q: number; r: number };
+  }
 ): ExecutionActivatedEvent {
   return {
     kind: EXECUTION_ACTIVATED_EVENT,
@@ -502,6 +532,26 @@ export function createExecutionActivatedEvent(
     abilityConfigId,
     executionId,
     timelineId,
+    targetActorId: options?.targetActorId,
+    targetCoord: options?.targetCoord,
+  };
+}
+
+/**
+ * 创建舞台提示事件
+ */
+export function createStageCueEvent(
+  sourceActorId: string,
+  targetActorIds: readonly string[],
+  cueId: string,
+  params?: Record<string, unknown>
+): StageCueEvent {
+  return {
+    kind: STAGE_CUE_EVENT,
+    sourceActorId,
+    targetActorIds,
+    cueId,
+    params,
   };
 }
 
@@ -568,4 +618,11 @@ export function isAbilityTriggeredEvent(event: GameEventBase): event is AbilityT
  */
 export function isExecutionActivatedEvent(event: GameEventBase): event is ExecutionActivatedEvent {
   return event.kind === EXECUTION_ACTIVATED_EVENT;
+}
+
+/**
+ * 检查事件是否为 StageCueEvent
+ */
+export function isStageCueEvent(event: GameEventBase): event is StageCueEvent {
+  return event.kind === STAGE_CUE_EVENT;
 }

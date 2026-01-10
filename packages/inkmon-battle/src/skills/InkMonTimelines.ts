@@ -55,7 +55,8 @@ export const BASIC_ATTACK_TIMELINE: TimelineAsset = {
   id: 'skill_basic_attack',
   totalDuration: 1000,
   tags: {
-    hit: 500, // 中点命中
+    start: 0,   // 动画开始
+    hit: 500,   // 中点命中
     end: 1000,
   },
 };
