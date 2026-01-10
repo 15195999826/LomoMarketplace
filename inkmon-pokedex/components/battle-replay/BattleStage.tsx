@@ -15,19 +15,12 @@ import styles from "./BattleStage.module.css";
 // ========== Constants ==========
 
 // 渲染用六边形尺寸
-const RENDER_HEX_SIZE = 36;
+const RENDER_HEX_SIZE = 52;
 const HEX_SPACING = 2;
 
 // ========== Props ==========
 
-/**
- * 触发的效果（用于飘字）
- */
-export interface TriggeredEffect {
-  type: 'damage' | 'heal';
-  targetActorId: string;
-  value: number;
-}
+import type { FloatingTextInstance } from "@/lib/battle-replay";
 
 export interface BattleStageProps {
   actors: Map<string, ActorState>;
@@ -36,19 +29,8 @@ export interface BattleStageProps {
   mapConfig?: HexMapConfig;
   /** 插值位置（用于移动动画） */
   interpolatedPositions?: Map<string, { q: number; r: number }>;
-  /** 触发的效果（用于 Hit 帧飘字） */
-  triggeredEffects?: TriggeredEffect[];
-}
-
-// ========== Floating Text Types ==========
-
-interface FloatingText {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  color: string;
-  timestamp: number;
+  /** 飘字列表（来自 RenderState） */
+  floatingTexts?: FloatingTextInstance[];
 }
 
 // ========== Helper Functions ==========
@@ -95,12 +77,11 @@ export function BattleStage({
   events,
   mapConfig,
   interpolatedPositions,
-  triggeredEffects,
+  floatingTexts: externalFloatingTexts,
 }: BattleStageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-  const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
 
   // 创建 HexGridModel 实例（用于坐标计算）
   // 使用渲染尺寸，这样 coordToWorld 直接返回渲染坐标
@@ -217,14 +198,14 @@ export function BattleStage({
       // 绘制单位名称
       const displayName = actor.displayName.slice(0, 2);
       ctx.fillStyle = "white";
-      ctx.font = "bold 14px sans-serif";
+      ctx.font = "bold 16px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(displayName, x, y - 4);
 
       // 绘制血条背景
       const hpBarWidth = hexSize * 1.2;
-      const hpBarHeight = 4;
+      const hpBarHeight = 5;
       const hpBarX = x - hpBarWidth / 2;
       const hpBarY = y + hexSize * 0.35;
 
@@ -239,73 +220,58 @@ export function BattleStage({
 
       // 绘制队伍标识
       ctx.beginPath();
-      ctx.arc(x + hexSize * 0.4, y - hexSize * 0.4, 8, 0, Math.PI * 2);
+      ctx.arc(x + hexSize * 0.4, y - hexSize * 0.4, 10, 0, Math.PI * 2);
       ctx.fillStyle = teamColor;
       ctx.fill();
       ctx.fillStyle = "white";
-      ctx.font = "bold 8px sans-serif";
+      ctx.font = "bold 10px sans-serif";
       ctx.fillText(actor.team, x + hexSize * 0.4, y - hexSize * 0.4);
     }
   }, [gridModel, actors, canvasSize, interpolatedPositions]);
 
-  // 处理触发的效果生成飘字（Hit 帧触发）
-  useEffect(() => {
-    if (!triggeredEffects || triggeredEffects.length === 0) return;
+  // 计算飘字的屏幕位置
+  const floatingTextsWithPosition = useMemo(() => {
+    if (!externalFloatingTexts || externalFloatingTexts.length === 0) return [];
 
-    const newTexts: FloatingText[] = [];
     const offsetX = canvasSize.width / 2;
     const offsetY = canvasSize.height / 2;
+    const now = Date.now();
 
-    for (const effect of triggeredEffects) {
-      const targetActor = actors.get(effect.targetActorId);
-      if (targetActor) {
-        // 使用插值位置（如果有）
-        const pos = interpolatedPositions?.get(effect.targetActorId) ?? targetActor.position;
-        const worldPos = gridModel.coordToWorld(pos);
+    return externalFloatingTexts.map((ft) => {
+      // 计算动画进度 (0 ~ 1)
+      const elapsed = now - ft.startTime;
+      const progress = Math.min(1, elapsed / ft.duration);
 
-        if (effect.type === 'damage') {
-          newTexts.push({
-            id: `${effect.targetActorId}-${Date.now()}-${Math.random()}`,
-            text: `-${effect.value}`,
-            x: worldPos.x + offsetX,
-            y: worldPos.y + offsetY - 30,
-            color: "#ff4444",
-            timestamp: Date.now(),
-          });
-        } else if (effect.type === 'heal') {
-          newTexts.push({
-            id: `${effect.targetActorId}-${Date.now()}-${Math.random()}`,
-            text: `+${effect.value}`,
-            x: worldPos.x + offsetX,
-            y: worldPos.y + offsetY - 30,
-            color: "#22c55e",
-            timestamp: Date.now(),
-          });
+      // 飘字向上移动 + 淡出
+      const yOffset = -50 - progress * 40; // 从 -50 移动到 -90
+      const opacity = 1 - progress * 0.6; // 从 1 淡出到 0.4
+
+      // 使用 actorId 获取角色位置，重新计算渲染坐标
+      let x = ft.position.x + offsetX;
+      let y = ft.position.y + offsetY + yOffset;
+
+      if (ft.actorId) {
+        const actor = actors.get(ft.actorId);
+        if (actor) {
+          // 使用插值位置（如果有）
+          const pos = interpolatedPositions?.get(ft.actorId) ?? actor.position;
+          const worldPos = gridModel.coordToWorld(pos);
+          x = worldPos.x + offsetX;
+          y = worldPos.y + offsetY + yOffset;
         }
       }
-    }
 
-    if (newTexts.length > 0) {
-      setFloatingTexts((prev) => [...prev, ...newTexts]);
-    }
-  }, [triggeredEffects, actors, canvasSize, interpolatedPositions, gridModel]);
-
-  // 清理飘字
-  const handleFloatingTextComplete = useCallback((id: string) => {
-    setFloatingTexts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  // 飘字自动消失
-  useEffect(() => {
-    const timers: NodeJS.Timeout[] = [];
-    floatingTexts.forEach((text) => {
-      const timer = setTimeout(() => {
-        handleFloatingTextComplete(text.id);
-      }, 1000);
-      timers.push(timer);
+      return {
+        id: ft.id,
+        text: ft.text,
+        x,
+        y,
+        color: ft.color,
+        opacity,
+        style: ft.style,
+      };
     });
-    return () => timers.forEach(clearTimeout);
-  }, [floatingTexts, handleFloatingTextComplete]);
+  }, [externalFloatingTexts, canvasSize, actors, interpolatedPositions, gridModel]);
 
   return (
     <div ref={containerRef} className={styles.stageContainer}>
@@ -313,14 +279,15 @@ export function BattleStage({
 
       {/* 飘字层 */}
       <div className={styles.floatingTextsContainer}>
-        {floatingTexts.map((text) => (
+        {floatingTextsWithPosition.map((text) => (
           <div
             key={text.id}
-            className={styles.floatingText}
+            className={`${styles.floatingText} ${text.style === 'critical' ? styles.critical : ''}`}
             style={{
               left: text.x,
               top: text.y,
               color: text.color,
+              opacity: text.opacity,
             }}
           >
             {text.text}

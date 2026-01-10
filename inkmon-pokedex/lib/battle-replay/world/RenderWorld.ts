@@ -310,6 +310,7 @@ export class RenderWorld {
 
     this.floatingTexts.push({
       id: actionId,
+      actorId: action.actorId, // 保存 actorId
       text: action.text,
       color: action.color,
       position: action.position,

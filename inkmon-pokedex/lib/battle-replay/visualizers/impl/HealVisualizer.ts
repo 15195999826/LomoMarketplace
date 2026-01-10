@@ -57,6 +57,7 @@ export class HealVisualizer implements IVisualizer<HealEvent> {
     // 1. 治疗飘字
     const floatingText: FloatingTextAction = {
       type: 'FloatingText',
+      actorId: event.targetActorId, // 添加 actorId 用于定位
       text: `+${event.healAmount}`,
       color: '#51cf66', // 绿色
       position: targetPosition,

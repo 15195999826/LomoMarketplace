@@ -89,6 +89,8 @@ export interface ProceduralEffectInstance {
 export interface FloatingTextInstance {
   /** 实例 ID */
   id: string;
+  /** 关联的 Actor ID（用于定位） */
+  actorId?: string;
   /** 显示文本 */
   text: string;
   /** 文字颜色 */

@@ -165,7 +165,15 @@ export function useBattleDirector(
   // ========== 派生状态 ==========
 
   const totalFrames = replay.meta.totalFrames;
-  const isEnded = currentFrame >= totalFrames;
+
+  // 逻辑帧是否已结束
+  const logicEnded = currentFrame >= totalFrames;
+
+  // 是否还有未完成的动画
+  const hasActiveAnimations = scheduler.getActionCount() > 0;
+
+  // 真正的结束：逻辑帧结束 且 所有动画播放完毕
+  const isEnded = logicEnded && !hasActiveAnimations;
 
   // ========== 帧循环 ==========
 
@@ -174,7 +182,7 @@ export function useBattleDirector(
       // 累积时间
       logicAccumulatorRef.current += deltaMs;
 
-      // 检查是否需要推进逻辑帧
+      // 检查是否需要推进逻辑帧（只有在逻辑帧未结束时才推进）
       while (logicAccumulatorRef.current >= LOGIC_TICK_MS) {
         logicAccumulatorRef.current -= LOGIC_TICK_MS;
 
@@ -182,9 +190,9 @@ export function useBattleDirector(
         setCurrentFrame((prev) => {
           const nextFrame = prev + 1;
 
-          // 检查是否结束
+          // 检查是否已到达最后一帧
           if (nextFrame > totalFrames) {
-            setIsPlaying(false);
+            // 不要在这里停止播放，让动画继续播放
             return prev;
           }
 
@@ -206,17 +214,29 @@ export function useBattleDirector(
         });
       }
 
-      // 调度器 tick
+      // 调度器 tick（即使逻辑帧结束，也要继续推进动画）
       const result = scheduler.tick(deltaMs);
 
       // 应用动作到世界状态
+      // 注意：需要同时应用活跃动作和本帧完成的动作
+      // completedThisTick 中的动作 progress = 1，需要应用最终状态
       if (result.hasChanges) {
+        // 先应用活跃动作
         world.applyActions(result.activeActions);
+        // 再应用本帧完成的动作（确保最终状态被应用）
+        world.applyActions(result.completedThisTick);
         world.cleanup(Date.now());
         setRenderState(world.getState());
       }
+
+      // 检查是否所有动画都已完成（逻辑帧结束 + 无活跃动画）
+      // 注意：这里不能直接用 isEnded，因为它是基于旧的 scheduler 状态
+      const stillHasAnimations = scheduler.getActionCount() > 0;
+      if (currentFrame >= totalFrames && !stillHasAnimations) {
+        setIsPlaying(false);
+      }
     },
-    [frameDataMap, registry, scheduler, totalFrames, world]
+    [currentFrame, frameDataMap, registry, scheduler, totalFrames, world]
   );
 
   // 使用带速度的帧循环

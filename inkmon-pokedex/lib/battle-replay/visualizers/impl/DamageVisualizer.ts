@@ -85,6 +85,7 @@ export class DamageVisualizer implements IVisualizer<DamageEvent> {
     // 1. 伤害飘字
     const floatingText: FloatingTextAction = {
       type: 'FloatingText',
+      actorId: event.targetActorId, // 添加 actorId 用于定位
       text: `-${event.damage}`,
       color: getEffectivenessColor(event.effectiveness, event.isCritical),
       position: targetPosition,

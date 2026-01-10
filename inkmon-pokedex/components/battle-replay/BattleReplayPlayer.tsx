@@ -225,15 +225,6 @@ export function BattleReplayPlayer({
     return map;
   }, [directorState.renderState.actors]);
 
-  // 转换飘字为 triggeredEffects 格式
-  const triggeredEffects = useMemo(() => {
-    return directorState.renderState.floatingTexts.map((ft) => ({
-      type: ft.style === 'heal' ? 'heal' as const : 'damage' as const,
-      targetActorId: ft.id.split('-')[0], // 从 id 中提取 actorId
-      value: parseInt(ft.text.replace(/[+-]/g, ''), 10) || 0,
-    }));
-  }, [directorState.renderState.floatingTexts]);
-
   const progress = directorState.totalFrames > 0
     ? (directorState.currentFrame / directorState.totalFrames) * 100
     : 0;
@@ -323,7 +314,7 @@ export function BattleReplayPlayer({
               events={directorState.currentEvents as import("./types").InkMonReplayEvent[]}
               mapConfig={replay.configs?.map as import("@lomo/hex-grid").HexMapConfig | undefined}
               interpolatedPositions={directorState.renderState.interpolatedPositions}
-              triggeredEffects={triggeredEffects}
+              floatingTexts={directorState.renderState.floatingTexts}
             />
             {/* 战斗结果浮层 */}
             {battleResult && (
