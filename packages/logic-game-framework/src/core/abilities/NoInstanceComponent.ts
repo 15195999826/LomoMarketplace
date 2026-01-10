@@ -42,7 +42,6 @@
 
 import {
   BaseAbilityComponent,
-  ComponentTypes,
   type ComponentLifecycleContext,
 } from './AbilityComponent.js';
 import type { GameEventBase } from '../events/GameEvent.js';
@@ -94,7 +93,7 @@ export type NoInstanceComponentConfig = {
  * 监听 GameEvent，匹配条件后直接执行 Action 链，不创建 ExecutionInstance。
  */
 export class NoInstanceComponent extends BaseAbilityComponent {
-  readonly type = ComponentTypes.TRIGGER;
+  readonly type = 'NoInstanceComponent';
 
   private readonly triggers: EventTrigger[];
   private readonly triggerMode: TriggerMode;

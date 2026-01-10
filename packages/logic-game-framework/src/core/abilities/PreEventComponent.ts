@@ -38,7 +38,6 @@
 
 import {
   BaseAbilityComponent,
-  ComponentTypes,
   type ComponentLifecycleContext,
 } from './AbilityComponent.js';
 import type { GameEventBase } from '../events/GameEvent.js';
@@ -96,7 +95,7 @@ export type PreEventComponentConfig<TEvent extends GameEventBase = GameEventBase
 export class PreEventComponent<
   TEvent extends GameEventBase = GameEventBase
 > extends BaseAbilityComponent {
-  readonly type = ComponentTypes.PRE_EVENT_HANDLER;
+  readonly type = 'PreEventComponent';
 
   private readonly eventKind: string;
   private readonly filter?: PreEventFilterFn<TEvent>;

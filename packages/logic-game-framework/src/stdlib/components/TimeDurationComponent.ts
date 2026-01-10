@@ -14,7 +14,6 @@
 
 import {
   BaseAbilityComponent,
-  ComponentTypes,
 } from '../../core/abilities/AbilityComponent.js';
 
 /** 过期原因常量 */
@@ -24,7 +23,7 @@ export const EXPIRE_REASON_TIME_DURATION = 'time_duration';
  * TimeDurationComponent - 基于时间的持续时间组件
  */
 export class TimeDurationComponent extends BaseAbilityComponent {
-  readonly type = ComponentTypes.TIME_DURATION;
+  readonly type = 'TimeDurationComponent';
 
   private readonly initialDuration: number;
   private remaining: number;

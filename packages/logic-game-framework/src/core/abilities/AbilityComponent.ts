@@ -213,31 +213,3 @@ export abstract class BaseAbilityComponent implements IAbilityComponent {
     return this.ability;
   }
 }
-
-/**
- * Component 类型常量
- */
-export const ComponentTypes = {
-  /** 主动技能标记，UI/快捷键配置 */
-  INPUT: 'input',
-  /** 被动触发器，事件监听 */
-  TRIGGER: 'trigger',
-  /** 基于时间的持续时间（stdlib 提供） */
-  TIME_DURATION: 'time_duration',
-  /** 层数管理 */
-  STACK: 'stack',
-  /** 冷却时间 */
-  COOLDOWN: 'cooldown',
-  /** 消耗（法力等） */
-  COST: 'cost',
-  /** 属性修改 */
-  STAT_MODIFIER: 'statModifier',
-  /** 执行效果（调用 Action） */
-  EFFECT: 'effect',
-  /** Timeline 执行实例激活器 */
-  TIMELINE_EXECUTION: 'timelineExecution',
-  /** Pre 阶段事件处理器 */
-  PRE_EVENT_HANDLER: 'preEventHandler',
-} as const;
-
-export type ComponentType = (typeof ComponentTypes)[keyof typeof ComponentTypes];

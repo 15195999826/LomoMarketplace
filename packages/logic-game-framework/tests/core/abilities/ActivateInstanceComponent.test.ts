@@ -132,7 +132,7 @@ describe('ActivateInstanceComponent', () => {
 
       const component = new ActivateInstanceComponent(config);
 
-      expect(component.type).toBe('timelineExecution');
+      expect(component.type).toBe('ActivateInstanceComponent');
       expect(component.state).toBe('active');
     });
 

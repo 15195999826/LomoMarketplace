@@ -132,7 +132,7 @@ export class Ability implements IAbilityForComponent {
   /** 过期原因（只记录第一个触发过期的原因） */
   private _expireReason?: string;
 
-  /** Component 列表（只读，构造时确定） */
+  /** Component 列表（只读，构造时确定, 包含activeUseComponents 和 components） */
   private readonly components: readonly IAbilityComponent[];
 
   /** 保存 grant 时的上下文（用于 removeEffects） */
@@ -143,6 +143,9 @@ export class Ability implements IAbilityForComponent {
 
   /** 事件触发回调列表 */
   private _onTriggeredCallbacks: Array<(event: GameEventBase, triggeredComponents: string[]) => void> = [];
+
+  /** 执行实例激活回调列表 */
+  private _onExecutionActivatedCallbacks: Array<(instance: IAbilityExecutionInstance) => void> = [];
 
   /**
    * 构造函数
@@ -329,6 +332,11 @@ export class Ability implements IAbilityForComponent {
 
     this.executionInstances.push(instance);
 
+    // 通知监听者
+    for (const callback of this._onExecutionActivatedCallbacks) {
+      callback(instance);
+    }
+
     // 立即触发一次 dt=0 的 tick，执行 timeline 中 0ms 的 tags
     // 这允许 Ability 在激活时立即执行初始化逻辑（如预订资源）
     instance.tick(0);
@@ -412,6 +420,25 @@ export class Ability implements IAbilityForComponent {
       const index = this._onTriggeredCallbacks.indexOf(callback);
       if (index !== -1) {
         this._onTriggeredCallbacks.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * 订阅执行实例激活
+   *
+   * 当 Ability 创建新的 ExecutionInstance 时调用回调。
+   * 用于录像系统记录技能释放，表演层获取 timelineId 等。
+   *
+   * @param callback 回调函数，接收执行实例引用
+   * @returns 取消订阅函数
+   */
+  addExecutionActivatedListener(callback: (instance: IAbilityExecutionInstance) => void): () => void {
+    this._onExecutionActivatedCallbacks.push(callback);
+    return () => {
+      const index = this._onExecutionActivatedCallbacks.indexOf(callback);
+      if (index !== -1) {
+        this._onExecutionActivatedCallbacks.splice(index, 1);
       }
     };
   }

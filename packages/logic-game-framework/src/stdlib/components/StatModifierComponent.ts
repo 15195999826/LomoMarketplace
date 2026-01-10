@@ -9,7 +9,6 @@
 
 import {
   BaseAbilityComponent,
-  ComponentTypes,
   type ComponentLifecycleContext,
 } from '../../core/abilities/AbilityComponent.js';
 import { ModifierType, type AttributeModifier } from '../../core/attributes/AttributeModifier.js';
@@ -51,7 +50,7 @@ export type StatModifierConfig = {
  * ```
  */
 export class StatModifierComponent extends BaseAbilityComponent {
-  readonly type = ComponentTypes.STAT_MODIFIER;
+  readonly type = 'StatModifierComponent';
 
   /** 静态配置（构造时确定） */
   private readonly configs: StatModifierConfig[];

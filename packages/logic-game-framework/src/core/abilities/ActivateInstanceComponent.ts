@@ -59,7 +59,6 @@
 
 import {
   BaseAbilityComponent,
-  ComponentTypes,
   type ComponentLifecycleContext,
 } from './AbilityComponent.js';
 import type { GameEventBase } from '../events/GameEvent.js';
@@ -101,7 +100,7 @@ export type ActivateInstanceComponentConfig = {
  * 响应事件触发，创建 ExecutionInstance 来执行 Timeline。
  */
 export class ActivateInstanceComponent extends BaseAbilityComponent {
-  readonly type = ComponentTypes.TIMELINE_EXECUTION;
+  readonly type: string = 'ActivateInstanceComponent';
 
   private readonly triggers: EventTrigger[];
   private readonly triggerMode: TriggerMode;

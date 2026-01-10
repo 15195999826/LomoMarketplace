@@ -49,7 +49,7 @@ export type TagComponentConfig = {
  * 随 Ability 生命周期管理 Tag。
  */
 export class TagComponent extends BaseAbilityComponent {
-  readonly type = 'tag';
+  readonly type = 'TagComponent';
 
   private readonly tags: Record<string, number>;
 

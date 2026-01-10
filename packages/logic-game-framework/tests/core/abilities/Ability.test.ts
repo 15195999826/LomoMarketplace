@@ -15,7 +15,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Ability, type AbilityConfig } from '../../../src/core/abilities/Ability.js';
 import {
   BaseAbilityComponent,
-  ComponentTypes,
   type IAbilityComponent,
   type IAbilityForComponent,
   type ComponentLifecycleContext,
@@ -64,7 +63,7 @@ class MockComponent extends BaseAbilityComponent {
 }
 
 class DurationComponent extends BaseAbilityComponent {
-  readonly type = ComponentTypes.TIME_DURATION;
+  readonly type = 'DurationComponent';
   private elapsed = 0;
   private readonly duration: number;
 

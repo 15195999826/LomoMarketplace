@@ -46,6 +46,7 @@ import {
   createActorSpawnedEvent,
   createActorDestroyedEvent,
   createAbilityTriggeredEvent,
+  createExecutionActivatedEvent,
 } from '../../core/events/GameEvent.js';
 
 /**
@@ -110,7 +111,7 @@ export function recordAttributeChanges(
 /**
  * 订阅 AbilitySet 的 Ability 生命周期变化
  *
- * 监听 Ability 的获得、移除和事件触发，自动转换为对应事件。
+ * 监听 Ability 的获得、移除、事件触发和执行实例激活，自动转换为对应事件。
  * 同时自动订阅 Tag 变化（通过 AbilitySet 代理的 TagContainer）。
  *
  * ## 订阅内容
@@ -118,6 +119,7 @@ export function recordAttributeChanges(
  * - **abilityGranted**: Ability 被授予时
  * - **abilityRemoved**: Ability 被移除时
  * - **abilityTriggered**: Ability 收到事件且有 Component 被触发时
+ * - **executionActivated**: Ability 创建新的 ExecutionInstance 时（用于表演层获取 timelineId）
  * - **tagChanged**: Tag 层数变化时
  *
  * @param abilitySet AbilitySet 实例
@@ -141,6 +143,8 @@ export function recordAbilitySetChanges(
 
   // 存储每个 Ability 的触发事件订阅取消函数
   const abilityTriggerUnsubscribes = new Map<string, () => void>();
+  // 存储每个 Ability 的执行实例激活订阅取消函数
+  const abilityExecutionUnsubscribes = new Map<string, () => void>();
 
   // 为单个 Ability 订阅触发事件
   const subscribeAbilityTriggered = (ability: Ability): void => {
@@ -158,9 +162,26 @@ export function recordAbilitySetChanges(
     abilityTriggerUnsubscribes.set(ability.id, unsubscribe);
   };
 
-  // 为已存在的 Ability 订阅触发事件
+  // 为单个 Ability 订阅执行实例激活事件
+  const subscribeAbilityExecutions = (ability: Ability): void => {
+    const unsubscribe = ability.addExecutionActivatedListener((instance) => {
+      ctx.pushEvent(
+        createExecutionActivatedEvent(
+          ctx.actorId,
+          ability.id,
+          ability.configId,
+          instance.id,
+          instance.timelineId
+        )
+      );
+    });
+    abilityExecutionUnsubscribes.set(ability.id, unsubscribe);
+  };
+
+  // 为已存在的 Ability 订阅事件
   for (const ability of abilitySet.getAbilities()) {
     subscribeAbilityTriggered(ability);
+    subscribeAbilityExecutions(ability);
   }
 
   // 订阅 Ability 获得
@@ -174,8 +195,9 @@ export function recordAbilitySetChanges(
         })
       );
 
-      // 为新 Ability 订阅触发事件
+      // 为新 Ability 订阅事件
       subscribeAbilityTriggered(ability);
+      subscribeAbilityExecutions(ability);
     })
   );
 
@@ -187,11 +209,16 @@ export function recordAbilitySetChanges(
         createAbilityRemovedEvent(ctx.actorId, ability.id)
       );
 
-      // 清理该 Ability 的触发事件订阅
-      const unsubscribe = abilityTriggerUnsubscribes.get(ability.id);
-      if (unsubscribe) {
-        unsubscribe();
+      // 清理该 Ability 的订阅
+      const triggerUnsubscribe = abilityTriggerUnsubscribes.get(ability.id);
+      if (triggerUnsubscribe) {
+        triggerUnsubscribe();
         abilityTriggerUnsubscribes.delete(ability.id);
+      }
+      const executionUnsubscribe = abilityExecutionUnsubscribes.get(ability.id);
+      if (executionUnsubscribe) {
+        executionUnsubscribe();
+        abilityExecutionUnsubscribes.delete(ability.id);
       }
     })
   );
@@ -199,12 +226,16 @@ export function recordAbilitySetChanges(
   // 订阅 Tag 变化
   unsubscribes.push(recordTagChanges(abilitySet, ctx));
 
-  // 添加清理所有 Ability 触发订阅的函数
+  // 添加清理所有 Ability 订阅的函数
   unsubscribes.push(() => {
     for (const unsubscribe of abilityTriggerUnsubscribes.values()) {
       unsubscribe();
     }
     abilityTriggerUnsubscribes.clear();
+    for (const unsubscribe of abilityExecutionUnsubscribes.values()) {
+      unsubscribe();
+    }
+    abilityExecutionUnsubscribes.clear();
   });
 
   return unsubscribes;

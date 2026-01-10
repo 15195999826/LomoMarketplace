@@ -172,6 +172,7 @@ export const ABILITY_GRANTED_EVENT = 'abilityGranted' as const;
 export const ABILITY_REMOVED_EVENT = 'abilityRemoved' as const;
 export const ABILITY_ACTIVATED_EVENT = 'abilityActivated' as const;
 export const ABILITY_TRIGGERED_EVENT = 'abilityTriggered' as const;
+export const EXECUTION_ACTIVATED_EVENT = 'executionActivated' as const;
 export const TAG_CHANGED_EVENT = 'tagChanged' as const;
 
 // ========== Actor 生命周期事件 ==========
@@ -314,6 +315,28 @@ export interface AbilityTriggeredEvent extends GameEventBase {
   readonly triggeredComponents: readonly string[];
 }
 
+// ========== 执行实例激活事件 ==========
+
+/**
+ * 执行实例激活事件
+ *
+ * 当 Ability 创建新的 ExecutionInstance 时产生。
+ * 用于表演层获取 timelineId 以播放对应动画。
+ */
+export interface ExecutionActivatedEvent extends GameEventBase {
+  readonly kind: typeof EXECUTION_ACTIVATED_EVENT;
+  /** Actor ID */
+  readonly actorId: string;
+  /** Ability 实例 ID */
+  readonly abilityInstanceId: string;
+  /** Ability 配置 ID */
+  readonly abilityConfigId: string;
+  /** 执行实例 ID */
+  readonly executionId: string;
+  /** Timeline ID（用于表演层获取动画配置） */
+  readonly timelineId: string;
+}
+
 // ========== 框架层事件联合类型 ==========
 
 /**
@@ -327,6 +350,7 @@ export type FrameworkEvent =
   | AbilityRemovedEvent
   | AbilityActivatedEvent
   | AbilityTriggeredEvent
+  | ExecutionActivatedEvent
   | TagChangedEvent;
 
 // ========== 工厂函数 ==========
@@ -461,6 +485,26 @@ export function createAbilityTriggeredEvent(
   };
 }
 
+/**
+ * 创建执行实例激活事件
+ */
+export function createExecutionActivatedEvent(
+  actorId: string,
+  abilityInstanceId: string,
+  abilityConfigId: string,
+  executionId: string,
+  timelineId: string
+): ExecutionActivatedEvent {
+  return {
+    kind: EXECUTION_ACTIVATED_EVENT,
+    actorId,
+    abilityInstanceId,
+    abilityConfigId,
+    executionId,
+    timelineId,
+  };
+}
+
 // ========== 框架事件 Type Guards ==========
 
 /**
@@ -517,4 +561,11 @@ export function isTagChangedEvent(event: GameEventBase): event is TagChangedEven
  */
 export function isAbilityTriggeredEvent(event: GameEventBase): event is AbilityTriggeredEvent {
   return event.kind === ABILITY_TRIGGERED_EVENT;
+}
+
+/**
+ * 检查事件是否为 ExecutionActivatedEvent
+ */
+export function isExecutionActivatedEvent(event: GameEventBase): event is ExecutionActivatedEvent {
+  return event.kind === EXECUTION_ACTIVATED_EVENT;
 }

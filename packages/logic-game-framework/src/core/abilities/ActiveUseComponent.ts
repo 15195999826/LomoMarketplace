@@ -230,6 +230,7 @@ export type ActiveUseContext = ComponentLifecycleContext & {
  * 并自动匹配 `event.abilityInstanceId === ability.id`。
  */
 export class ActiveUseComponent extends ActivateInstanceComponent {
+  override readonly type = 'ActiveUseComponent';
   private readonly conditions: Condition[];
   private readonly costs: Cost[];
 

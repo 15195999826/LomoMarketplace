@@ -6,7 +6,6 @@
 
 import {
   BaseAbilityComponent,
-  ComponentTypes,
 } from '../../core/abilities/AbilityComponent.js';
 
 /**
@@ -18,7 +17,7 @@ export type StackOverflowPolicy = 'cap' | 'refresh' | 'reject';
  * StackComponent
  */
 export class StackComponent extends BaseAbilityComponent {
-  readonly type = ComponentTypes.STACK;
+  readonly type = 'StackComponent';
 
   private stacks: number;
   private maxStacks: number;
