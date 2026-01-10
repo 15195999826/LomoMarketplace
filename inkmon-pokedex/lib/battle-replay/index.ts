@@ -20,3 +20,6 @@ export * from './world';
 
 // ========== Hooks ==========
 export * from './hooks';
+
+// ========== Config ==========
+export * from './config';

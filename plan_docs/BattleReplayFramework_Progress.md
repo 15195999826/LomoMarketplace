@@ -10,7 +10,7 @@
 | Phase 2 | Visualizer 注册机制 | ✅ 完成 | 2026-01-10 |
 | Phase 3 | ActionScheduler + RenderWorld | ✅ 完成 | 2026-01-10 |
 | Phase 4 | 重构 BattleReplayPlayer | ✅ 完成 | 2026-01-10 |
-| Phase 5 | 配置化 | ⏳ 待开始 | - |
+| Phase 5 | 配置化 | ✅ 完成 | 2026-01-10 |
 
 ## Phase 1: 核心类型定义 ✅
 
@@ -220,28 +220,63 @@ const { state, controls } = useBattleDirector(replay, options);
 
 | 文件 | 变更 | 状态 |
 |------|------|------|
-| `components/battle-replay/BattleReplayPlayer.tsx` | 简化为纯渲染 | ⏳ 可选 |
+| `components/battle-replay/BattleReplayPlayer.tsx` | 简化为纯渲染 | ✅ 完成 |
 
-> 注：现有组件仍可正常工作，新 Hook 提供了更简洁的替代方案。
-> 组件重构为可选任务，可在后续迭代中完成。
+**重构成果**：
+- 组件从 700 行简化到 440 行
+- 移除所有动画调度逻辑，改用 `useBattleDirector` Hook
+- 保留事件历史、日志导出等 UI 功能
 
 ### 验证
 
 - [x] TypeScript 编译通过
 - [x] 类型导出正确
+- [x] 组件重构完成
 
 ---
 
-## Phase 5: 配置化 ⏳
+## Phase 5: 配置化 ✅
 
 **目标**：动画参数从配置读取
 
-### 待创建文件
+### 完成的文件
 
-| 文件 | 说明 |
-|------|------|
-| `lib/battle-replay/config/AnimationConfig.ts` | 配置加载逻辑 |
-| `lib/battle-replay/config/index.ts` | 模块导出 |
+| 文件 | 说明 | 状态 |
+|------|------|------|
+| `lib/battle-replay/types/AnimationConfig.ts` | 配置类型 + 默认值 + 合并函数 | ✅ |
+| `lib/battle-replay/config/index.ts` | 配置模块导出 | ✅ |
+
+### 实现内容
+
+**配置类型**（已在 Phase 1 定义）：
+- `AnimationConfig` - 完整动画配置
+- `MoveAnimationConfig` - 移动动画配置
+- `DamageAnimationConfig` - 伤害动画配置
+- `HealAnimationConfig` - 治疗动画配置
+- `SkillAnimationConfig` - 技能动画配置
+
+**配置功能**：
+- `DEFAULT_ANIMATION_CONFIG` - 默认配置值
+- `mergeAnimationConfig()` - 配置合并函数
+- `extractAnimationConfig()` - 从回放数据提取配置
+
+**使用方式**：
+```typescript
+// 使用默认配置
+const { state, controls } = useBattleDirector(replay);
+
+// 自定义配置
+const { state, controls } = useBattleDirector(replay, {
+  animationConfig: {
+    move: { duration: 300 },  // 覆盖移动时长
+  },
+});
+```
+
+### 验证
+
+- [x] TypeScript 编译通过
+- [x] 配置导出正确
 
 ---
 
@@ -284,13 +319,12 @@ inkmon-pokedex/
 │       │   ├── useBattleDirector.ts  # ✅
 │       │   └── index.ts              # ✅
 │       │
-│       └── config/                   # ⏳ Phase 5
-│           ├── AnimationConfig.ts
-│           └── index.ts
+│       └── config/                   # ✅ Phase 5
+│           └── index.ts              # ✅
 │
 └── components/
     └── battle-replay/
-        ├── BattleReplayPlayer.tsx    # ⏳ Phase 4 重构
+        ├── BattleReplayPlayer.tsx    # ✅ Phase 4 重构完成
         └── ...
 ```
 
@@ -361,6 +395,21 @@ inkmon-pokedex/
 5. **组件重构为可选**：保留现有组件，新 Hook 作为替代方案
    - 原因：渐进式迁移，降低风险
    - 影响：两套实现并存，后续可选择性迁移
+
+### 2026-01-10: Phase 4 组件重构 + Phase 5 配置化
+
+1. **组件重构完成**：`BattleReplayPlayer.tsx` 从 700 行简化到 440 行
+   - 移除：动画调度逻辑、插值计算、事件处理
+   - 保留：事件历史、日志导出、UI 渲染
+   - 改用 `useBattleDirector` Hook 管理所有逻辑
+
+2. **配置模块复用**：配置类型已在 Phase 1 定义，Phase 5 只需导出
+   - `types/AnimationConfig.ts` 包含类型、默认值、合并函数
+   - `config/index.ts` 重新导出 + 添加 `extractAnimationConfig()`
+
+3. **事件历史本地维护**：Director 只提供当前帧事件，历史需组件维护
+   - 原因：Director 专注于渲染状态，不关心历史
+   - 影响：组件需要 useEffect 追踪事件变化
 
 ---
 
