@@ -46,6 +46,7 @@ import type {
   SpriteVFXInstance,
   ProceduralEffectInstance,
   ScreenShakeState,
+  MeleeStrikeInstance,
 } from '../types/RenderState';
 
 // ========== 缓动函数实现 ==========
@@ -88,18 +89,6 @@ interface InternalActorState {
   elements: string[];
   flashProgress?: number;
   tintColor?: string;
-}
-
-// ========== MeleeStrike 实例 ==========
-
-interface MeleeStrikeInstance {
-  id: string;
-  from: WorldCoord;
-  to: WorldCoord;
-  style: 'slash' | 'thrust' | 'impact';
-  color?: string;
-  startTime: number;
-  duration: number;
 }
 
 // ========== RenderWorld 实现 ==========
@@ -496,6 +485,7 @@ export class RenderWorld {
       interpolatedPositions: new Map(this.interpolatedPositions),
       activeSpriteVFX: [...this.spriteVFX],
       proceduralEffects: [...this.proceduralEffects],
+      meleeStrikes: [...this.meleeStrikes],
       floatingTexts: [...this.floatingTexts],
       screenShake: this.screenShake ? { ...this.screenShake } : undefined,
     };

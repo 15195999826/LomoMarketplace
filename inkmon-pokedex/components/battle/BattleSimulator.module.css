@@ -163,6 +163,34 @@
   cursor: not-allowed;
 }
 
+/* 随机队伍按钮 */
+.randomButton {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  color: var(--ink-black);
+  border: 2px solid var(--ink-black);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.randomButton:hover:not(:disabled) {
+  background: var(--ink-black);
+  color: var(--paper);
+  transform: translateY(-2px);
+}
+
+.randomButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 固定随机种子选项 */
 .deterministicToggle {
   display: flex;

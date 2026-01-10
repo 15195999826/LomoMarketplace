@@ -105,6 +105,34 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
     setBattle({ status: "idle", replay: null, log: null, error: null });
   };
 
+  // 随机填充两边队伍
+  const handleRandomTeams = useCallback(() => {
+    // 复制一份可用的 InkMon 列表
+    const available = [...inkmons];
+
+    // Fisher-Yates 洗牌算法
+    for (let i = available.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [available[i], available[j]] = [available[j], available[i]];
+    }
+
+    // 取前6个分配给两队
+    const newTeamA: TeamState = [
+      available[0] ?? null,
+      available[1] ?? null,
+      available[2] ?? null,
+    ];
+    const newTeamB: TeamState = [
+      available[3] ?? null,
+      available[4] ?? null,
+      available[5] ?? null,
+    ];
+
+    setTeamA(newTeamA);
+    setTeamB(newTeamB);
+    setBattle({ status: "idle", replay: null, log: null, error: null });
+  }, [inkmons]);
+
   // 运行战斗模拟
   const handleBattle = async () => {
     setBattle({ status: "loading", replay: null, log: null, error: null });
@@ -186,6 +214,13 @@ export function BattleSimulator({ inkmons }: BattleSimulatorProps) {
                 disabled={!canBattle || battle.status === "loading"}
               >
                 {battle.status === "loading" ? "⏳ 战斗中..." : "⚔️ 开始战斗"}
+              </button>
+              <button
+                className={styles.randomButton}
+                onClick={handleRandomTeams}
+                disabled={battle.status === "loading"}
+              >
+                🎲 随机队伍
               </button>
               <label className={styles.deterministicToggle}>
                 <input

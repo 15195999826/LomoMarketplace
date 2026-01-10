@@ -20,7 +20,7 @@ const HEX_SPACING = 2;
 
 // ========== Props ==========
 
-import type { FloatingTextInstance } from "@/lib/battle-replay";
+import type { FloatingTextInstance, MeleeStrikeInstance } from "@/lib/battle-replay";
 
 export interface BattleStageProps {
   actors: Map<string, ActorState>;
@@ -31,6 +31,8 @@ export interface BattleStageProps {
   interpolatedPositions?: Map<string, { q: number; r: number }>;
   /** 飘字列表（来自 RenderState） */
   floatingTexts?: FloatingTextInstance[];
+  /** 近战打击特效列表（来自 RenderState） */
+  meleeStrikes?: MeleeStrikeInstance[];
 }
 
 // ========== Helper Functions ==========
@@ -78,6 +80,7 @@ export function BattleStage({
   mapConfig,
   interpolatedPositions,
   floatingTexts: externalFloatingTexts,
+  meleeStrikes: externalMeleeStrikes,
 }: BattleStageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -227,7 +230,131 @@ export function BattleStage({
       ctx.font = "bold 10px sans-serif";
       ctx.fillText(actor.team, x + hexSize * 0.4, y - hexSize * 0.4);
     }
-  }, [gridModel, actors, canvasSize, interpolatedPositions]);
+
+    // 绘制近战打击特效
+    if (externalMeleeStrikes && externalMeleeStrikes.length > 0) {
+      const now = Date.now();
+      // 坐标缩放因子：RenderWorld 使用逻辑层 hexSize (50)，BattleStage 使用渲染层 hexSize (52)
+      const logicHexSize = mapConfig?.hexSize ?? 50;
+      const scaleFactor = RENDER_HEX_SIZE / logicHexSize;
+
+      for (const strike of externalMeleeStrikes) {
+        const elapsed = now - strike.startTime;
+        const progress = Math.min(1, elapsed / strike.duration);
+
+        // 计算屏幕坐标
+        const fromX = strike.from.x * scaleFactor + offsetX;
+        const fromY = strike.from.y * scaleFactor + offsetY;
+        const toX = strike.to.x * scaleFactor + offsetX;
+        const toY = strike.to.y * scaleFactor + offsetY;
+
+        // 计算方向向量
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        // 使用 easeOutQuad 让特效加速飞向目标
+        const easedProgress = progress * (2 - progress);
+
+        // 当前位置
+        const currentX = fromX + dx * easedProgress;
+        const currentY = fromY + dy * easedProgress;
+
+        const color = strike.color ?? '#ff8c00';
+
+        // 解析颜色为 RGB（用于渐变）
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+
+        ctx.save();
+
+        // === 1. 绘制拖尾效果 ===
+        if (progress < 0.95) {
+          // 拖尾长度随进度增加
+          const tailLength = Math.min(distance * 0.4, 60) * Math.min(progress * 2, 1);
+          const tailStartX = currentX - Math.cos(angle) * tailLength;
+          const tailStartY = currentY - Math.sin(angle) * tailLength;
+
+          // 渐变拖尾
+          const gradient = ctx.createLinearGradient(tailStartX, tailStartY, currentX, currentY);
+          gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+          gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.3)`);
+          gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.8)`);
+
+          ctx.beginPath();
+          ctx.moveTo(tailStartX, tailStartY);
+          ctx.lineTo(currentX, currentY);
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 6;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+
+        // === 2. 绘制飞行弹头 ===
+        if (progress < 0.95) {
+          // 发光效果
+          const glowRadius = 12;
+          const glowGradient = ctx.createRadialGradient(
+            currentX, currentY, 0,
+            currentX, currentY, glowRadius
+          );
+          glowGradient.addColorStop(0, `rgba(255, 255, 255, 0.9)`);
+          glowGradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.8)`);
+          glowGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, glowRadius, 0, Math.PI * 2);
+          ctx.fillStyle = glowGradient;
+          ctx.fill();
+
+          // 核心亮点
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, 4, 0, Math.PI * 2);
+          ctx.fillStyle = 'white';
+          ctx.fill();
+        }
+
+        // === 3. 命中爆炸效果 ===
+        if (progress > 0.85) {
+          const impactProgress = (progress - 0.85) / 0.15;
+          const impactEased = 1 - Math.pow(1 - impactProgress, 3); // easeOutCubic
+
+          // 爆炸圆环
+          const ringRadius = 8 + impactEased * 35;
+          const ringAlpha = 1 - impactProgress;
+
+          ctx.beginPath();
+          ctx.arc(toX, toY, ringRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${ringAlpha * 0.8})`;
+          ctx.lineWidth = 3 - impactProgress * 2;
+          ctx.stroke();
+
+          // 内部闪光
+          if (impactProgress < 0.5) {
+            const flashAlpha = 1 - impactProgress * 2;
+            const flashRadius = 15 * (1 - impactProgress);
+
+            const flashGradient = ctx.createRadialGradient(
+              toX, toY, 0,
+              toX, toY, flashRadius
+            );
+            flashGradient.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`);
+            flashGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${flashAlpha * 0.5})`);
+            flashGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+            ctx.beginPath();
+            ctx.arc(toX, toY, flashRadius, 0, Math.PI * 2);
+            ctx.fillStyle = flashGradient;
+            ctx.fill();
+          }
+        }
+
+        ctx.restore();
+      }
+    }
+  }, [gridModel, actors, canvasSize, interpolatedPositions, externalMeleeStrikes, mapConfig]);
 
   // 计算飘字的屏幕位置
   const floatingTextsWithPosition = useMemo(() => {

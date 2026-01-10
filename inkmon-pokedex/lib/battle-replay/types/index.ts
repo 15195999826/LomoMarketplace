@@ -58,6 +58,7 @@ export type {
   ProceduralEffectInstance,
   FloatingTextInstance,
   ScreenShakeState,
+  MeleeStrikeInstance,
   RenderState,
 } from './RenderState';
 

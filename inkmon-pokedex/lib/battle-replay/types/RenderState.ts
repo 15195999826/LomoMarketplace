@@ -6,7 +6,7 @@
  * @module lib/battle-replay/types/RenderState
  */
 
-import type { HexCoord, WorldCoord } from './VisualAction';
+import type { HexCoord, WorldCoord, MeleeStrikeStyle } from './VisualAction';
 
 // ========== Actor 渲染状态 ==========
 
@@ -117,6 +117,26 @@ export interface ScreenShakeState {
   offsetY: number;
 }
 
+/**
+ * 近战打击特效实例
+ */
+export interface MeleeStrikeInstance {
+  /** 实例 ID */
+  id: string;
+  /** 起始位置 */
+  from: WorldCoord;
+  /** 目标位置 */
+  to: WorldCoord;
+  /** 打击样式 */
+  style: MeleeStrikeStyle;
+  /** 颜色 */
+  color?: string;
+  /** 开始时间戳 */
+  startTime: number;
+  /** 持续时间 */
+  duration: number;
+}
+
 // ========== 完整渲染状态 ==========
 
 /**
@@ -139,6 +159,9 @@ export interface RenderState {
   /** 活跃的程序化特效 */
   proceduralEffects: ProceduralEffectInstance[];
 
+  /** 活跃的近战打击特效 */
+  meleeStrikes: MeleeStrikeInstance[];
+
   // ========== DOM 层数据 ==========
 
   /** 活跃的飘字 */
@@ -159,6 +182,7 @@ export function createEmptyRenderState(): RenderState {
     interpolatedPositions: new Map(),
     activeSpriteVFX: [],
     proceduralEffects: [],
+    meleeStrikes: [],
     floatingTexts: [],
     screenShake: undefined,
   };

@@ -315,6 +315,7 @@ export function BattleReplayPlayer({
               mapConfig={replay.configs?.map as import("@lomo/hex-grid").HexMapConfig | undefined}
               interpolatedPositions={directorState.renderState.interpolatedPositions}
               floatingTexts={directorState.renderState.floatingTexts}
+              meleeStrikes={directorState.renderState.meleeStrikes}
             />
             {/* 战斗结果浮层 */}
             {battleResult && (

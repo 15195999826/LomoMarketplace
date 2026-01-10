@@ -44,8 +44,15 @@ function inferStrikeStyle(cueId: string): MeleeStrikeStyle {
 
 /**
  * 获取攻击颜色
+ *
+ * 优先级：
+ * 1. params.element 元素颜色
+ * 2. 队伍颜色（A队绿色系，B队红色系）
  */
-function getAttackColor(params?: Record<string, unknown>): string {
+function getAttackColor(
+  team: 'A' | 'B',
+  params?: Record<string, unknown>
+): string {
   // 如果有 element 参数，根据元素返回颜色
   const element = params?.element as string | undefined;
   if (element) {
@@ -56,10 +63,13 @@ function getAttackColor(params?: Record<string, unknown>): string {
       electric: '#ffd43b',
       ice: '#74c0fc',
     };
-    return elementColors[element.toLowerCase()] ?? '#ff8c00';
+    return elementColors[element.toLowerCase()] ?? (team === 'A' ? '#22c55e' : '#ef4444');
   }
-  // 默认橙色
-  return '#ff8c00';
+
+  // 根据队伍返回颜色
+  // A队（我方）：绿色系
+  // B队（敌方）：红色系
+  return team === 'A' ? '#22c55e' : '#ef4444';
 }
 
 /**
@@ -98,8 +108,13 @@ export class StageCueVisualizer implements IVisualizer<StageCueEvent> {
     const config = ctx.getAnimationConfig();
     const actions: VisualAction[] = [];
 
-    // 获取攻击者位置
+    // 获取攻击者位置和队伍
     const attackerPosition = ctx.getActorPosition(event.sourceActorId);
+    const attackerTeam = ctx.getActorTeam(event.sourceActorId);
+
+    // 特效持续时间 = hitFrame（从 start 到 hit 的时间）
+    // 这样特效会在 hit 帧时刻到达目标
+    const strikeDuration = config.skill.basicAttack.hitFrame;
 
     // 为每个目标生成一个攻击动画
     for (const targetId of event.targetActorIds) {
@@ -111,8 +126,8 @@ export class StageCueVisualizer implements IVisualizer<StageCueEvent> {
         from: attackerPosition,
         to: targetPosition,
         style: inferStrikeStyle(event.cueId),
-        color: getAttackColor(event.params),
-        duration: config.skill.basicAttack.duration,
+        color: getAttackColor(attackerTeam, event.params),
+        duration: strikeDuration,
       };
 
       actions.push(meleeStrike);
