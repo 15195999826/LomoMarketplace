@@ -1,0 +1,215 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+
+  // ============================================================
+  // LomoMarketplace 项目配置
+  // 项目类型: 游戏框架 + MCP 服务器 + Claude Code 插件
+  // ============================================================
+
+  // Google Gemini 认证 - 使用内置 auth
+  "google_auth": true,
+
+  // ============================================================
+  // 智能体模型配置
+  // 根据你的可用模型进行优化配置
+  // ============================================================
+  "agents": {
+    // 主智能体 Sisyphus - 使用 Claude Opus 进行复杂编排
+    "Sisyphus": {
+      "model": "anthropic/claude-opus-4-5",
+      "temperature": 0.1
+    },
+
+    // Oracle - 架构设计和深度调试
+    // 使用 Claude Sonnet 作为高智商顾问
+    "oracle": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.1,
+      "prompt_append": "This is a game framework and MCP server project. Focus on TypeScript patterns, game logic architecture, and MCP protocol design."
+    },
+
+    // Librarian - 文档查找和代码库分析
+    // 使用免费/便宜模型
+    "librarian": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1,
+      "prompt_append": "Focus on: @lomo/logic-game-framework APIs, MCP protocol, Vitest testing patterns, pnpm monorepo structure."
+    },
+
+    // Explore - 快速代码库探索
+    // 使用 Gemini Flash 进行快速搜索
+    "explore": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1
+    },
+
+    // Frontend UI/UX - Next.js Web 应用开发
+    "frontend-ui-ux-engineer": {
+      "model": "google/gemini-3-pro-preview",
+      "temperature": 0.5,
+      "prompt_append": "This project uses Next.js for inkmon-pokedex. Use Tailwind CSS and modern React patterns."
+    },
+
+    // Document Writer - 技术文档
+    "document-writer": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.3
+    },
+
+    // Multimodal Looker - 图像/PDF 分析
+    "multimodal-looker": {
+      "model": "google/gemini-3-flash"
+    },
+
+    // ============================================================
+    // Code Review 代理 - 使用 GitHub Copilot 模型
+    // 用法: 在对话中输入 "让 code-reviewer-claude 审查代码" 或直接调用
+    // ============================================================
+
+    // Code Reviewer 1: Claude Sonnet (严谨型)
+    // 擅长: 逻辑错误、边界条件、类型安全
+    "code-reviewer-claude": {
+      "model": "github-copilot/claude-sonnet-4",
+      "temperature": 0.1,
+      "description": "严谨的代码审查员，专注于逻辑错误和类型安全",
+      "prompt_append": "You are a meticulous code reviewer. Focus on: 1) Logic errors and edge cases 2) Type safety issues 3) Potential runtime errors 4) Security vulnerabilities. Be specific and provide line numbers. Output in Chinese."
+    },
+
+    // Code Reviewer 2: GPT-4.1 (架构型)
+    // 擅长: 设计模式、代码结构、可维护性
+    "code-reviewer-gpt": {
+      "model": "github-copilot/gpt-4.1",
+      "temperature": 0.2,
+      "description": "架构导向的审查员，专注于设计模式和可维护性",
+      "prompt_append": "You are an architecture-focused code reviewer. Focus on: 1) Design patterns and SOLID principles 2) Code organization and modularity 3) Naming conventions and readability 4) Performance implications. Suggest refactoring when needed. Output in Chinese."
+    },
+
+    // Code Reviewer 3: Gemini (全面型)
+    // 擅长: 综合审查、最佳实践、文档完整性
+    "code-reviewer-gemini": {
+      "model": "github-copilot/gemini-2.0-flash",
+      "temperature": 0.15,
+      "description": "全面的审查员，覆盖代码质量各方面",
+      "prompt_append": "You are a comprehensive code reviewer. Cover all aspects: 1) Code correctness 2) Best practices 3) Error handling 4) Test coverage suggestions 5) Documentation completeness. Provide actionable feedback. Output in Chinese."
+    }
+  },
+
+  // ============================================================
+  // 自定义类别 - 针对项目特定任务
+  // ============================================================
+  "categories": {
+    // 游戏逻辑开发 - 需要精确性
+    "game-logic": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.1,
+      "prompt_append": "Working on @lomo/logic-game-framework. Focus on: Actor system, AttributeSet, Ability EC pattern, Action chains, BattleEvent system. Ensure deterministic logic."
+    },
+
+    // MCP 服务器开发
+    "mcp-server": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.1,
+      "prompt_append": "Working on MCP server development. Follow MCP protocol specifications. Use Zod for schema validation."
+    },
+
+    // 测试编写
+    "testing": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1,
+      "prompt_append": "Write Vitest tests. Use BDD style (#given, #when, #then). Follow existing test patterns in the codebase."
+    }
+  },
+
+  // ============================================================
+  // Sisyphus 编排器配置
+  // 控制 Sisyphus 与 OpenCode 原生模式的共存
+  // ============================================================
+  "sisyphus_agent": {
+    // disabled: true 会完全禁用 Sisyphus，恢复原生 OpenCode 模式
+    "disabled": false,
+    // 启用 OpenCode-Builder (原生 build agent)，与 Sisyphus 共存
+    "default_builder_enabled": true,
+    // 保留原生 plan agent，设为 false 可同时使用 Prometheus 和原生 plan
+    "replace_plan": false,
+    // 启用 Prometheus (Planner) agent
+    "planner_enabled": true
+  },
+
+  // ============================================================
+  // LSP 配置
+  // ============================================================
+  "lsp": {
+    "typescript-language-server": {
+      "command": ["C:\\Users\\37065\\AppData\\Roaming\\npm\\typescript-language-server.cmd", "--stdio"],
+      "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"],
+      "priority": 10
+    }
+  },
+
+  // ============================================================
+  // 后台任务并发配置
+  // ============================================================
+  "background_task": {
+    "defaultConcurrency": 5,
+    "providerConcurrency": {
+      "anthropic": 3,
+      "google": 8
+    }
+  },
+
+  // ============================================================
+  // 禁用的钩子 - 根据项目需求调整
+  // ============================================================
+  "disabled_hooks": [],
+
+  // ============================================================
+  // 禁用的 MCP - 项目已有自己的 MCP
+  // ============================================================
+  "disabled_mcps": [],
+
+  // ============================================================
+  // Claude Code 兼容性
+  // 让 Claude Code 的配置在 OpenCode 中也能用
+  // 如果你从未用过 Claude Code，保持 true 也没副作用
+  // ============================================================
+  "claude_code": {
+    "mcp": true,           // 加载 ~/.claude/.mcp.json, ./.mcp.json 中的 MCP 配置
+    "commands": true,      // 加载 ~/.claude/commands/ 中的斜杠命令
+    "skills": true,        // 加载 ~/.claude/skills/ 中的技能
+    "agents": true,        // 加载 ~/.claude/agents/*.md 中的自定义智能体
+    "hooks": true,         // 执行 ~/.claude/settings.json 中的钩子 (PreToolUse/PostToolUse/Stop)
+    "plugins": true        // 加载 ~/.claude/plugins/ 中的 Claude Code 市场插件
+  },
+
+  // ============================================================
+  // Git Master 配置
+  // ============================================================
+  "git_master": {
+    "commit_footer": true,
+    "include_co_authored_by": true
+  },
+
+  // ============================================================
+  // Ralph Loop - 无人值守持续工作模式
+  // 智能体回复结束后，系统自动发送新消息继续推进，直到任务完成
+  // 适合：睡前启动的大型重构、批量处理等长任务
+  // ============================================================
+  "ralph_loop": {
+    "enabled": false,              // 需要时手动改为 true
+    "default_max_iterations": 100  // 最大迭代次数，防止无限循环
+  },
+
+  // ============================================================
+  // 实验性功能
+  // ============================================================
+  "experimental": {
+    // 预防性压缩阈值：上下文窗口使用率达到此比例时自动压缩会话历史
+    // 范围 0.5~0.95，越低越早压缩（保守），越高越晚压缩（激进）
+    "preemptive_compaction_threshold": 0.85,
+
+    // 是否截断所有工具输出（防止单次搜索吃掉整个上下文）
+    // false = 只截断特定工具 (Grep/Glob/LSP/AST-grep)
+    // true = 截断所有工具输出
+    "truncate_all_tool_outputs": false
+  }
+}
