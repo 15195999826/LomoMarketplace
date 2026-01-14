@@ -19,7 +19,8 @@
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20",

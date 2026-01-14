@@ -16,7 +16,6 @@
 ## 前置依赖
 
 - [Phase0_ConfigParser.md](./Phase0_ConfigParser.md) - JSON 配置类型定义
-- [Phase1_TestGameWorld.md](./Phase1_TestGameWorld.md) - TimelineRegistry 初始化
 
 ---
 

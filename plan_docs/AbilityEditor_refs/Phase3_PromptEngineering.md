@@ -207,23 +207,21 @@ export class PromptBuilder {
 请严格按照以下 TypeScript 类型定义生成配置：
 
 \`\`\`typescript
-interface AbilityConfig {
+interface AbilityConfigJSON {
   configId: string;           // 配置 ID（唯一标识符，使用 snake_case）
   displayName?: string;        // 显示名称
   description?: string;        // 技能描述
   icon?: string;              // 图标路径
   tags?: string[];            // 标签列表
   activeUseComponents?: Array<{  // 主动使用组件
-    type: 'ActiveUse';
+    type: 'ActiveUseComponent';
     conditions?: Array<{ type: string; params?: Record<string, unknown> }>;
     costs?: Array<{ type: string; amount: number }>;
-    timeline: {
-      id: string;             // Timeline ID
-      tags: Record<string, Array<{  // Tag -> Actions 映射
-        type: string;
-        [key: string]: unknown;
-      }>>;
-    };
+    timelineId: string;        // Timeline ID（引用 TimelineRegistry）
+    tagActions: Record<string, Array<{  // Tag -> Actions 映射
+      type: string;
+      [key: string]: unknown;
+    }>>;
   }>;
   components?: Array<{        // 效果组件
     type: string;
@@ -373,20 +371,20 @@ export interface ComponentDescription {
 }
 
 export const componentDescriptions: Record<string, ComponentDescription> = {
-  Duration: {
+  TimeDurationComponent: {
     description: '设置 Ability 的持续时间（毫秒）。',
     fields: [
       {
-        name: 'time',
+        name: 'duration',
         type: 'number',
         description: '持续时间，单位毫秒。通常：即时效果 100-500，短期效果 5000-10000，长期效果 15000-30000',
         required: true,
       },
     ],
-    example: { type: 'Duration', time: 10000 },
+    example: { type: 'TimeDurationComponent', duration: 10000 },
   },
 
-  Stack: {
+  StackComponent: {
     description: '设置 Ability 的最大层数和初始层数。用于可叠加的效果。',
     fields: [
       {
@@ -401,52 +399,45 @@ export const componentDescriptions: Record<string, ComponentDescription> = {
         description: '初始层数。默认为 0 或 1',
         required: false,
       },
-    ],
-    example: { type: 'Stack', maxStacks: 5, initialStacks: 1 },
-  },
-
-  StatModifier: {
-    description: '修改目标的属性值。支持四层修改：addBase（加法基础）、mulBase（乘法基础）、addFinal（加法最终）、mulFinal（乘法最终）。',
-    fields: [
       {
-        name: 'attribute',
+        name: 'overflowPolicy',
         type: 'string',
-        description: '属性名。可选：hp（生命值）、atk（攻击力）、def（防御力）、spd（速度）',
-        required: true,
-      },
-      {
-        name: 'layer',
-        type: 'string',
-        description: '修改层。addBase：加到基础值；mulBase：乘以基础值；addFinal：加到最终值；mulFinal：乘以最终值',
-        required: true,
-      },
-      {
-        name: 'value',
-        type: 'number',
-        description: '修改值。加法层使用绝对值（如 +50），乘法层使用小数（如 0.5 表示 +50%）',
-        required: true,
-      },
-    ],
-    example: { type: 'StatModifier', attribute: 'atk', layer: 'mulBase', value: 0.5 },
-  },
-
-  Tag: {
-    description: '为目标添加标签，用于标记特殊状态。',
-    fields: [
-      {
-        name: 'tagId',
-        type: 'string',
-        description: '标签 ID。使用 snake_case 格式，如：burning、frozen、poisoned',
-        required: true,
-      },
-      {
-        name: 'initialStacks',
-        type: 'number',
-        description: '初始层数，默认为 1',
+        description: '溢出策略。cap：达到上限后不再增加',
         required: false,
       },
     ],
-    example: { type: 'Tag', tagId: 'burning', initialStacks: 1 },
+    example: { type: 'StackComponent', maxStacks: 5, initialStacks: 1 },
+  },
+
+  StatModifierComponent: {
+    description: '修改目标的属性值。支持多个属性修改配置。',
+    fields: [
+      {
+        name: 'modifiers',
+        type: 'array',
+        description: '属性修改配置数组，每个配置包含 attributeName、modifierType、value',
+        required: true,
+      },
+    ],
+    example: { 
+      type: 'StatModifierComponent', 
+      modifiers: [
+        { attributeName: 'atk', modifierType: 'mulBase', value: 0.5 }
+      ]
+    },
+  },
+
+  TagComponent: {
+    description: '为目标添加标签，用于标记特殊状态。',
+    fields: [
+      {
+        name: 'tags',
+        type: 'object',
+        description: 'Tag 映射对象。键为 tagId（如：burning），值为层数',
+        required: true,
+      },
+    ],
+    example: { type: 'TagComponent', tags: { burning: 1 } },
   },
 };
 ```
@@ -689,23 +680,21 @@ export const fewShotExamples: FewShotExample[] = [
       tags: ['attack', 'physical', 'single_target'],
       activeUseComponents: [
         {
-          type: 'ActiveUse',
-          timeline: {
-            id: 'timeline_basic_attack',
-            tags: {
-              impact: [
-                {
-                  type: 'Damage',
-                  target: 'eventTarget',
-                  formula: '100',
-                  damageType: 'physical',
-                },
-                {
-                  type: 'StageCue',
-                  cueId: 'melee_slash',
-                },
-              ],
-            },
+          type: 'ActiveUseComponent',
+          timelineId: 'timeline_basic_attack',
+          tagActions: {
+            impact: [
+              {
+                type: 'Damage',
+                target: 'eventTarget',
+                formula: '100',
+                damageType: 'physical',
+              },
+              {
+                type: 'StageCue',
+                cueId: 'melee_slash',
+              },
+            ],
           },
         },
       ],
@@ -722,31 +711,29 @@ export const fewShotExamples: FewShotExample[] = [
       tags: ['magic', 'aoe', 'fire'],
       activeUseComponents: [
         {
-          type: 'ActiveUse',
-          timeline: {
-            id: 'timeline_aoe',
-            tags: {
-              cast: [
-                {
-                  type: 'StageCue',
-                  cueId: 'cast_magic',
-                  params: { color: 'orange' },
-                },
-              ],
-              impact: [
-                {
-                  type: 'Damage',
-                  target: 'allEnemies',
-                  formula: '150',
-                  damageType: 'magical',
-                },
-                {
-                  type: 'StageCue',
-                  cueId: 'explosion',
-                  params: { color: 'orange', size: 'large' },
-                },
-              ],
-            },
+          type: 'ActiveUseComponent',
+          timelineId: 'timeline_aoe',
+          tagActions: {
+            cast: [
+              {
+                type: 'StageCue',
+                cueId: 'cast_magic',
+                params: { color: 'orange' },
+              },
+            ],
+            impact: [
+              {
+                type: 'Damage',
+                target: 'allEnemies',
+                formula: '150',
+                damageType: 'magical',
+              },
+              {
+                type: 'StageCue',
+                cueId: 'explosion',
+                params: { color: 'orange', size: 'large' },
+              },
+            ],
           },
         },
       ],
@@ -763,23 +750,21 @@ export const fewShotExamples: FewShotExample[] = [
       tags: ['heal', 'self'],
       activeUseComponents: [
         {
-          type: 'ActiveUse',
-          timeline: {
-            id: 'timeline_instant',
-            tags: {
-              apply: [
-                {
-                  type: 'Heal',
-                  target: 'self',
-                  formula: 'source.maxHp * 0.2',
-                },
-                {
-                  type: 'StageCue',
-                  cueId: 'heal_sparkle',
-                  params: { color: 'green' },
-                },
-              ],
-            },
+          type: 'ActiveUseComponent',
+          timelineId: 'timeline_instant',
+          tagActions: {
+            apply: [
+              {
+                type: 'Heal',
+                target: 'self',
+                formula: 'source.maxHp * 0.2',
+              },
+              {
+                type: 'StageCue',
+                cueId: 'heal_sparkle',
+                params: { color: 'green' },
+              },
+            ],
           },
         },
       ],
@@ -796,14 +781,14 @@ export const fewShotExamples: FewShotExample[] = [
       tags: ['buff', 'attack'],
       components: [
         {
-          type: 'Duration',
-          time: 10000,
+          type: 'TimeDurationComponent',
+          duration: 10000,
         },
         {
-          type: 'StatModifier',
-          attribute: 'atk',
-          layer: 'mulBase',
-          value: 0.5,
+          type: 'StatModifierComponent',
+          modifiers: [
+            { attributeName: 'atk', modifierType: 'mulBase', value: 0.5 }
+          ],
         },
       ],
     },
@@ -819,24 +804,22 @@ export const fewShotExamples: FewShotExample[] = [
       tags: ['attack', 'physical', 'heavy'],
       activeUseComponents: [
         {
-          type: 'ActiveUse',
-          timeline: {
-            id: 'timeline_heavy_attack',
-            tags: {
-              impact: [
-                {
-                  type: 'Damage',
-                  target: 'eventTarget',
-                  formula: 'source.atk * 2.0',
-                  damageType: 'physical',
-                },
-                {
-                  type: 'StageCue',
-                  cueId: 'melee_slash',
-                  params: { intensity: 'heavy' },
-                },
-              ],
-            },
+          type: 'ActiveUseComponent',
+          timelineId: 'timeline_heavy_attack',
+          tagActions: {
+            impact: [
+              {
+                type: 'Damage',
+                target: 'eventTarget',
+                formula: 'source.atk * 2.0',
+                damageType: 'physical',
+              },
+              {
+                type: 'StageCue',
+                cueId: 'melee_slash',
+                params: { intensity: 'heavy' },
+              },
+            ],
           },
         },
       ],
@@ -853,45 +836,43 @@ export const fewShotExamples: FewShotExample[] = [
       tags: ['dot', 'fire', 'debuff'],
       components: [
         {
-          type: 'Duration',
-          time: 3000,
+          type: 'TimeDurationComponent',
+          duration: 3000,
         },
         {
-          type: 'Tag',
-          tagId: 'burning',
+          type: 'TagComponent',
+          tags: { burning: 1 },
         },
       ],
       activeUseComponents: [
         {
-          type: 'ActiveUse',
-          timeline: {
-            id: 'timeline_dot',
-            tags: {
-              tick_1: [
-                {
-                  type: 'Damage',
-                  target: 'self',
-                  formula: '20',
-                  damageType: 'true',
-                },
-              ],
-              tick_2: [
-                {
-                  type: 'Damage',
-                  target: 'self',
-                  formula: '20',
-                  damageType: 'true',
-                },
-              ],
-              tick_3: [
-                {
-                  type: 'Damage',
-                  target: 'self',
-                  formula: '20',
-                  damageType: 'true',
-                },
-              ],
-            },
+          type: 'ActiveUseComponent',
+          timelineId: 'timeline_dot',
+          tagActions: {
+            tick_1: [
+              {
+                type: 'Damage',
+                target: 'self',
+                formula: '20',
+                damageType: 'true',
+              },
+            ],
+            tick_2: [
+              {
+                type: 'Damage',
+                target: 'self',
+                formula: '20',
+                damageType: 'true',
+              },
+            ],
+            tick_3: [
+              {
+                type: 'Damage',
+                target: 'self',
+                formula: '20',
+                damageType: 'true',
+              },
+            ],
           },
         },
       ],
