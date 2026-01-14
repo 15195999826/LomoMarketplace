@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useInkMons } from "@/contexts";
 import styles from "./page.module.css";
 
@@ -12,6 +13,11 @@ export function HomePageWrapper() {
       <p className={styles.subtitle}>
         探索 InkWorld，发现 {isLoaded ? total : "..."} 种独特的 InkMon
       </p>
+      <nav className={styles.toolsNav}>
+        <Link href="/tools/ability-editor" className={styles.toolLink}>
+          🎯 Ability Editor
+        </Link>
+      </nav>
     </section>
   );
 }

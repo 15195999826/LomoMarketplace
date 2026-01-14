@@ -24,7 +24,36 @@
   font-family: var(--font-body);
   font-size: 1.125rem;
   color: var(--accent);
-  margin-bottom: 0;
+  margin-bottom: var(--spacing-md);
+}
+
+.toolsNav {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.toolLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--paper);
+  border: 2px solid var(--ink-light);
+  border-radius: 8px;
+  color: var(--ink-black);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.toolLink:hover {
+  background: var(--ink-black);
+  color: var(--paper);
+  border-color: var(--ink-black);
+  transform: translateY(-2px);
 }
 
 .content {
