@@ -1,0 +1,145 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+.title {
+  font-weight: 600;
+  color: #d4d4d4;
+}
+
+.duration {
+  color: #808080;
+  font-size: 0.9em;
+}
+
+.svg {
+  flex: 1;
+  min-height: 100px;
+}
+
+.track {
+  stroke: #404040;
+  stroke-width: 0.5;
+}
+
+.marker {
+  stroke: #606060;
+  stroke-width: 0.2;
+}
+
+.markerLabel {
+  font-size: 2px;
+  fill: #808080;
+}
+
+.tagGroup {
+  cursor: pointer;
+}
+
+.tagConnector {
+  stroke: #0e639c;
+  stroke-width: 0.3;
+  stroke-dasharray: 1, 0.5;
+}
+
+.tagNode {
+  fill: #0e639c;
+  stroke: #1177bb;
+  stroke-width: 0.3;
+  transition: all 0.2s ease;
+}
+
+.tagNode.selected {
+  fill: #1177bb;
+  stroke-width: 0.5;
+}
+
+.tagNode.hovered {
+  fill: #1e90ff;
+}
+
+.tagName {
+  font-size: 2px;
+  fill: #d4d4d4;
+  font-weight: 500;
+}
+
+.badge {
+  fill: #cca700;
+}
+
+.badgeText {
+  font-size: 1.5px;
+  fill: white;
+  font-weight: bold;
+}
+
+.actionDetails {
+  border-top: 1px solid #333;
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.actionDetailsHeader {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #d4d4d4;
+}
+
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.noActions {
+  color: #808080;
+  font-style: italic;
+}
+
+.actionItem {
+  background: #252526;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.actionType {
+  font-weight: 600;
+  color: #4ec9b0;
+  margin-bottom: 4px;
+}
+
+.actionParams {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9em;
+}
+
+.actionParam {
+  display: flex;
+  gap: 8px;
+}
+
+.paramKey {
+  color: #9cdcfe;
+}
+
+.paramValue {
+  color: #ce9178;
+  font-family: monospace;
+}

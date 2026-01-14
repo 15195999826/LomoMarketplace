@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { VALID_ELEMENTS } from '@inkmon/core';
+
+const VALID_ELEMENTS = [
+  'fire', 'water', 'grass', 'electric', 'ice',
+  'rock', 'ground', 'flying', 'bug', 'poison',
+  'dark', 'light', 'steel', 'dragon',
+] as const;
 
 export const TargetSelectorSchema = z.enum([
   'eventTarget',

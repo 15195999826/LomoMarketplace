@@ -1,0 +1,296 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+.title {
+  font-weight: 600;
+  color: #d4d4d4;
+}
+
+.addButton {
+  padding: 4px 12px;
+  background: #0e639c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.addButton:hover {
+  background: #1177bb;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty {
+  color: #808080;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
+.item {
+  background: #252526;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.item:hover {
+  background: #2d2d2d;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.itemIcon {
+  font-size: 1.2em;
+}
+
+.itemType {
+  font-weight: 600;
+  color: #d4d4d4;
+  flex: 1;
+}
+
+.unknownType {
+  color: #f14c4c;
+}
+
+.deleteButton {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: #808080;
+  cursor: pointer;
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.deleteButton:hover {
+  color: #f14c4c;
+}
+
+.itemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9em;
+}
+
+.itemField {
+  display: flex;
+  gap: 8px;
+}
+
+.fieldName {
+  color: #9cdcfe;
+}
+
+.fieldValue {
+  color: #ce9178;
+  font-family: monospace;
+}
+
+.editor {
+  background: #252526;
+  border-radius: 6px;
+  border: 2px solid #0e639c;
+}
+
+.editorHeader {
+  padding: 8px 12px;
+  background: #0e639c;
+  color: white;
+}
+
+.editorTitle {
+  font-weight: 600;
+}
+
+.editorContent {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editorField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-size: 0.9em;
+  color: #808080;
+}
+
+.required {
+  color: #f14c4c;
+  margin-left: 2px;
+}
+
+.input,
+.select {
+  padding: 8px;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-size: 1em;
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #0e639c;
+}
+
+.editorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid #3c3c3c;
+}
+
+.cancelButton,
+.saveButton {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancelButton {
+  background: #3c3c3c;
+  color: #d4d4d4;
+}
+
+.cancelButton:hover {
+  background: #4c4c4c;
+}
+
+.saveButton {
+  background: #0e639c;
+  color: white;
+}
+
+.saveButton:hover {
+  background: #1177bb;
+}
+
+.dialogOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: #1e1e1e;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90vw;
+  border: 1px solid #333;
+}
+
+.dialogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+  color: #d4d4d4;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  color: #808080;
+}
+
+.closeButton:hover {
+  color: #d4d4d4;
+}
+
+.dialogContent {
+  padding: 16px;
+}
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.typeCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #d4d4d4;
+}
+
+.typeCard:hover {
+  background: #2d2d2d;
+  border-color: #0e639c;
+}
+
+.typeIcon {
+  font-size: 2em;
+}
+
+.typeName {
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.typeDesc {
+  font-size: 0.8em;
+  color: #808080;
+}

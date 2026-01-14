@@ -1,0 +1,55 @@
+.container {
+  background: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.header {
+  padding: 8px 12px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  font-weight: 600;
+  color: #d4d4d4;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+.templateCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #d4d4d4;
+}
+
+.templateCard:hover {
+  background: #2d2d2d;
+  border-color: #0e639c;
+}
+
+.icon {
+  font-size: 1.5em;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.description {
+  font-size: 0.75em;
+  color: #808080;
+  text-align: center;
+}

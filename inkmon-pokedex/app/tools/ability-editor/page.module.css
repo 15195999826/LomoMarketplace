@@ -1,0 +1,75 @@
+.page {
+  min-height: 100vh;
+  background: #121212;
+  color: #d4d4d4;
+  padding: 20px;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  color: #fff;
+  margin: 0 0 4px 0;
+}
+
+.header p {
+  font-size: 0.9rem;
+  color: #808080;
+  margin: 0;
+}
+
+.main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leftPanel,
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section h2 {
+  font-size: 1rem;
+  color: #808080;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.placeholder {
+  padding: 40px;
+  text-align: center;
+  color: #606060;
+  background: #1e1e1e;
+  border-radius: 8px;
+  border: 1px dashed #333;
+}
+
+.preview {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.8rem;
+  overflow: auto;
+  max-height: 300px;
+  border: 1px solid #333;
+  margin: 0;
+}
