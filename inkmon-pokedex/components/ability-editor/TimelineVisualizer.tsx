@@ -24,9 +24,11 @@ export interface TimelineVisualizerProps {
   selectedTag?: string;
   onTagSelect?: (tagName: string | null) => void;
   height?: number;
+  editable?: boolean;
+  onTimelineChange?: (timeline: TimelineData) => void;
 }
 
-const PADDING = 10;
+const TRACK_PADDING = 16;
 
 export function TimelineVisualizer({
   timeline,
@@ -34,6 +36,8 @@ export function TimelineVisualizer({
   selectedTag,
   onTagSelect,
   height = 200,
+  editable = false,
+  onTimelineChange,
 }: TimelineVisualizerProps) {
   const [hoveredTag, setHoveredTag] = useState<string | null>(null);
 
@@ -41,30 +45,30 @@ export function TimelineVisualizer({
     const positions: Array<{
       name: string;
       time: number;
-      x: number;
+      percent: number;
       actionCount: number;
     }> = [];
 
     const sortedTags = Object.entries(timeline.tags).sort(([, a], [, b]) => a - b);
-    const availableWidth = 100 - PADDING * 2;
 
     for (const [name, time] of sortedTags) {
-      const x = PADDING + (time / timeline.totalDuration) * availableWidth;
+      const percent = (time / timeline.totalDuration) * 100;
       const actionCount = tagActions[name]?.length ?? 0;
-      positions.push({ name, time, x, actionCount });
+      positions.push({ name, time, percent, actionCount });
     }
 
     return positions;
   }, [timeline, tagActions]);
 
-  const timeMarkers = useMemo(() => {
-    const markers: Array<{ time: number; x: number }> = [];
-    const step = timeline.totalDuration <= 1000 ? 250 : 500;
-    const availableWidth = 100 - PADDING * 2;
+  const rulerMarkers = useMemo(() => {
+    const markers: Array<{ time: number; percent: number; isMajor: boolean }> = [];
+    const majorStep = timeline.totalDuration <= 1000 ? 250 : 500;
+    const minorStep = majorStep / 4;
 
-    for (let time = 0; time <= timeline.totalDuration; time += step) {
-      const x = PADDING + (time / timeline.totalDuration) * availableWidth;
-      markers.push({ time, x });
+    for (let time = 0; time <= timeline.totalDuration; time += minorStep) {
+      const percent = (time / timeline.totalDuration) * 100;
+      const isMajor = time % majorStep === 0;
+      markers.push({ time, percent, isMajor });
     }
 
     return markers;
@@ -80,99 +84,75 @@ export function TimelineVisualizer({
   return (
     <div className={styles.container} style={{ height }}>
       <div className={styles.header}>
-        <span className={styles.title}>Timeline: {timeline.id}</span>
-        <span className={styles.duration}>Duration: {timeline.totalDuration}ms</span>
+        <div className={styles.headerLeft}>
+          <span className={styles.title}>Timeline</span>
+          <span className={styles.timelineId}>{timeline.id}</span>
+        </div>
+        <span className={styles.duration}>{timeline.totalDuration}ms</span>
       </div>
 
-      <svg className={styles.svg} viewBox="0 0 100 100" preserveAspectRatio="none">
-        <line
-          x1={PADDING}
-          y1={50}
-          x2={100 - PADDING}
-          y2={50}
-          className={styles.track}
-        />
-
-        {timeMarkers.map(({ time, x }) => (
-          <g key={time}>
-            <line
-              x1={x}
-              y1={45}
-              x2={x}
-              y2={55}
-              className={styles.marker}
-            />
-            <text
-              x={x}
-              y={65}
-              className={styles.markerLabel}
-              textAnchor="middle"
+      <div className={styles.timelineWrapper}>
+        <div className={styles.rulerTrack}>
+          {rulerMarkers.map(({ time, percent, isMajor }) => (
+            <div
+              key={time}
+              className={styles.rulerMarker}
+              style={{ left: `calc(${TRACK_PADDING}px + ${percent}% * (100% - ${TRACK_PADDING * 2}px) / 100%)` }}
             >
-              {time}ms
-            </text>
-          </g>
-        ))}
+              <div className={`${styles.rulerTick} ${isMajor ? styles.rulerTickMajor : ''}`} />
+              {isMajor && <span className={styles.rulerLabel}>{time}</span>}
+            </div>
+          ))}
+        </div>
 
-        {tagPositions.map(({ name, x, actionCount }) => {
-          const isSelected = selectedTag === name;
-          const isHovered = hoveredTag === name;
+        <div className={styles.mainTrack}>
+          <div className={styles.trackLineGlow} />
+          <div className={styles.trackLine} />
 
-          return (
-            <g
-              key={name}
-              className={styles.tagGroup}
-              onClick={() => handleTagClick(name)}
-              onMouseEnter={() => setHoveredTag(name)}
-              onMouseLeave={() => setHoveredTag(null)}
-            >
-              <line
-                x1={x}
-                y1={50}
-                x2={x}
-                y2={30}
-                className={styles.tagConnector}
-              />
+          {tagPositions.map(({ name, time, percent, actionCount }) => {
+            const isSelected = selectedTag === name;
+            const isHovered = hoveredTag === name;
 
-              <rect
-                x={x - 8}
-                y={10}
-                width={16}
-                height={20}
-                rx={2}
-                className={`${styles.tagNode} ${isSelected ? styles.selected : ''} ${isHovered ? styles.hovered : ''}`}
-              />
-
-              <text
-                x={x}
-                y={5}
-                className={styles.tagName}
-                textAnchor="middle"
+            return (
+              <div
+                key={name}
+                className={styles.tagMarker}
+                style={{ left: `calc(${TRACK_PADDING}px + ${percent}% * (100% - ${TRACK_PADDING * 2}px) / 100%)` }}
+                onClick={() => handleTagClick(name)}
+                onMouseEnter={() => setHoveredTag(name)}
+                onMouseLeave={() => setHoveredTag(null)}
               >
-                {name}
-              </text>
+                <span className={`${styles.tagLabel} ${isSelected ? styles.selected : ''}`}>
+                  {name}
+                </span>
+                <div className={styles.tagConnector} />
+                <div
+                  className={`${styles.tagNode} ${isSelected ? styles.selected : ''} ${actionCount > 0 ? styles.hasActions : ''}`}
+                >
+                  {actionCount > 0 && (
+                    <span className={styles.actionBadge}>{actionCount}</span>
+                  )}
+                </div>
+                <span className={styles.tagTime}>{time}ms</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-              {actionCount > 0 && (
-                <g>
-                  <circle
-                    cx={x + 6}
-                    cy={12}
-                    r={3}
-                    className={styles.badge}
-                  />
-                  <text
-                    x={x + 6}
-                    y={13}
-                    className={styles.badgeText}
-                    textAnchor="middle"
-                  >
-                    {actionCount}
-                  </text>
-                </g>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+      {editable && (
+        <div className={styles.toolbar}>
+          <button type="button" className={styles.toolbarBtn} title="Add Tag">+</button>
+          <button type="button" className={styles.toolbarBtn} title="Remove Tag">−</button>
+          <div className={styles.toolbarDivider} />
+          <button type="button" className={styles.toolbarBtn} title="Snap to Grid">⊞</button>
+          <div className={styles.zoomControls}>
+            <span className={styles.zoomLabel}>Zoom</span>
+            <button type="button" className={styles.toolbarBtn}>−</button>
+            <button type="button" className={styles.toolbarBtn}>+</button>
+          </div>
+        </div>
+      )}
 
       {selectedTag && (
         <TagActionDetails
@@ -195,20 +175,20 @@ function TagActionDetails({ tagName, time, actions }: TagActionDetailsProps) {
   return (
     <div className={styles.actionDetails}>
       <div className={styles.actionDetailsHeader}>
-        Selected Tag: {tagName} ({time}ms)
+        <span className={styles.actionDetailsTag}>{tagName}</span>
+        <span className={styles.actionDetailsTime}>@ {time}ms</span>
       </div>
       <div className={styles.actionList}>
         {actions.length === 0 ? (
-          <div className={styles.noActions}>No actions</div>
+          <div className={styles.noActions}>No actions bound to this tag</div>
         ) : (
           actions.map((action, index) => (
             <div key={index} className={styles.actionItem}>
-              <div className={styles.actionType}>
-                {index + 1}. {action.type}
-              </div>
+              <div className={styles.actionType}>{action.type}</div>
               <div className={styles.actionParams}>
                 {Object.entries(action)
                   .filter(([key]) => key !== 'type')
+                  .slice(0, 4)
                   .map(([key, value]) => (
                     <div key={key} className={styles.actionParam}>
                       <span className={styles.paramKey}>{key}:</span>

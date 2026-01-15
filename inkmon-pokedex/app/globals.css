@@ -121,3 +121,11 @@ img {
     opacity: 0.5;
   }
 }
+
+body:has([data-tools-page]) > footer {
+  display: none;
+}
+
+body:has([data-tools-page]) {
+  overflow: hidden;
+}

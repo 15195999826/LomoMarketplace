@@ -1,145 +1,384 @@
 .container {
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
+  background: #0d0d0d;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #333;
+  border: 1px solid #2a2a2a;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 8px 12px;
-  background: #252526;
-  border-bottom: 1px solid #333;
+  background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .title {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #808080;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.timelineId {
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #d4d4d4;
+  color: #e0e0e0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 .duration {
-  color: #808080;
-  font-size: 0.9em;
+  font-size: 0.75rem;
+  color: #4ec9b0;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background: rgba(78, 201, 176, 0.1);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(78, 201, 176, 0.2);
 }
 
-.svg {
+.timelineWrapper {
+  position: relative;
   flex: 1;
-  min-height: 100px;
+  min-height: 120px;
+  background: #0a0a0a;
 }
 
-.track {
-  stroke: #404040;
-  stroke-width: 0.5;
+.rulerTrack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: #111;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  align-items: flex-end;
 }
 
-.marker {
-  stroke: #606060;
-  stroke-width: 0.2;
+.mainTrack {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
 }
 
-.markerLabel {
-  font-size: 2px;
-  fill: #808080;
+.trackLine {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    #333 5%, 
+    #333 95%, 
+    transparent 100%
+  );
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-.tagGroup {
+.trackLineGlow {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  height: 8px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(78, 201, 176, 0.15) 5%, 
+    rgba(78, 201, 176, 0.15) 95%, 
+    transparent 100%
+  );
+  top: 50%;
+  transform: translateY(-50%);
+  filter: blur(4px);
+}
+
+.rulerMarker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.rulerTick {
+  width: 1px;
+  height: 8px;
+  background: #404040;
+}
+
+.rulerTickMajor {
+  height: 12px;
+  background: #555;
+}
+
+.rulerLabel {
+  font-size: 9px;
+  color: #555;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  margin-top: 2px;
+}
+
+.tagMarker {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
   cursor: pointer;
-}
-
-.tagConnector {
-  stroke: #0e639c;
-  stroke-width: 0.3;
-  stroke-dasharray: 1, 0.5;
-}
-
-.tagNode {
-  fill: #0e639c;
-  stroke: #1177bb;
-  stroke-width: 0.3;
   transition: all 0.2s ease;
 }
 
+.tagMarker:hover {
+  z-index: 10;
+}
+
+.tagConnector {
+  width: 2px;
+  height: 24px;
+  background: linear-gradient(180deg, #4ec9b0 0%, rgba(78, 201, 176, 0.3) 100%);
+  border-radius: 1px;
+}
+
+.tagMarker:hover .tagConnector {
+  background: linear-gradient(180deg, #6ee7c7 0%, rgba(110, 231, 199, 0.5) 100%);
+  box-shadow: 0 0 8px rgba(78, 201, 176, 0.5);
+}
+
+.tagNode {
+  width: 12px;
+  height: 12px;
+  background: #1a1a1a;
+  border: 2px solid #4ec9b0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 0 3px rgba(78, 201, 176, 0.1);
+}
+
+.tagMarker:hover .tagNode {
+  background: #4ec9b0;
+  box-shadow: 0 0 12px rgba(78, 201, 176, 0.6), 0 0 0 4px rgba(78, 201, 176, 0.2);
+  transform: scale(1.2);
+}
+
 .tagNode.selected {
-  fill: #1177bb;
-  stroke-width: 0.5;
+  background: #4ec9b0;
+  box-shadow: 0 0 12px rgba(78, 201, 176, 0.6), 0 0 0 4px rgba(78, 201, 176, 0.2);
 }
 
-.tagNode.hovered {
-  fill: #1e90ff;
+.tagNode.hasActions {
+  border-color: #ff9800;
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.1);
 }
 
-.tagName {
-  font-size: 2px;
-  fill: #d4d4d4;
+.tagNode.hasActions.selected,
+.tagMarker:hover .tagNode.hasActions {
+  background: #ff9800;
+  box-shadow: 0 0 12px rgba(255, 152, 0, 0.6), 0 0 0 4px rgba(255, 152, 0, 0.2);
+}
+
+.tagLabel {
+  position: absolute;
+  top: -22px;
+  white-space: nowrap;
+  font-size: 10px;
   font-weight: 500;
+  color: #888;
+  text-transform: capitalize;
+  transition: color 0.2s ease;
+  padding: 2px 6px;
+  background: #0d0d0d;
+  border-radius: 3px;
 }
 
-.badge {
-  fill: #cca700;
+.tagMarker:hover .tagLabel {
+  color: #fff;
+  background: #1a1a1a;
 }
 
-.badgeText {
-  font-size: 1.5px;
-  fill: white;
-  font-weight: bold;
+.tagLabel.selected {
+  color: #4ec9b0;
+}
+
+.tagTime {
+  position: absolute;
+  bottom: -18px;
+  font-size: 9px;
+  color: #555;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.tagMarker:hover .tagTime {
+  color: #4ec9b0;
+}
+
+.actionBadge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 14px;
+  height: 14px;
+  background: #ff9800;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .actionDetails {
-  border-top: 1px solid #333;
+  border-top: 1px solid #2a2a2a;
   padding: 12px;
-  max-height: 200px;
+  background: #0a0a0a;
+  max-height: 180px;
   overflow-y: auto;
 }
 
 .actionDetailsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.actionDetailsTag {
+  font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 8px;
-  color: #d4d4d4;
+  color: #4ec9b0;
+}
+
+.actionDetailsTime {
+  font-size: 0.75rem;
+  color: #666;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
 .actionList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .noActions {
-  color: #808080;
+  color: #444;
+  font-size: 0.8rem;
   font-style: italic;
 }
 
 .actionItem {
-  background: #252526;
+  background: #111;
   border-radius: 4px;
-  padding: 8px;
+  padding: 8px 10px;
+  border-left: 2px solid #ff9800;
 }
 
 .actionType {
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #4ec9b0;
+  color: #ff9800;
   margin-bottom: 4px;
 }
 
 .actionParams {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.9em;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.75rem;
 }
 
 .actionParam {
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 
 .paramKey {
-  color: #9cdcfe;
+  color: #666;
 }
 
 .paramValue {
-  color: #ce9178;
-  font-family: monospace;
+  color: #9cdcfe;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #111;
+  border-top: 1px solid #2a2a2a;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
+}
+
+.toolbarBtn:hover {
+  background: #1a1a1a;
+  border-color: #444;
+  color: #fff;
+}
+
+.toolbarBtn:active {
+  background: #222;
+}
+
+.toolbarBtn.active {
+  background: rgba(78, 201, 176, 0.1);
+  border-color: #4ec9b0;
+  color: #4ec9b0;
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 20px;
+  background: #2a2a2a;
+  margin: 0 4px;
+}
+
+.zoomControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.zoomLabel {
+  font-size: 10px;
+  color: #555;
+  margin-right: 4px;
 }

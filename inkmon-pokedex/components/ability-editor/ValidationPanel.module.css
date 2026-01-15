@@ -1,12 +1,12 @@
 .panel {
   padding: 12px;
   border-radius: 6px;
-  font-size: 0.9em;
+  font-size: 0.85rem;
 }
 
 .success {
-  background: rgba(78, 201, 176, 0.1);
-  border: 1px solid #4ec9b0;
+  background: rgba(78, 201, 176, 0.08);
+  border: 1px solid rgba(78, 201, 176, 0.3);
   color: #4ec9b0;
   display: flex;
   align-items: center;
@@ -14,20 +14,21 @@
 }
 
 .error {
-  background: rgba(241, 76, 76, 0.1);
-  border: 1px solid #f14c4c;
+  background: rgba(255, 82, 82, 0.08);
+  border: 1px solid rgba(255, 82, 82, 0.3);
 }
 
 .header {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #f14c4c;
+  color: #ff5252;
   margin-bottom: 8px;
+  font-weight: 600;
 }
 
 .icon {
-  font-size: 1.2em;
+  font-size: 1.1em;
 }
 
 .list {
@@ -36,38 +37,39 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .item:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .path {
-  color: #ce9178;
-  font-family: monospace;
-  font-size: 0.85em;
+  color: #ff9800;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
 }
 
 .message {
   color: #d4d4d4;
+  font-size: 0.85rem;
 }
 
 .item.error {
-  border-left: 3px solid #f14c4c;
+  border-left: 3px solid #ff5252;
 }
 
 .item.warning {
-  border-left: 3px solid #cca700;
+  border-left: 3px solid #ffc107;
 }

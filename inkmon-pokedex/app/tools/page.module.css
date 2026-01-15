@@ -1,0 +1,95 @@
+.page {
+  padding: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: #fff;
+  margin: 0 0 8px 0;
+}
+
+.header p {
+  font-size: 1rem;
+  color: #808080;
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s;
+}
+
+.card:hover {
+  background: #252525;
+  border-color: #444;
+  transform: translateY(-2px);
+}
+
+.cardIcon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.cardContent {
+  flex: 1;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cardHeader h2 {
+  font-size: 1.1rem;
+  color: #fff;
+  margin: 0;
+}
+
+.statusBadge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+}
+
+.cardContent p {
+  font-size: 0.85rem;
+  color: #808080;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cardArrow {
+  font-size: 1.5rem;
+  color: #555;
+  transition: transform 0.2s;
+}
+
+.card:hover .cardArrow {
+  transform: translateX(4px);
+  color: #0a84ff;
+}

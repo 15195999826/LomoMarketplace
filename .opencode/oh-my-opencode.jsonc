@@ -1,125 +1,166 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
-
   // ============================================================
   // LomoMarketplace 项目配置
-  // 项目类型: 游戏框架 + MCP 服务器 + Claude Code 插件
+  // 包含: logic-game-framework, InkMon 生态, Claude Code 插件
   // ============================================================
 
-  // Google Gemini 认证 - 使用内置 auth
   "google_auth": true,
 
   // ============================================================
-  // 智能体模型配置
-  // 根据你的可用模型进行优化配置
+  // 智能体配置
+  // Temperature 指南:
+  //   0.0-0.1: 精确任务 (代码生成、逻辑推理、调试)
+  //   0.2-0.3: 平衡任务 (代码审查、架构设计)
+  //   0.5-0.7: 创意任务 (UI设计、文档撰写)
   // ============================================================
   "agents": {
-    // 主智能体 Sisyphus - 使用 Claude Opus 进行复杂编排
+    // ==================== 核心编排 ====================
+    
+    // 主编排器 - 需要稳定的决策能力
     "Sisyphus": {
-      "model": "anthropic/claude-opus-4-5",
-      "temperature": 0.1
+      "model": "github-copilot/claude-opus-4.5",
+      "temperature": 0.1  // 低温度确保稳定的任务分配和决策
     },
 
-    // Oracle - 架构设计和深度调试
-    // 使用 Claude Sonnet 作为高智商顾问
+    // ==================== 专家顾问 ====================
+    
+    // Oracle - 架构设计和深度调试 (只读顾问)
+    // 需要严谨的逻辑推理，低温度
     "oracle": {
-      "model": "anthropic/claude-sonnet-4-5",
-      "temperature": 0.1,
-      "prompt_append": "This is a game framework and MCP server project. Focus on TypeScript patterns, game logic architecture, and MCP protocol design."
+      "model": "anthropic/claude-opus-4-5",
+      "temperature": 0.15  // 略高于 0.1 允许一些创造性建议
     },
 
-    // Librarian - 文档查找和代码库分析
-    // 使用免费/便宜模型
+    // ==================== 探索代理 ====================
+    
+    // Librarian - 文档/代码库分析 (快速便宜)
     "librarian": {
-      "model": "google/gemini-3-flash",
-      "temperature": 0.1,
-      "prompt_append": "Focus on: @lomo/logic-game-framework APIs, MCP protocol, Vitest testing patterns, pnpm monorepo structure."
+      "model": "xaio/GLM-4.7",
+      "temperature": 0.1  // 搜索任务需要精确
     },
 
-    // Explore - 快速代码库探索
-    // 使用 Gemini Flash 进行快速搜索
+    // Explore - 快速代码库探索 (极速)
     "explore": {
-      "model": "google/gemini-3-flash",
-      "temperature": 0.1
+      "model": "zhipuai-coding-plan/glm-4.7",
+      "temperature": 0.0  // 纯搜索，无需创造性
     },
 
-    // Frontend UI/UX - Next.js Web 应用开发
+    // ==================== 专业领域 ====================
+    
+    // Frontend UI/UX - 需要创意
     "frontend-ui-ux-engineer": {
-      "model": "google/gemini-3-pro-preview",
-      "temperature": 0.5,
-      "prompt_append": "This project uses Next.js for inkmon-pokedex. Use Tailwind CSS and modern React patterns."
+      "model": "google/antigravity-gemini-3-pro-high",
+      "temperature": 0.6  // 高温度激发 UI 创意
     },
 
-    // Document Writer - 技术文档
+    // Document Writer - 技术文档需要清晰但有表达力
     "document-writer": {
-      "model": "google/gemini-3-flash",
-      "temperature": 0.3
+      "model": "anthropic/claude-opus-4-5",
+      "temperature": 0.4  // 中等温度平衡准确性和可读性
     },
 
-    // Multimodal Looker - 图像/PDF 分析
+    // Multimodal Looker - 图像/PDF 分析需要精确
     "multimodal-looker": {
-      "model": "google/gemini-3-flash"
+      "model": "google/antigravity-gemini-3-flash",
+      "temperature": 0.1  // 分析任务需要精确
     },
 
-    // ============================================================
-    // Code Review 代理 - 使用 GitHub Copilot 模型
-    // 用法: 在对话中输入 "让 code-reviewer-claude 审查代码" 或直接调用
-    // ============================================================
-
-    // Code Reviewer 1: Claude Sonnet (严谨型)
-    // 擅长: 逻辑错误、边界条件、类型安全
+    // ==================== 代码审查专家组 ====================
+    // 用法: background_task(agent="code-reviewer-xxx", prompt="审查这段代码...")
+    
+    // Claude 审查员 - 严谨型 (逻辑/类型/安全)
     "code-reviewer-claude": {
-      "model": "github-copilot/claude-sonnet-4",
-      "temperature": 0.1,
-      "description": "严谨的代码审查员，专注于逻辑错误和类型安全",
-      "prompt_append": "You are a meticulous code reviewer. Focus on: 1) Logic errors and edge cases 2) Type safety issues 3) Potential runtime errors 4) Security vulnerabilities. Be specific and provide line numbers. Output in Chinese."
+      "model": "github-copilot/claude-opus-4.5",
+      "temperature": 0.05,  // 极低温度确保不遗漏问题
+      "description": "严谨型审查员 - 逻辑错误、类型安全、安全漏洞",
+      "prompt_append": "You are a meticulous code reviewer. Focus on: 1) Logic errors and edge cases 2) Type safety issues 3) Potential runtime errors 4) Security vulnerabilities. Be specific with line numbers. Output in Chinese."
     },
 
-    // Code Reviewer 2: GPT-4.1 (架构型)
-    // 擅长: 设计模式、代码结构、可维护性
+    // GPT 审查员 - 架构型 (设计模式/可维护性)
     "code-reviewer-gpt": {
-      "model": "github-copilot/gpt-4.1",
-      "temperature": 0.2,
-      "description": "架构导向的审查员，专注于设计模式和可维护性",
-      "prompt_append": "You are an architecture-focused code reviewer. Focus on: 1) Design patterns and SOLID principles 2) Code organization and modularity 3) Naming conventions and readability 4) Performance implications. Suggest refactoring when needed. Output in Chinese."
+      "model": "github-copilot/gpt-5.2",
+      "temperature": 0.2,  // 稍高温度允许架构建议
+      "description": "架构型审查员 - 设计模式、SOLID、可维护性",
+      "prompt_append": "You are an architecture-focused code reviewer. Focus on: 1) Design patterns and SOLID principles 2) Code organization and modularity 3) Naming conventions 4) Performance implications. Suggest refactoring when needed. Output in Chinese."
     },
 
-    // Code Reviewer 3: Gemini (全面型)
-    // 擅长: 综合审查、最佳实践、文档完整性
+    // Gemini 审查员 - 全面型 (综合覆盖)
     "code-reviewer-gemini": {
-      "model": "github-copilot/gemini-2.0-flash",
-      "temperature": 0.15,
-      "description": "全面的审查员，覆盖代码质量各方面",
-      "prompt_append": "You are a comprehensive code reviewer. Cover all aspects: 1) Code correctness 2) Best practices 3) Error handling 4) Test coverage suggestions 5) Documentation completeness. Provide actionable feedback. Output in Chinese."
+      "model": "google/antigravity-gemini-3-pro-high",
+      "temperature": 0.15,  // 平衡全面性和准确性
+      "description": "全面型审查员 - 正确性、最佳实践、测试建议",
+      "prompt_append": "You are a comprehensive code reviewer. Cover: 1) Code correctness 2) Best practices 3) Error handling 4) Test coverage suggestions 5) Documentation completeness. Provide actionable feedback. Output in Chinese."
     }
   },
 
   // ============================================================
-  // 自定义类别 - 针对项目特定任务
+  // 任务类别 - 通过 sisyphus_task(category="xxx") 调用
   // ============================================================
   "categories": {
-    // 游戏逻辑开发 - 需要精确性
+    // 游戏逻辑 - 需要确定性和精确性
     "game-logic": {
       "model": "anthropic/claude-sonnet-4-5",
-      "temperature": 0.1,
-      "prompt_append": "Working on @lomo/logic-game-framework. Focus on: Actor system, AttributeSet, Ability EC pattern, Action chains, BattleEvent system. Ensure deterministic logic."
+      "temperature": 0.05,  // 游戏逻辑必须确定性
+      "prompt_append": "Working on @lomo/logic-game-framework. Focus on: Actor system, AttributeSet (4-layer formula), Ability EC pattern, Action chains, BattleEvent system. Ensure deterministic logic. No randomness in calculations."
     },
 
-    // MCP 服务器开发
+    // MCP 服务器开发 - 协议实现需精确
     "mcp-server": {
       "model": "anthropic/claude-sonnet-4-5",
       "temperature": 0.1,
-      "prompt_append": "Working on MCP server development. Follow MCP protocol specifications. Use Zod for schema validation."
+      "prompt_append": "Working on MCP server development. Follow MCP protocol spec strictly. Use Zod for schema validation. Handle all edge cases."
     },
 
-    // 测试编写
+    // 测试编写 - 需要覆盖边界情况
     "testing": {
       "model": "google/gemini-3-flash",
+      "temperature": 0.2,  // 稍高温度有助于想到边界case
+      "prompt_append": "Write Vitest tests. Use BDD style (#given, #when, #then). Follow existing test patterns. Aim for edge case coverage."
+    },
+
+    // 代码审查 - Claude 严谨审查
+    "code-review-claude": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.05,
+      "prompt_append": "Perform thorough code review. Check: logic errors, type safety, security issues, edge cases. Be specific with line numbers. Output in Chinese."
+    },
+
+    // 代码审查 - GPT 架构视角
+    "code-review-gpt": {
+      "model": "openai/gpt-5.2",
+      "temperature": 0.2,
+      "prompt_append": "Review code from architecture perspective. Check: SOLID principles, design patterns, modularity, naming, performance. Suggest refactoring. Output in Chinese."
+    },
+
+    // 代码审查 - Gemini 综合审查
+    "code-review-gemini": {
+      "model": "google/antigravity-gemini-3-pro-high",
+      "temperature": 0.15,
+      "prompt_append": "Comprehensive code review. Cover: correctness, best practices, error handling, test suggestions, documentation. Output in Chinese."
+    },
+
+    // InkMon 开发 - 数据一致性重要
+    "inkmon": {
+      "model": "anthropic/claude-sonnet-4-5",
       "temperature": 0.1,
-      "prompt_append": "Write Vitest tests. Use BDD style (#given, #when, #then). Follow existing test patterns in the codebase."
+      "prompt_append": "Working on InkMon ecosystem. Use @inkmon/core for DB operations. Validate with Zod schemas. Ensure data consistency between JSON files and SQLite."
+    },
+
+    // 插件开发 - Claude Code 兼容
+    "plugin-dev": {
+      "model": "anthropic/claude-sonnet-4-5",
+      "temperature": 0.15,
+      "prompt_append": "Developing Claude Code plugins. Follow plugin structure: commands/, skills/, agents/, hooks/. Use kebab-case for directories. Export via barrel pattern."
+    },
+
+    // 快速任务 - 简单操作
+    "quick": {
+      "model": "google/gemini-3-flash",
+      "temperature": 0.1,
+      "prompt_append": "Quick task. Be concise and efficient."
     }
   },
-
   // ============================================================
   // Sisyphus 编排器配置
   // 控制 Sisyphus 与 OpenCode 原生模式的共存
@@ -134,18 +175,10 @@
     // 启用 Prometheus (Planner) agent
     "planner_enabled": true
   },
-
   // ============================================================
   // LSP 配置
   // ============================================================
-  "lsp": {
-    "typescript-language-server": {
-      "command": ["C:\\Users\\37065\\AppData\\Roaming\\npm\\typescript-language-server.cmd", "--stdio"],
-      "extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"],
-      "priority": 10
-    }
-  },
-
+  "lsp": {},
   // ============================================================
   // 后台任务并发配置
   // ============================================================
@@ -156,31 +189,27 @@
       "google": 8
     }
   },
-
   // ============================================================
   // 禁用的钩子 - 根据项目需求调整
   // ============================================================
   "disabled_hooks": [],
-
   // ============================================================
   // 禁用的 MCP - 项目已有自己的 MCP
   // ============================================================
   "disabled_mcps": [],
-
   // ============================================================
   // Claude Code 兼容性
   // 让 Claude Code 的配置在 OpenCode 中也能用
   // 如果你从未用过 Claude Code，保持 true 也没副作用
   // ============================================================
   "claude_code": {
-    "mcp": true,           // 加载 ~/.claude/.mcp.json, ./.mcp.json 中的 MCP 配置
-    "commands": true,      // 加载 ~/.claude/commands/ 中的斜杠命令
-    "skills": true,        // 加载 ~/.claude/skills/ 中的技能
-    "agents": true,        // 加载 ~/.claude/agents/*.md 中的自定义智能体
-    "hooks": true,         // 执行 ~/.claude/settings.json 中的钩子 (PreToolUse/PostToolUse/Stop)
-    "plugins": true        // 加载 ~/.claude/plugins/ 中的 Claude Code 市场插件
+    "mcp": true, // 加载 ~/.claude/.mcp.json, ./.mcp.json 中的 MCP 配置
+    "commands": true, // 加载 ~/.claude/commands/ 中的斜杠命令
+    "skills": true, // 加载 ~/.claude/skills/ 中的技能
+    "agents": true, // 加载 ~/.claude/agents/*.md 中的自定义智能体
+    "hooks": true, // 执行 ~/.claude/settings.json 中的钩子 (PreToolUse/PostToolUse/Stop)
+    "plugins": true // 加载 ~/.claude/plugins/ 中的 Claude Code 市场插件
   },
-
   // ============================================================
   // Git Master 配置
   // ============================================================
@@ -188,25 +217,22 @@
     "commit_footer": true,
     "include_co_authored_by": true
   },
-
   // ============================================================
   // Ralph Loop - 无人值守持续工作模式
   // 智能体回复结束后，系统自动发送新消息继续推进，直到任务完成
   // 适合：睡前启动的大型重构、批量处理等长任务
   // ============================================================
   "ralph_loop": {
-    "enabled": false,              // 需要时手动改为 true
-    "default_max_iterations": 100  // 最大迭代次数，防止无限循环
+    "enabled": true, // 需要时手动改为 true
+    "default_max_iterations": 100 // 最大迭代次数，防止无限循环
   },
-
   // ============================================================
   // 实验性功能
   // ============================================================
   "experimental": {
     // 预防性压缩阈值：上下文窗口使用率达到此比例时自动压缩会话历史
     // 范围 0.5~0.95，越低越早压缩（保守），越高越晚压缩（激进）
-    "preemptive_compaction_threshold": 0.85,
-
+    "preemptive_compaction_threshold": 0.95,
     // 是否截断所有工具输出（防止单次搜索吃掉整个上下文）
     // false = 只截断特定工具 (Grep/Glob/LSP/AST-grep)
     // true = 截断所有工具输出

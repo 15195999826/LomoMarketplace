@@ -1,0 +1,6 @@
+.toolsContainer {
+  height: calc(100vh - 74px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

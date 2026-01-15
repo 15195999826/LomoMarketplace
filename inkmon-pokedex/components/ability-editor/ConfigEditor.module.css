@@ -1,10 +1,10 @@
 .container {
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
+  background: #0a0a0a;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #333;
+  border: 1px solid #1a1a1a;
 }
 
 .toolbar {
@@ -12,35 +12,61 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  background: #252526;
-  border-bottom: 1px solid #333;
+  background: linear-gradient(180deg, #141414 0%, #0f0f0f 100%);
+  border-bottom: 1px solid #1a1a1a;
 }
 
 .toolbarButton {
-  padding: 4px 12px;
-  background: #0e639c;
-  color: white;
+  padding: 5px 12px;
+  background: linear-gradient(135deg, #4ec9b0 0%, #3da897 100%);
+  color: #000;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.9em;
-  transition: background 0.2s;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(78, 201, 176, 0.2);
 }
 
 .toolbarButton:hover {
-  background: #1177bb;
+  background: linear-gradient(135deg, #5fd4bc 0%, #4ec9b0 100%);
+  box-shadow: 0 3px 10px rgba(78, 201, 176, 0.3);
 }
 
 .status {
-  font-size: 0.9em;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .statusValid {
   color: #4ec9b0;
 }
 
+.statusValid::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #4ec9b0;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(78, 201, 176, 0.5);
+}
+
 .statusInvalid {
-  color: #f14c4c;
+  color: #ff5252;
+}
+
+.statusInvalid::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: #ff5252;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(255, 82, 82, 0.5);
 }
 
 .loading {
@@ -48,5 +74,6 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #808080;
+  color: #505050;
+  font-size: 0.9rem;
 }
