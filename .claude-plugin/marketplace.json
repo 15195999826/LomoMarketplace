@@ -73,6 +73,14 @@
       "version": "1.0.0",
       "keywords": ["gemini", "google", "ai", "bridge", "cross-ai"],
       "category": "productivity"
+    },
+    {
+      "name": "godot-lsp",
+      "source": "./plugins/godot-lsp",
+      "description": "GDScript LSP 支持 - 通过 godot-lsp-proxy 桥接 Godot 编辑器的语言服务器",
+      "version": "1.0.0",
+      "keywords": ["godot", "gdscript", "lsp", "language-server", "game-development"],
+      "category": "productivity"
     }
   ]
 }

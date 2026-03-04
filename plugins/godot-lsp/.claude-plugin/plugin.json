@@ -1,0 +1,5 @@
+{
+  "name": "godot-lsp",
+  "description": "GDScript LSP support for Godot via godot-lsp-proxy",
+  "version": "1.0.0"
+}
