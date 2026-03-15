@@ -81,6 +81,14 @@
       "version": "1.0.0",
       "keywords": ["godot", "gdscript", "lsp", "language-server", "game-development"],
       "category": "productivity"
+    },
+    {
+      "name": "typescript-lsp",
+      "source": "./plugins/typescript-lsp",
+      "description": "TypeScript/JavaScript LSP 支持 - 通过 typescript-language-server 提供代码智能",
+      "version": "1.0.0",
+      "keywords": ["typescript", "javascript", "lsp", "language-server"],
+      "category": "productivity"
     }
   ]
 }

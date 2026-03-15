@@ -1,0 +1,16 @@
+{
+  "typescript": {
+    "command": "C:\\Program Files\\nodejs\\node.exe",
+    "args": ["C:\\Users\\37065\\AppData\\Roaming\\npm\\node_modules\\typescript-language-server\\lib\\cli.mjs", "--stdio"],
+    "extensionToLanguage": {
+      ".ts": "typescript",
+      ".tsx": "typescriptreact",
+      ".js": "javascript",
+      ".jsx": "javascriptreact",
+      ".mts": "typescript",
+      ".cts": "typescript",
+      ".mjs": "javascript",
+      ".cjs": "javascript"
+    }
+  }
+}
