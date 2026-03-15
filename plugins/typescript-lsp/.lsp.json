@@ -1,6 +1,6 @@
 {
   "typescript": {
-    "command": "C:\\Program Files\\nodejs\\node.exe",
+    "command": "C:\\PROGRA~1\\nodejs\\node.exe",
     "args": ["C:\\Users\\37065\\AppData\\Roaming\\npm\\node_modules\\typescript-language-server\\lib\\cli.mjs", "--stdio"],
     "extensionToLanguage": {
       ".ts": "typescript",
