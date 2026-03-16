@@ -1,7 +1,7 @@
 {
   "gdscript": {
-    "command": "C:\\PROGRA~1\\nodejs\\node.exe",
-    "args": ["D:\\GodotProjects\\godot-lsp-proxy\\dist\\index.js", "--port", "6005"],
+    "command": "npx",
+    "args": ["github:15195999826/godot-lsp-proxy", "--port", "6005"],
     "extensionToLanguage": {
       ".gd": "gdscript"
     }
