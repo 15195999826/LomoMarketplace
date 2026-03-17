@@ -1,0 +1,5 @@
+{
+  "name": "lomo-orchestrator",
+  "version": "1.0.0",
+  "description": "Lomo Orchestrator — 多 Agent 团队协作和异步任务委派（需要 lomo-windows-bot REST 服务）"
+}
