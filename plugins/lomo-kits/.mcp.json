@@ -2,7 +2,7 @@
   "mcpServers": {
     "lomo-kits": {
       "command": "C:\\PROGRA~1\\nodejs\\npx.cmd",
-      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT}/../../lomo-mcp-servers/lomo-ts-kits-server/src/index.ts"],
+      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT}/server/src/index.ts"],
       "env": {
         "LOMO_ENABLE_VISION": "true",
         "LOMO_ENABLE_LOVART": "false",
