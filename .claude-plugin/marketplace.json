@@ -81,6 +81,14 @@
       "version": "1.0.0",
       "keywords": ["godot", "gdscript", "lsp", "language-server", "game-development"],
       "category": "productivity"
+    },
+    {
+      "name": "lomo-kits",
+      "source": "./plugins/lomo-kits",
+      "description": "Lomo 工具箱 - Vision 图片分析、Lovart AI 生成、Waveterm 终端控制、异步任务委派",
+      "version": "1.0.0",
+      "keywords": ["vision", "lovart", "waveterm", "mcp", "async-tasks"],
+      "category": "productivity"
     }
   ]
 }
