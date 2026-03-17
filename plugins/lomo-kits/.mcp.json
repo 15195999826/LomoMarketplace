@@ -2,12 +2,7 @@
   "mcpServers": {
     "lomo-kits": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"],
-      "env": {
-        "LOMO_ENABLE_VISION": "true",
-        "LOMO_ENABLE_LOVART": "false",
-        "LOMO_ENABLE_WAVETERM": "false"
-      }
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"]
     }
   }
 }
