@@ -1,6 +1,6 @@
 {
   "gdscript": {
-    "command": "npx",
+    "command": "C:\\PROGRA~1\\nodejs\\npx.cmd",
     "args": ["github:15195999826/godot-lsp-proxy", "--port", "6005"],
     "extensionToLanguage": {
       ".gd": "gdscript"
