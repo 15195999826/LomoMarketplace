@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "lomo-kits": {
+      "command": "npx",
+      "args": ["tsx", "${CLAUDE_PLUGIN_ROOT}/../lomo-mcp-servers/lomo-ts-kits-server/src/index.ts"],
+      "env": {
+        "LOMO_ENABLE_VISION": "true",
+        "LOMO_ENABLE_LOVART": "false",
+        "LOMO_ENABLE_WAVETERM": "false"
+      }
+    }
+  }
+}
