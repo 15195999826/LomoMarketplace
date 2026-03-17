@@ -112,7 +112,6 @@
     "context7@claude-plugins-official": true,
     "hex-grid@LomoMarketplace": true,
     "linus-coding-standards@LomoMarketplace": true,
-    "typescript-style@LomoMarketplace": true,
-    "ralph-wiggum@claude-plugins-official": false
+    "typescript-style@LomoMarketplace": true
   }
 }

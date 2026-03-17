@@ -25,14 +25,37 @@ export function registerWshTools(server: McpServer): void {
   // 2. wsh_read_output
   server.tool(
     "wsh_read_output",
-    "Read terminal scrollback buffer of a block (last N lines).",
+    "Read terminal scrollback buffer of a block (last N lines)." +
+      " WARNING: Large buffers (>1000 lines) may timeout when reading from tail." +
+      " Use positive 'start' to skip early content for faster reads on large buffers.",
     {
       blockId: z.string().describe("Block ID (UUID or block:UUID)"),
-      lines: z.number().default(50).describe("Number of lines to read from the end (default 50)"),
+      lines: z.number().default(50).describe("Number of lines to read (default 50)"),
+      start: z
+        .number()
+        .optional()
+        .describe(
+          "Starting line number. " +
+            "Positive: absolute offset from top (e.g. 1990 = skip first 1990 lines). " +
+            "Negative: offset from end (e.g. -50 = last 50 lines, may be slow on large buffers). " +
+            "Omitted: same as negative `lines` (read from tail).",
+        ),
     },
-    async ({ blockId, lines }) => {
+    async ({ blockId, lines, start }) => {
       const id = ensureBlockPrefix(blockId);
-      return runWsh(["termscrollback", "-b", id, "--start", String(-lines)]);
+      const offset = start ?? -lines;
+      const result = await runWsh(
+        ["termscrollback", "-b", id, "--start", String(offset)],
+        30_000,
+      );
+      // When using positive start, wsh returns everything from that line to end.
+      // Trim to requested line count.
+      if (!result.isError && offset >= 0 && result.content[0]) {
+        const text = result.content[0].text;
+        const trimmed = text.split("\n").slice(0, lines).join("\n");
+        result.content[0].text = trimmed;
+      }
+      return result;
     },
   );
 
