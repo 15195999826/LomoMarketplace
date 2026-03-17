@@ -1,6 +1,7 @@
 ---
 name: look
 description: 用便宜的 Vision 模型分析图片（不消耗主模型 token）
+disable-model-invocation: true
 ---
 
 用户希望用便宜的 Vision 模型（默认 Gemini 3 Flash）分析图片，而不是让你（昂贵的主模型）直接看图。
