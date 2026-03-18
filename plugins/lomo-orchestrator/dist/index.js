@@ -20829,6 +20829,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           work_dir: {
             type: "string",
             description: "Agent \u56E2\u961F\u7684\u5DE5\u4F5C\u76EE\u5F55\u7EDD\u5BF9\u8DEF\u5F84\uFF08\u5982 D:/projects/my-app\uFF09\u3002\u6240\u6709 Agent \u4F1A\u5728\u6B64\u76EE\u5F55\u4E2D\u8BFB\u5199\u4EE3\u7801\u3002"
+          },
+          mode: {
+            type: "string",
+            enum: ["adaptive", "opus"],
+            description: "\u6A21\u578B\u6A21\u5F0F\u3002adaptive\uFF08\u9ED8\u8BA4\uFF09= \u6309\u4EFB\u52A1\u7C7B\u578B\u81EA\u52A8\u5206\u914D\u6700\u4F73\u6A21\u578B\uFF08Opus\u7F16\u7801/Codex\u7EC8\u7AEF/Gemini\u89C6\u89C9\u7B49\uFF09\uFF1Bopus = \u6240\u6709 Agent \u7EDF\u4E00\u4F7F\u7528 Opus 4.6"
           }
         },
         required: ["goal", "work_dir"]
@@ -20936,6 +20941,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
         required: ["task_id"]
       }
+    },
+    // ── Cross Review ──
+    {
+      name: "cross_review",
+      description: "\u4EA4\u53C9\u8BC4\u5BA1\uFF1A\u5C06 prompt \u53D1\u7ED9 GPT-5.4 \u8FDB\u884C\u72EC\u7ACB\u5206\u6790\uFF0C\u8FD4\u56DE GPT \u7684\u8BC4\u5BA1\u7ED3\u679C\u3002\u7528\u4E8E\u83B7\u53D6\u4E0D\u540C\u6A21\u578B\u89C6\u89D2\u7684\u65B9\u6848\u8BC4\u4F30\u3002\u8C03\u7528\u540E\u5F53\u524D\u4F1A\u8BDD\uFF08Opus\uFF09\u53EF\u6574\u5408\u4E24\u65B9\u89C2\u70B9\u8F93\u51FA\u6700\u7EC8\u7ED3\u8BBA\u3002",
+      inputSchema: {
+        type: "object",
+        properties: {
+          prompt: {
+            type: "string",
+            description: "\u53D1\u7ED9 GPT \u7684\u5B8C\u6574\u8BC4\u5BA1 prompt\uFF08\u9700\u81EA\u5305\u542B\u6240\u6709\u4E0A\u4E0B\u6587\uFF0CGPT \u6CA1\u6709\u4F60\u7684\u5BF9\u8BDD\u5386\u53F2\uFF09"
+          },
+          cwd: {
+            type: "string",
+            description: "\u53EF\u9009\uFF0CGPT \u8FD0\u884C\u65F6\u7684\u5DE5\u4F5C\u76EE\u5F55\uFF08\u5F71\u54CD CLAUDE.md \u52A0\u8F7D\uFF09"
+          }
+        },
+        required: ["prompt"]
+      }
     }
   ]
 }));
@@ -20961,8 +20985,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       // ── Team ──
       case "create_team": {
-        const { goal, work_dir } = args;
-        const result = await apiCall("POST", "/api/teams", { goal, workDir: work_dir });
+        const { goal, work_dir, mode } = args;
+        const result = await apiCall("POST", "/api/teams", { goal, workDir: work_dir, mode });
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       case "get_team_status": {
@@ -21003,6 +21027,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "cancel_async_task": {
         const taskId = args.task_id;
         const result = await apiCall("DELETE", `/api/async-tasks/${taskId}`);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+      // ── Cross Review ──
+      case "cross_review": {
+        const { prompt, cwd } = args;
+        const result = await apiCall("POST", "/api/cross-review", { prompt, cwd });
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
       }
       default:

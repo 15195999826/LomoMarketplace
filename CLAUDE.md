@@ -10,9 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-**LomoMarketplace** is a multi-purpose monorepo containing:
+**LomoMarketplace** is a plugin marketplace repository containing:
 
-1. **Claude Code Plugins** - Custom plugins extending Claude Code functionality
+1. **Claude Code Plugins** - Custom plugins extending Claude Code functionality (dist + skills)
 2. **Logic Game Framework** - Logic-performance separated game framework (`@lomo/logic-game-framework`)
 3. **InkMon Ecosystem** - Complete InkMon project stack (core lib, MCP server, web pokedex)
 
@@ -22,18 +22,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 LomoMarketplace/
 ├── apps/
 │   └── hex-atb-battle/           # Framework example project (ATB battle demo)
-├── plugins/                      # Claude Code Plugins
+├── plugins/                      # Claude Code Plugins (dist + skills)
 │   ├── UE_ReactUMG/              # ReactUMG development plugin
-│   │   ├── .claude-plugin/
-│   │   │   └── plugin.json
-│   │   ├── skills/               # Auto-activate skills
-│   │   ├── agents/               # Specialized agents
-│   │   └── commands/             # Slash commands
-│   └── InkMon/                   # InkMon development plugin
-│       ├── .claude-plugin/
-│       │   └── plugin.json
-│       ├── skills/
-│       └── commands/
+│   ├── InkMon/                   # InkMon development plugin
+│   ├── lomo-kits/                # Vision/Lovart/Waveterm MCP toolkit (source: D:\lomo-ts-kits-server)
+│   └── lomo-orchestrator/        # Multi-agent orchestration (source: lomo-windows-bot)
 ├── packages/
 │   ├── logic-game-framework/     # @lomo/logic-game-framework
 │   │   ├── src/
@@ -42,7 +35,8 @@ LomoMarketplace/
 │   │   └── tests/
 │   └── inkmon-core/              # @inkmon/core (types, DB operations)
 ├── lomo-mcp-servers/
-│   └── inkmon-server/            # InkMon MCP Server
+│   ├── inkmon-server/            # InkMon MCP Server
+│   └── browser-control-server/   # Browser control MCP Server
 ├── inkmon-pokedex/               # Next.js Web Pokedex
 ├── data/
 │   ├── inkmon.db                 # SQLite database
