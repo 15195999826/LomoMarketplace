@@ -30173,7 +30173,7 @@ server.registerTool("cancel_team", {
 server.registerTool("create_async_task", {
   description: "\u521B\u5EFA\u4E00\u4E2A\u5F02\u6B65\u540E\u53F0\u4EFB\u52A1\uFF0C\u59D4\u6D3E\u7ED9\u6307\u5B9A runtime \u7684 Agent \u6267\u884C\u3002Agent \u4F1A\u5728\u540E\u53F0\u72EC\u7ACB\u5DE5\u4F5C\uFF0C\u5B8C\u6210\u540E\u901A\u8FC7\u684C\u9762\u901A\u77E5+WebUI \u901A\u77E5\u3002",
   inputSchema: {
-    runtime: external_exports3.string().describe("Agent \u4F7F\u7528\u7684 CLI runtime \u547D\u4EE4\u540D\u3002\u53EF\u9009: claude-codex, claude-gemini, claude-gpt, claude-glm, claude-copilot, claude-duo-team"),
+    runtime: external_exports3.string().describe("Agent \u4F7F\u7528\u7684 CLI runtime \u547D\u4EE4\u540D\u3002\u53EF\u9009: claude-codex, claude-gemini, claude-gpt, claude-glm, claude-copilot, claude-duo-team-1m"),
     prompt: external_exports3.string().describe("\u53D1\u7ED9\u540E\u53F0 Agent \u7684\u5B8C\u6574 prompt\uFF08\u9700\u81EA\u5305\u542B\uFF0C\u5305\u542B\u6587\u4EF6\u8DEF\u5F84\u3001\u6280\u672F\u7EA6\u675F\u7B49\u5B8C\u6574\u4E0A\u4E0B\u6587\uFF09"),
     cwd: external_exports3.string().describe("\u540E\u53F0 Agent \u7684\u5DE5\u4F5C\u76EE\u5F55\u7EDD\u5BF9\u8DEF\u5F84"),
     max_turns: external_exports3.number().optional().describe("\u53EF\u9009\uFF0CAgent \u6700\u5927\u8F6E\u6570\uFF0C\u9ED8\u8BA4 30"),
