@@ -30171,22 +30171,16 @@ server.registerTool("cancel_team", {
   }
 });
 server.registerTool("create_async_task", {
-  description: `\u521B\u5EFA\u4E00\u4E2A\u5F02\u6B65\u540E\u53F0\u4EFB\u52A1\uFF0C\u59D4\u6D3E\u7ED9\u6307\u5B9A runtime \u7684 Agent \u6267\u884C\u3002Agent \u4F1A\u5728\u540E\u53F0\u72EC\u7ACB\u5DE5\u4F5C\uFF0C\u5B8C\u6210\u540E\u901A\u8FC7\u684C\u9762\u901A\u77E5+WebUI \u901A\u77E5\u3002
-
-\u652F\u6301\u4E09\u79CD\u590D\u6742\u5EA6\u7B49\u7EA7\uFF1A
-- L1\uFF08\u9ED8\u8BA4\uFF09\uFF1A\u76F4\u63A5\u6267\u884C\uFF0C\u9002\u5408\u5355\u6587\u4EF6\u4FEE\u6539\u3001\u8C03\u7814\u3001\u6587\u6863
-- L2\uFF1A\u5148\u89C4\u5212\u518D\u5B9E\u65BD\uFF0C\u9002\u5408\u591A\u6587\u4EF6\u529F\u80FD\u3001\u4E2D\u7B49\u91CD\u6784
-- L3\uFF1A\u591A\u9636\u6BB5\u6D41\u6C34\u7EBF\uFF08architect\u2192planner\u2192coder\u2192reviewer\uFF09\uFF0C\u9002\u5408\u67B6\u6784\u7EA7\u53D8\u66F4`,
+  description: "\u521B\u5EFA\u4E00\u4E2A\u5F02\u6B65\u540E\u53F0\u4EFB\u52A1\uFF0C\u59D4\u6D3E\u7ED9\u6307\u5B9A runtime \u7684 Agent \u6267\u884C\u3002Agent \u4F1A\u5728\u540E\u53F0\u72EC\u7ACB\u5DE5\u4F5C\uFF0C\u5B8C\u6210\u540E\u901A\u8FC7\u684C\u9762\u901A\u77E5+WebUI \u901A\u77E5\u3002",
   inputSchema: {
     runtime: external_exports3.string().describe("Agent \u4F7F\u7528\u7684 CLI runtime \u547D\u4EE4\u540D\u3002\u53EF\u9009: claude-codex, claude-gemini, claude-gpt, claude-glm, claude-copilot, claude-duo-team"),
     prompt: external_exports3.string().describe("\u53D1\u7ED9\u540E\u53F0 Agent \u7684\u5B8C\u6574 prompt\uFF08\u9700\u81EA\u5305\u542B\uFF0C\u5305\u542B\u6587\u4EF6\u8DEF\u5F84\u3001\u6280\u672F\u7EA6\u675F\u7B49\u5B8C\u6574\u4E0A\u4E0B\u6587\uFF09"),
     cwd: external_exports3.string().describe("\u540E\u53F0 Agent \u7684\u5DE5\u4F5C\u76EE\u5F55\u7EDD\u5BF9\u8DEF\u5F84"),
     max_turns: external_exports3.number().optional().describe("\u53EF\u9009\uFF0CAgent \u6700\u5927\u8F6E\u6570\uFF0C\u9ED8\u8BA4 30"),
     keep_block: external_exports3.boolean().optional().describe("\u4EE3\u7801\u4FEE\u6539\u7C7B\u4EFB\u52A1\u4F20 true \u4FDD\u7559\u7EC8\u7AEF\uFF0C\u5176\u5B83\u9ED8\u8BA4\u5173\u95ED"),
-    team_id: external_exports3.string().optional().describe("\u53EF\u9009\uFF0C\u5173\u8054\u7684\u56E2\u961F ID\uFF08Team Leader \u521B\u5EFA\u65F6\u4F20\u5165\uFF0C\u89E3\u51B3\u7ADE\u6001\u95EE\u9898\uFF09"),
-    complexity: external_exports3.enum(["L1", "L2", "L3"]).optional().describe("\u4EFB\u52A1\u590D\u6742\u5EA6: L1=\u76F4\u63A5\u6267\u884C, L2=\u5148\u89C4\u5212\u518D\u5B9E\u65BD, L3=\u591A\u9636\u6BB5\u6D41\u6C34\u7EBF")
+    team_id: external_exports3.string().optional().describe("\u53EF\u9009\uFF0C\u5173\u8054\u7684\u56E2\u961F ID\uFF08Team Leader \u521B\u5EFA\u65F6\u4F20\u5165\uFF0C\u89E3\u51B3\u7ADE\u6001\u95EE\u9898\uFF09")
   }
-}, async ({ runtime, prompt, cwd, max_turns, keep_block, team_id, complexity }) => {
+}, async ({ runtime, prompt, cwd, max_turns, keep_block, team_id }) => {
   try {
     const result = await apiCall("POST", "/api/async-tasks", {
       runtime,
@@ -30194,8 +30188,7 @@ server.registerTool("create_async_task", {
       cwd,
       maxTurns: max_turns,
       keepBlock: keep_block,
-      teamId: team_id,
-      complexity
+      teamId: team_id
     });
     return jsonResult(result);
   } catch (e) {
