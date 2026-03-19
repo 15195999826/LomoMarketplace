@@ -20898,6 +20898,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "number",
             description: "\u53EF\u9009\uFF0CAgent \u6700\u5927\u8F6E\u6570\uFF0C\u9ED8\u8BA4 30"
           },
+          keep_block: {
+            type: "boolean",
+            description: "\u4EE3\u7801\u4FEE\u6539\u7C7B\u4EFB\u52A1\u4F20 true \u4FDD\u7559\u7EC8\u7AEF\uFF0C\u5176\u5B83\u9ED8\u8BA4\u5173\u95ED"
+          },
           team_id: {
             type: "string",
             description: "\u53EF\u9009\uFF0C\u5173\u8054\u7684\u56E2\u961F ID\uFF08Team Leader \u521B\u5EFA\u65F6\u4F20\u5165\uFF0C\u89E3\u51B3\u7ADE\u6001\u95EE\u9898\uFF09"
@@ -21005,12 +21009,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       // ── Async Task ──
       case "create_async_task": {
-        const { runtime, prompt, cwd, max_turns, team_id } = args;
+        const { runtime, prompt, cwd, max_turns, keep_block, team_id } = args;
         const result = await apiCall("POST", "/api/async-tasks", {
           runtime,
           prompt,
           cwd,
           maxTurns: max_turns,
+          keepBlock: keep_block,
           teamId: team_id
         });
         return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -21032,8 +21037,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // ── Cross Review ──
       case "cross_review": {
         const { prompt, cwd } = args;
-        const result = await apiCall("POST", "/api/cross-review", { prompt, cwd });
-        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        const data = await apiCall("POST", "/api/cross-review", { prompt, cwd });
+        return { content: [{ type: "text", text: data.result }] };
       }
       default:
         return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
