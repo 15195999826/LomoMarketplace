@@ -1,5 +1,5 @@
 ---
-name: write-tips
+name: on-write-error-handle
 description: LLM上游写入文本失败后追加提示， 这种情况下LLM并不知情
 disable-model-invocation: true
 ---
