@@ -30124,11 +30124,12 @@ server.registerTool("create_team", {
   inputSchema: {
     goal: external_exports3.string().describe("\u56E2\u961F\u7684\u4EFB\u52A1\u76EE\u6807\u63CF\u8FF0\uFF08\u8BE6\u7EC6\u8BF4\u660E\u8981\u505A\u4EC0\u4E48\uFF09"),
     work_dir: external_exports3.string().describe("Agent \u56E2\u961F\u7684\u5DE5\u4F5C\u76EE\u5F55\u7EDD\u5BF9\u8DEF\u5F84\uFF08\u5982 D:/projects/my-app\uFF09\u3002\u6240\u6709 Agent \u4F1A\u5728\u6B64\u76EE\u5F55\u4E2D\u8BFB\u5199\u4EE3\u7801\u3002"),
-    mode: external_exports3.enum(["adaptive", "opus"]).optional().describe("\u6A21\u578B\u6A21\u5F0F\u3002adaptive\uFF08\u9ED8\u8BA4\uFF09= \u6309\u4EFB\u52A1\u7C7B\u578B\u81EA\u52A8\u5206\u914D\u6700\u4F73\u6A21\u578B\uFF08Opus\u7F16\u7801/Codex\u7EC8\u7AEF/Gemini\u89C6\u89C9\u7B49\uFF09\uFF1Bopus = \u6240\u6709 Agent \u7EDF\u4E00\u4F7F\u7528 Opus 4.6")
+    mode: external_exports3.enum(["adaptive", "opus"]).optional().describe("\u6A21\u578B\u6A21\u5F0F\u3002adaptive\uFF08\u9ED8\u8BA4\uFF09= \u6309\u4EFB\u52A1\u7C7B\u578B\u81EA\u52A8\u5206\u914D\u6700\u4F73\u6A21\u578B\uFF08Opus\u7F16\u7801/Codex\u7EC8\u7AEF/Gemini\u89C6\u89C9\u7B49\uFF09\uFF1Bopus = \u6240\u6709 Agent \u7EDF\u4E00\u4F7F\u7528 Opus 4.6"),
+    workflow_id: external_exports3.string().optional().describe("Workflow \u5B9A\u4E49 ID\u3002\u53EF\u9009: default\uFF08\u5168\u9636\u6BB5\uFF09, fast\uFF08\u4EC5\u7F16\u7801\uFF09, with-review\uFF08\u7F16\u7801+\u5BA1\u67E5\uFF09\u3002\u4E5F\u53EF\u7528\u81EA\u5B9A\u4E49 workflow ID")
   }
-}, async ({ goal, work_dir, mode }) => {
+}, async ({ goal, work_dir, mode, workflow_id }) => {
   try {
-    const result = await apiCall("POST", "/api/teams", { goal, workDir: work_dir, mode });
+    const result = await apiCall("POST", "/api/teams", { goal, workDir: work_dir, mode, workflowId: workflow_id });
     return jsonResult(result);
   } catch (e) {
     return errorResult(e);
@@ -30173,7 +30174,7 @@ server.registerTool("cancel_team", {
 server.registerTool("create_async_task", {
   description: "\u521B\u5EFA\u4E00\u4E2A\u5F02\u6B65\u540E\u53F0\u4EFB\u52A1\uFF0C\u59D4\u6D3E\u7ED9\u6307\u5B9A runtime \u7684 Agent \u6267\u884C\u3002Agent \u4F1A\u5728\u540E\u53F0\u72EC\u7ACB\u5DE5\u4F5C\uFF0C\u5B8C\u6210\u540E\u901A\u8FC7\u684C\u9762\u901A\u77E5+WebUI \u901A\u77E5\u3002",
   inputSchema: {
-    runtime: external_exports3.string().describe("Agent \u4F7F\u7528\u7684 CLI runtime \u547D\u4EE4\u540D\u3002\u53EF\u9009: claude-codex, claude-gemini, claude-gpt, claude-glm, claude-copilot, claude-duo-team-1m"),
+    runtime: external_exports3.string().describe("Agent \u4F7F\u7528\u7684 CLI runtime \u547D\u4EE4\u540D\u3002\u53EF\u9009: claude-codex, claude-gemini, claude-gpt, claude-glm, claude-copilot, claude-duo-team-1m, opencode-gpt, opencode-gemini, opencode-codex"),
     prompt: external_exports3.string().describe("\u53D1\u7ED9\u540E\u53F0 Agent \u7684\u5B8C\u6574 prompt\uFF08\u9700\u81EA\u5305\u542B\uFF0C\u5305\u542B\u6587\u4EF6\u8DEF\u5F84\u3001\u6280\u672F\u7EA6\u675F\u7B49\u5B8C\u6574\u4E0A\u4E0B\u6587\uFF09"),
     cwd: external_exports3.string().describe("\u540E\u53F0 Agent \u7684\u5DE5\u4F5C\u76EE\u5F55\u7EDD\u5BF9\u8DEF\u5F84"),
     max_turns: external_exports3.number().optional().describe("\u53EF\u9009\uFF0CAgent \u6700\u5927\u8F6E\u6570\uFF0C\u9ED8\u8BA4 30"),
